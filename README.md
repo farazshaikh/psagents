@@ -16,13 +16,14 @@ The PI test is a extension of the **Turing Test** where we are not just testing 
 ## Conceptual recepie for building PSAgent
 
 The design space of building PSAgents can be explored in many way and one generic forumulation is converting (personal information, context -> actions) into a semantic representation, and exterpolating actions for unseen contexts.
-
 ```mermaid
-                    PersonalInformation-->SemanticDB
-                    Context->SemanticDB
-                    Action->SemanticDB
-
-                    Predict(SemanticDB, unseen context) -> Action
+graph LR
+   PI[Personal Information] --> SDB[SemanticDB]
+   C[Context] --> SDB
+   A[Action] --> SDB
+   SDB --> P[Predict]
+   UC[Unseen Context] --> P
+   P --> NA[New Action]
 ```
 
 # Practical Approach from implementing PSAgent
@@ -48,6 +49,6 @@ Both the rag and fine-tuning approach have distinct qualitaitve and cost tradeof
 
 ### Drilling down design space for a RAG based approach
 
-We want to design a system for a large number of PSAgents thus we prefer the RAG approach for its scale.
+We want to design a system for a large number of PSAgents thus we prefer the RAG approach for its scale.****
 
 
