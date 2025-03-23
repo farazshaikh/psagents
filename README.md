@@ -17,13 +17,15 @@ The PI test is a extension of the **Turing Test** where we are not just testing 
 
 The design space of building PSAgents can be explored in many way and one generic forumulation is converting (personal information, context -> actions) into a semantic representation, and exterpolating actions for unseen contexts.
 ```mermaid
-graph LR
+graph TD
    PI[Personal Information] --> SDB[SemanticDB]
    C[Context] --> SDB
    A[Action] --> SDB
-   SDB --> P[Predict]
-   UC[Unseen Context] --> P
-   P --> NA[New Action]
+
+graph TD
+   UC[Unseen Context]->P[Predict]
+   P --> SDB[Semantic]
+   SDB --> NA[New Action]
 ```
 
 # Practical Approach from implementing PSAgent
