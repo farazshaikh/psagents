@@ -123,42 +123,94 @@ graph TD
 
 # PS Agents
 
-A system for building and managing knowledge graphs from text messages using semantic similarity and LLM-assisted processing.
+A Go application for processing and analyzing messages using embeddings and graph databases.
 
 ## Development Environment
 
-This project uses Nix for reproducible development environments. To get started:
+### Prerequisites
 
-1. Install Nix:
+- Go 1.22 or later
+- Nix package manager
+- Neo4j (for graph database)
+
+### Setup
+
+1. Clone the repository:
    ```bash
-   sh <(curl -L https://nixos.org/nix/install) --daemon
+   git clone https://github.com/yourusername/psagents.git
+   cd psagents
    ```
 
-2. Enable flakes (optional but recommended):
-   ```bash
-   mkdir -p ~/.config/nix
-   echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
-   ```
-
-3. Enter the development shell:
+2. Enter the Nix development shell:
    ```bash
    nix develop
    ```
 
-   Or if using direnv:
+3. Install dependencies:
    ```bash
-   echo "use nix" > .envrc
-   direnv allow
+   go mod download
    ```
 
-The development environment includes:
-- Go 1.21 and tools
-- Language server (gopls)
-- Linter (golangci-lint)
-- Debugger (delve)
-- Code formatters
-- Version control tools
-- Shell utilities
-- Neo4j database
+4. Copy the example config:
+   ```bash
+   cp config/config.example.yaml config/config.yaml
+   ```
+
+5. Edit `config/config.yaml` with your settings.
+
+### Running Tests
+
+```bash
+go test ./...
+```
+
+## Usage
+
+### Ingest Command
+
+The `ingest` command processes messages and generates embeddings. It supports both full processing and development mode.
+
+```bash
+# Process all messages
+go run cmd/ingest/main.go -config config/config.yaml
+
+# Process only first 20 messages (development mode)
+go run cmd/ingest/main.go -config config/config.yaml -dev
+```
+
+Command line flags:
+- `-config`: Path to config file (default: "config/config.example.yaml")
+- `-dev`: Use development file with first 20 messages (default: false)
+
+The command will:
+1. Load the configuration file
+2. Create a development file if `-dev` flag is used
+3. Generate embeddings for the messages
+4. Save the embeddings to the configured output directory
 
 ## Project Structure
+
+```
+.
+├── cmd/
+│   └── ingest/          # Ingest command for processing messages
+├── config/              # Configuration package
+├── internal/
+│   ├── embeddings/      # Embedding generation
+│   └── graph/          # Graph database operations
+└── README.md
+```
+
+## Configuration
+
+The application uses a YAML configuration file with the following sections:
+
+- `server`: Server configuration
+- `pipeline`: Pipeline settings
+- `graph`: Graph database configuration
+- `embeddings`: Embedding model settings
+- `llm`: Language model configuration
+- `data`: Data directory paths
+- `logging`: Logging configuration
+
+See `config/config.example.yaml` for a complete example.

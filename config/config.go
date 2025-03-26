@@ -55,6 +55,8 @@ type LLMConfig struct {
 	Provider      string        `mapstructure:"provider"`
 	Model         string        `mapstructure:"model"`
 	APIKey        string        `mapstructure:"api_key"`
+	Endpoint      string        `mapstructure:"endpoint"`
+	Timeout       int           `mapstructure:"timeout_seconds"`
 	MaxTokens     int           `mapstructure:"max_tokens"`
 	Temperature   float64       `mapstructure:"temperature"`
 	LLMThreshold  ThresholdConfig `mapstructure:"llm_threshold"`
