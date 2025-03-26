@@ -27,8 +27,9 @@ let
     jq            # JSON processor
     yq            # YAML processor
 
-    # Database tools (for Neo4j)
-    neo4j
+    # Database tools
+    neo4j          # Graph database
+    qdrant         # Vector database
   ];
 
 in

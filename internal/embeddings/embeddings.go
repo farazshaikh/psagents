@@ -3,6 +3,8 @@ package embeddings
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,11 +17,18 @@ import (
 	"github.com/yourusername/psagents/config"
 )
 
-// MessageEmbedding represents a text message and its embedding
-type MessageEmbedding struct {
+// MessageEmbeddingIn represents an input text message without embedding
+type MessageEmbeddingIn struct {
+	Text string `json:"text"`
+}
+
+// MessageEmbeddingOut represents a text message with its embedding and ID
+type MessageEmbeddingOut struct {
+	ID        string    `json:"id"`   // SHA hash of text
 	Text      string    `json:"text"`
 	Embedding []float32 `json:"embedding"`
 }
+
 
 // Generator handles embedding generation
 type Generator struct {
@@ -61,14 +70,16 @@ func (g *Generator) GenerateEmbeddings() error {
 	}
 
 	// Generate embeddings
-	embeddings := make([]MessageEmbedding, 0, len(messages))
+	embeddings := make([]MessageEmbeddingOut, 0, len(messages))
 	for _, msg := range messages {
 		embedding, err := g.generateEmbedding(msg)
 		if err != nil {
 			g.logger.WithError(err).WithField("message", msg).Error("Failed to generate embedding")
 			continue
 		}
-		embeddings = append(embeddings, MessageEmbedding{
+		id := sha256.Sum256([]byte(msg))
+		embeddings = append(embeddings, MessageEmbeddingOut{
+			ID:        hex.EncodeToString(id[:]),
 			Text:      msg,
 			Embedding: embedding,
 		})
@@ -193,7 +204,7 @@ func (g *Generator) generateEmbedding(text string) ([]float32, error) {
 }
 
 // saveEmbeddings saves embeddings to a JSONL file
-func (g *Generator) saveEmbeddings(path string, embeddings []MessageEmbedding) error {
+func (g *Generator) saveEmbeddings(path string, embeddings []MessageEmbeddingOut) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
@@ -236,16 +247,13 @@ func (g *Generator) CreateDevFile() error {
 
 	// Copy first N messages
 	for count < g.cfg.DevMode.MaxMessages {
-		var msg MessageEmbedding
+		var msg MessageEmbeddingIn
 		if err := decoder.Decode(&msg); err != nil {
 			if err.Error() == "EOF" {
 				break
 			}
 			return fmt.Errorf("failed to decode message: %w", err)
 		}
-
-		// Set embedding field to null for dev file
-		msg.Embedding = nil
 
 		if err := encoder.Encode(msg); err != nil {
 			return fmt.Errorf("failed to encode message: %w", err)
