@@ -18,6 +18,7 @@ type Config struct {
 	Data       DataConfig       `mapstructure:"data"`
 	Logging    LoggingConfig    `mapstructure:"logging"`
 	DevMode    DevModeConfig    `mapstructure:"devmode"`
+	Qdrant     QdrantConfig     `mapstructure:"qdrant"`
 }
 
 // ServerConfig represents server-related configuration
@@ -69,6 +70,18 @@ type LLMConfig struct {
 	MaxTokens     int           `mapstructure:"max_tokens"`
 	Temperature   float64       `mapstructure:"temperature"`
 	LLMThreshold  ThresholdConfig `mapstructure:"llm_threshold"`
+}
+
+// QdrantConfig represents Qdrant-related configuration
+type QdrantConfig struct {
+	Enabled             bool   `mapstructure:"enabled"`
+	Path                string `mapstructure:"path"`
+	CollectionName      string `mapstructure:"collection_name"`
+	VectorSize          int    `mapstructure:"vector_size"`
+	Distance            string `mapstructure:"distance"`
+	OnDiskPayload       bool   `mapstructure:"on_disk_payload"`
+	OptimizeForDiskAccess bool   `mapstructure:"optimize_for_disk_access"`
+	TestMode            bool   `mapstructure:"test_mode"`
 }
 
 // ThresholdConfig represents threshold configuration

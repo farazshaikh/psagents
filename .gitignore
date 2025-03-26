@@ -2,3 +2,6 @@ secrets.ini
 data/input/messages_dev.jsonl
 data/output/
 *.log
+storage/**
+.qdrant-initialized
+data/qdrant

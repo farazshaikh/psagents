@@ -25,6 +25,16 @@ graphdb:
   password: "password"
 
 # Embeddings Configuration
+# Supports local Qdrant vector database storage
+qdrant:
+  enabled: true
+  path: "data/qdrant"  # Local file path for Qdrant storage
+  collection_name: "embeddings"
+  vector_size: 768
+  distance: "Cosine"  # Options: Cosine, Euclid, Dot
+  on_disk_payload: true  # Store payload on disk to reduce memory usage
+  optimize_for_disk_access: true  # Optimize for disk access patterns
+
 embeddings:
   model: "mxbai-embed-large"
   dimension: 768
