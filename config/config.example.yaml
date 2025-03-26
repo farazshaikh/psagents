@@ -14,7 +14,7 @@ pipeline:
 
 devmode:
   enabled: true
-  max_messages: 1
+  max_messages: 25
 
 # Graph Database Configuration
 graphdb:
@@ -30,14 +30,14 @@ qdrant:
   enabled: true
   path: "data/qdrant"  # Local file path for Qdrant storage
   collection_name: "embeddings"
-  vector_size: 768
+  vector_size: 1024
   distance: "Cosine"  # Options: Cosine, Euclid, Dot
   on_disk_payload: true  # Store payload on disk to reduce memory usage
   optimize_for_disk_access: true  # Optimize for disk access patterns
 
 embeddings:
   model: "mxbai-embed-large"
-  dimension: 768
+  dimension: 1024
   cache_size: 1000
   similarity_threshold: 0.8
   endpoint: "http://localhost:11434/api/embeddings"  # Separate embedding endpoint

@@ -3,6 +3,7 @@ package vector_db
 import (
 	"bufio"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -80,7 +81,7 @@ func NewQdrantDB(cfg *config.Config) (*QdrantDB, error) {
 		return db, nil
 	}
 
-	// Connect to local Qdrant instance
+	// Connect to local Qdrant instance using gRPC
 	conn, err := grpc.Dial("localhost:6334", grpc.WithInsecure())
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Qdrant (make sure to run 'start-qdrant' first): %w", err)
@@ -91,15 +92,16 @@ func NewQdrantDB(cfg *config.Config) (*QdrantDB, error) {
 
 	// Log connection status
 	db.logger.WithFields(logrus.Fields{
-		"host": "localhost",
-		"port": 6334,
-		"path": cfg.Qdrant.Path,
+		"host":      "localhost",
+		"grpc_port": 6334,
+		"http_port": 6333,
+		"path":      cfg.Qdrant.Path,
 	}).Info("Connected to local Qdrant instance")
 
 	return db, nil
 }
 
-// CreateCollection creates a new collection in Qdrant
+// CreateCollection creates a new collection in Qdrant if it doesn't already exist
 func (db *QdrantDB) CreateCollection() error {
 	if db.isTestMode {
 		// In test mode, just create an empty file
@@ -112,6 +114,21 @@ func (db *QdrantDB) CreateCollection() error {
 	}
 
 	ctx := context.Background()
+
+	// Check if collection exists
+	collections, err := db.client.List(ctx, &qdrant.ListCollectionsRequest{})
+	if err != nil {
+		return fmt.Errorf("failed to list collections: %w", err)
+	}
+
+	for _, collection := range collections.Collections {
+		if collection.Name == db.cfg.Qdrant.CollectionName {
+			db.logger.WithFields(logrus.Fields{
+				"collection": db.cfg.Qdrant.CollectionName,
+			}).Info("Collection already exists")
+			return nil
+		}
+	}
 
 	distance := qdrant.Distance_Cosine
 	if db.cfg.Qdrant.Distance == "Euclid" {
@@ -135,7 +152,7 @@ func (db *QdrantDB) CreateCollection() error {
 		OnDiskPayload: &onDiskPayload,
 	}
 
-	_, err := db.client.Create(ctx, req)
+	_, err = db.client.Create(ctx, req)
 	if err != nil {
 		return fmt.Errorf("failed to create collection: %w", err)
 	}
@@ -183,11 +200,25 @@ func (db *QdrantDB) InjectMessages() error {
 			}
 			testBatch = append(testBatch, point)
 		} else {
+			// Convert SHA-256 hash to UUID format
+			// Take first 16 bytes of SHA-256 and format as UUID
+			hashBytes, err := hex.DecodeString(msg.ID)
+			if err != nil {
+				return fmt.Errorf("failed to decode hash: %w", err)
+			}
+			uuid := fmt.Sprintf("%x-%x-%x-%x-%x",
+				hashBytes[0:4],
+				hashBytes[4:6],
+				hashBytes[6:8],
+				hashBytes[8:10],
+				hashBytes[10:16],
+			)
+
 			// Create point
 			point := &qdrant.PointStruct{
 				Id: &qdrant.PointId{
 					PointIdOptions: &qdrant.PointId_Uuid{
-						Uuid: msg.ID,
+						Uuid: uuid,
 					},
 				},
 				Vectors: &qdrant.Vectors{

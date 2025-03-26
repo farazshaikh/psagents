@@ -32,7 +32,7 @@ func main() {
 		if err := gen.CreateDevFile(); err != nil {
 			log.Fatalf("Failed to create development file: %v", err)
 		}
-		fmt.Println("Created development file with first 20 messages")
+		fmt.Printf("Created development file with first %d messages\n", cfg.DevMode.MaxMessages)
 	}
 
 	// Generate embeddings
