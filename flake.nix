@@ -10,7 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        
+
         # Go version to use
         go = pkgs.go_1_22;
 
@@ -46,9 +46,13 @@
         startQdrant = pkgs.writeScriptBin "start-qdrant" ''
           #!${pkgs.bash}/bin/bash
           QDRANT_DIR="$PWD/data/qdrant"
+          STORAGE_DIR="$QDRANT_DIR/db/storage"
+          SNAPSHOT_DIR="$QDRANT_DIR/db/snapshots"
           PID_FILE="$QDRANT_DIR/qdrant.pid"
           LOG_FILE="$QDRANT_DIR/qdrant.log"
-          mkdir -p "$QDRANT_DIR"
+
+          # Create required directories
+          mkdir -p "$STORAGE_DIR" "$SNAPSHOT_DIR"
 
           # Check if Qdrant is already running
           if [ -f "$PID_FILE" ]; then
@@ -64,7 +68,8 @@
           # Create Qdrant config
           cat > "$QDRANT_DIR/config.yaml" << EOF
 storage:
-  dir: $QDRANT_DIR
+  dir: $STORAGE_DIR
+  snapshots_path: $SNAPSHOT_DIR
 
 service:
   host: 127.0.0.1
@@ -161,4 +166,4 @@ EOF
         };
       }
     );
-} 
+}
