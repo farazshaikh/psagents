@@ -12,8 +12,7 @@ import (
 func main() {
 	// Parse command line flags
 	configPath := flag.String("config", "config/config.example.yaml", "path to config file")
-	devMode := flag.Bool("dev", false, "use development file (first 20 messages)")
-	flag.Parse()
+
 
 	// Load configuration
 	cfg, err := config.LoadConfig(*configPath)
@@ -28,7 +27,7 @@ func main() {
 	}
 
 	// If dev mode, create development file first
-	if *devMode {
+	if cfg.DevMode.Enabled {
 		if err := gen.CreateDevFile(); err != nil {
 			log.Fatalf("Failed to create development file: %v", err)
 		}

@@ -12,6 +12,10 @@ pipeline:
   max_workers: 4
   timeout: "30s"
 
+devmode:
+  enabled: true
+  max_messages: 1
+
 # Graph Database Configuration
 graphdb:
   type: "neo4j"  # or "janusgraph"
@@ -20,25 +24,27 @@ graphdb:
   username: "neo4j"
   password: "password"
 
-# Embedding Configuration
+# Embeddings Configuration
 embeddings:
-  model: "text-embedding-ada-002"
-  dimension: 1536
-  cache_size: 10000
+  model: "mxbai-embed-large"
+  dimension: 768
+  cache_size: 1000
   similarity_threshold: 0.8
+  endpoint: "http://localhost:11434/api/embeddings"  # Separate embedding endpoint
 
 # LLM Configuration
 llm:
-  provider: "openai"
+  provider: "ollama"
+  endpoint: "http://localhost:11434/api/chat"  # LLM-specific endpoint
+  timeout_seconds: 30
   model: "gpt-4"
   api_key: "${OPENAI_API_KEY}"
-  endpoint: "https://openrouter.ai/api/v1"
-  timeout_seconds: 30
   max_tokens: 1000
   temperature: 0.7
   llm_threshold:
     min: 0.3
     max: 0.8
+
 # Data Configuration
 data:
   input_dir: "data/input"

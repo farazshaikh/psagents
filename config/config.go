@@ -17,6 +17,7 @@ type Config struct {
 	LLM        LLMConfig        `mapstructure:"llm"`
 	Data       DataConfig       `mapstructure:"data"`
 	Logging    LoggingConfig    `mapstructure:"logging"`
+	DevMode    DevModeConfig    `mapstructure:"devmode"`
 }
 
 // ServerConfig represents server-related configuration
@@ -42,12 +43,20 @@ type GraphDBConfig struct {
 	Password string `mapstructure:"password"`
 }
 
+// DevModeConfig represents development mode configuration
+type DevModeConfig struct {
+	Enabled    bool   `mapstructure:"enabled"`
+	MaxMessages int    `mapstructure:"max_messages"`
+}
+
 // EmbeddingsConfig represents embedding-related configuration
 type EmbeddingsConfig struct {
 	Model              string  `mapstructure:"model"`
 	Dimension          int     `mapstructure:"dimension"`
 	CacheSize          int     `mapstructure:"cache_size"`
 	SimilarityThreshold float64 `mapstructure:"similarity_threshold"`
+	Endpoint           string  `mapstructure:"endpoint"`
+	RequestFormat      string  `mapstructure:"request_format"`
 }
 
 // LLMConfig represents LLM-related configuration

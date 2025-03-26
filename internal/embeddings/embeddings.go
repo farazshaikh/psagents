@@ -1,6 +1,7 @@
 package embeddings
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -90,55 +91,67 @@ func (g *Generator) GenerateEmbeddings() error {
 
 // readMessages reads messages from the input directory
 func (g *Generator) readMessages() ([]string, error) {
-	// TODO: Implement message reading from input directory
-	// For now, return a test message
-	return []string{"This is a test message"}, nil
+	inputFile := "messages.jsonl"
+	if g.cfg.DevMode.Enabled {
+		inputFile = "messages_dev.jsonl"
+	}
+
+	filePath := filepath.Join(g.cfg.Data.InputDir, inputFile)
+	g.logger.WithField("file", filePath).Info("Reading messages from file")
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open input file: %w", err)
+	}
+	defer file.Close()
+
+	var messages []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Parse the JSON line to extract just the text
+		var msg struct {
+			Text string `json:"text"`
+		}
+		if err := json.Unmarshal([]byte(line), &msg); err != nil {
+			return nil, fmt.Errorf("failed to parse message JSON: %w", err)
+		}
+		messages = append(messages, msg.Text)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading input file: %w", err)
+	}
+
+	g.logger.WithField("count", len(messages)).Info("Read messages from file")
+	return messages, nil
 }
 
 // generateEmbedding generates an embedding for a single message
 func (g *Generator) generateEmbedding(text string) ([]float32, error) {
-	// Get API key from environment if it's a variable reference
-	apiKey := g.cfg.LLM.APIKey
-	if apiKey == "${OPENAI_API_KEY}" {
-		apiKey = os.Getenv("OPENAI_API_KEY")
-		if apiKey == "" {
-			return nil, fmt.Errorf("OPENAI_API_KEY environment variable not set")
-		}
-	}
-
 	// Create HTTP client
 	client := &http.Client{
 		Timeout: time.Duration(g.cfg.LLM.Timeout) * time.Second,
 	}
 
-	// Prepare request body for OpenRouter format
+	// Prepare request body
 	reqBody := map[string]interface{}{
-		"messages": []map[string]string{
-			{
-				"role":    "user",
-				"content": text,
-			},
-		},
-		"model": g.cfg.Embeddings.Model,
-		"stream": false,
+		"model":  g.cfg.Embeddings.Model,
+		"prompt": text,
 	}
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// Create request using endpoint from config
-	apiURL := fmt.Sprintf("%s/embeddings", g.cfg.LLM.Endpoint)
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
+	// Use the embeddings-specific endpoint
+	req, err := http.NewRequest("POST", g.cfg.Embeddings.Endpoint, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set headers for OpenRouter
+	// Set headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("HTTP-Referer", "https://github.com/yourusername/psagents") // Replace with your actual repo
-	req.Header.Set("X-Title", "PS Agents")
 
 	// Make request
 	resp, err := client.Do(req)
@@ -153,28 +166,30 @@ func (g *Generator) generateEmbedding(text string) ([]float32, error) {
 		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Parse response
+	// Parse Ollama response format
 	var result struct {
-		Data []struct {
-			Embedding []float32 `json:"embedding"`
-		} `json:"data"`
+		Embedding []float32 `json:"embedding"`
+		Error    string    `json:"error"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	if len(result.Data) == 0 || len(result.Data[0].Embedding) == 0 {
+	if result.Error != "" {
+		return nil, fmt.Errorf("API error: %s", result.Error)
+	}
+
+	if result.Embedding == nil || len(result.Embedding) == 0 {
 		return nil, fmt.Errorf("no embedding in response")
 	}
 
 	g.logger.WithFields(logrus.Fields{
-		"text_length": len(text),
-		"embedding_dimension": len(result.Data[0].Embedding),
-		"model": g.cfg.Embeddings.Model,
-		"provider": g.cfg.LLM.Provider,
+		"text_length":         len(text),
+		"embedding_dimension": len(result.Embedding),
+		"model":              g.cfg.Embeddings.Model,
 	}).Debug("Generated embedding")
 
-	return result.Data[0].Embedding, nil
+	return result.Embedding, nil
 }
 
 // saveEmbeddings saves embeddings to a JSONL file
@@ -195,7 +210,8 @@ func (g *Generator) saveEmbeddings(path string, embeddings []MessageEmbedding) e
 	return nil
 }
 
-// CreateDevFile creates a development file with the first 20 messages
+// CreateDevFile creates a development file with the first N messages from messages.jsonl
+// for development purposes, completely omitting the embedding field
 func (g *Generator) CreateDevFile() error {
 	inputPath := filepath.Join(g.cfg.Data.InputDir, "messages.jsonl")
 	outputPath := filepath.Join(g.cfg.Data.InputDir, "messages_dev.jsonl")
@@ -218,8 +234,8 @@ func (g *Generator) CreateDevFile() error {
 	encoder := json.NewEncoder(outputFile)
 	count := 0
 
-	// Copy first 20 messages
-	for count < 20 {
+	// Copy first N messages
+	for count < g.cfg.DevMode.MaxMessages {
 		var msg MessageEmbedding
 		if err := decoder.Decode(&msg); err != nil {
 			if err.Error() == "EOF" {
@@ -227,6 +243,10 @@ func (g *Generator) CreateDevFile() error {
 			}
 			return fmt.Errorf("failed to decode message: %w", err)
 		}
+
+		// Set embedding field to null for dev file
+		msg.Embedding = nil
+
 		if err := encoder.Encode(msg); err != nil {
 			return fmt.Errorf("failed to encode message: %w", err)
 		}
