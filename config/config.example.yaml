@@ -1,0 +1,51 @@
+# PS Agents Configuration
+
+# Server Configuration
+server:
+  host: "0.0.0.0"
+  port: 8080
+  grpc_port: 50051
+
+# Pipeline Configuration
+pipeline:
+  batch_size: 100
+  max_workers: 4
+  timeout: "30s"
+
+# Graph Database Configuration
+graphdb:
+  type: "neo4j"  # or "janusgraph"
+  host: "localhost"
+  port: 7687
+  username: "neo4j"
+  password: "password"
+
+# Embedding Configuration
+embeddings:
+  model: "text-embedding-ada-002"
+  dimension: 1536
+  cache_size: 10000
+  similarity_threshold: 0.8
+
+# LLM Configuration
+llm:
+  provider: "openai"
+  model: "gpt-4"
+  api_key: "${OPENAI_API_KEY}"
+  max_tokens: 1000
+  temperature: 0.7
+  llm_threshold:
+    min: 0.3
+    max: 0.8
+
+# Data Configuration
+data:
+  input_dir: "data/input"
+  output_dir: "data/output"
+  temp_dir: "data/temp"
+
+# Logging Configuration
+logging:
+  level: "info"
+  format: "json"
+  output: "logs/app.log"
