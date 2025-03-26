@@ -36,10 +36,15 @@ pkgs.mkShell {
   buildInputs = devTools;
 
   shellHook = ''
+    # Create temporary directory for Go
+    mkdir -p /tmp/nix-shell-$UID-0
+    chmod 700 /tmp/nix-shell-$UID-0
+
     # Set Go environment variables
     export GOPATH="$HOME/go"
     export GOROOT="${go}/share/go"
     export GO111MODULE="on"
+    export TMPDIR="/tmp/nix-shell-$UID-0"
 
     # Print welcome message
     echo "🚀 Go Development Environment"

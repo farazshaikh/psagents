@@ -120,4 +120,4 @@ func LoadDefaultConfig() (*Config, error) {
 
 	// Load the configuration
 	return LoadConfig(configPath)
-} 
+}

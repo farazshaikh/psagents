@@ -12,49 +12,57 @@ func TestLoadConfig(t *testing.T) {
 	configPath := filepath.Join(tmpDir, "test_config.yaml")
 
 	// Write test configuration
-	testConfig := `
+	testConfig := `# PS Agents Configuration
+
+# Server Configuration
 server:
-  host: "localhost"
+  host: "0.0.0.0"
   port: 8080
   grpc_port: 50051
 
+# Pipeline Configuration
 pipeline:
   batch_size: 100
   max_workers: 4
   timeout: "30s"
 
+# Graph Database Configuration
 graphdb:
-  type: "neo4j"
+  type: "neo4j"  # or "janusgraph"
   host: "localhost"
   port: 7687
-  username: "test"
-  password: "test"
+  username: "neo4j"
+  password: "password"
 
+# Embedding Configuration
 embeddings:
-  model: "test-model"
+  model: "text-embedding-ada-002"
   dimension: 1536
-  cache_size: 1000
+  cache_size: 10000
   similarity_threshold: 0.8
 
+# LLM Configuration
 llm:
-  provider: "test"
-  model: "test-model"
-  api_key: "test-key"
+  provider: "openai"
+  model: "gpt-4"
+  api_key: "${OPENAI_API_KEY}"
   max_tokens: 1000
   temperature: 0.7
   llm_threshold:
     min: 0.3
     max: 0.8
 
+# Data Configuration
 data:
-  input_dir: "test/input"
-  output_dir: "test/output"
-  temp_dir: "test/temp"
+  input_dir: "data/input"
+  output_dir: "data/output"
+  temp_dir: "data/temp"
 
+# Logging Configuration
 logging:
-  level: "debug"
+  level: "info"
   format: "json"
-  output: "test.log"
+  output: "logs/app.log"
 `
 
 	if err := os.WriteFile(configPath, []byte(testConfig), 0644); err != nil {
@@ -68,8 +76,8 @@ logging:
 	}
 
 	// Verify the loaded configuration
-	if cfg.Server.Host != "localhost" {
-		t.Errorf("Expected server host to be 'localhost', got '%s'", cfg.Server.Host)
+	if cfg.Server.Host != "0.0.0.0" {
+		t.Errorf("Expected server host to be '0.0.0.0', got '%s'", cfg.Server.Host)
 	}
 	if cfg.Server.Port != 8080 {
 		t.Errorf("Expected server port to be 8080, got %d", cfg.Server.Port)
@@ -79,6 +87,12 @@ logging:
 	}
 	if cfg.Embeddings.SimilarityThreshold != 0.8 {
 		t.Errorf("Expected similarity threshold to be 0.8, got %f", cfg.Embeddings.SimilarityThreshold)
+	}
+	if cfg.GraphDB.Type != "neo4j" {
+		t.Errorf("Expected graphdb type to be 'neo4j', got '%s'", cfg.GraphDB.Type)
+	}
+	if cfg.LLM.Provider != "openai" {
+		t.Errorf("Expected llm provider to be 'openai', got '%s'", cfg.LLM.Provider)
 	}
 }
 
@@ -102,10 +116,17 @@ func TestLoadDefaultConfig(t *testing.T) {
 		t.Fatalf("Failed to create config directory: %v", err)
 	}
 
-	// Copy the example config
-	exampleConfig := filepath.Join(originalDir, "config", "config.example.yaml")
-	if err := os.Link(exampleConfig, filepath.Join(configDir, "config.example.yaml")); err != nil {
-		t.Fatalf("Failed to link example config: %v", err)
+	// Read the example config content
+	exampleConfig := filepath.Join(originalDir, "config.example.yaml")
+	content, err := os.ReadFile(exampleConfig)
+	if err != nil {
+		t.Fatalf("Failed to read example config: %v", err)
+	}
+
+	// Write the example config to the test directory
+	testConfigPath := filepath.Join(configDir, "config.example.yaml")
+	if err := os.WriteFile(testConfigPath, content, 0644); err != nil {
+		t.Fatalf("Failed to write test config: %v", err)
 	}
 
 	// Try to load the default config
@@ -120,5 +141,11 @@ func TestLoadDefaultConfig(t *testing.T) {
 	}
 	if cfg.Pipeline.BatchSize == 0 {
 		t.Error("Expected batch size to be set")
+	}
+	if cfg.GraphDB.Type == "" {
+		t.Error("Expected graphdb type to be set")
+	}
+	if cfg.LLM.Provider == "" {
+		t.Error("Expected llm provider to be set")
 	}
 } 
