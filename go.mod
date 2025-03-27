@@ -3,6 +3,7 @@ module github.com/yourusername/psagents
 go 1.22
 
 require (
+	github.com/neo4j/neo4j-go-driver/v4 v4.4.7
 	github.com/qdrant/go-client v1.7.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.18.2

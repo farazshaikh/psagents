@@ -49,6 +49,13 @@ type SearchResult struct {
 	Text  string           `json:"text"`
 }
 
+// MessageWithEmbedding represents a message with its embedding
+type MessageWithEmbedding struct {
+	ID        string    `json:"id"`
+	Text      string    `json:"text"`
+	Embedding []float32 `json:"embedding"`
+}
+
 // NewQdrantDB creates a new Qdrant database connection
 func NewQdrantDB(cfg *config.Config) (*QdrantDB, error) {
 	// Setup logging
@@ -425,4 +432,84 @@ func cosineSimilarity(a, b []float32) float32 {
 func (db *QdrantDB) Close() error {
 	// Add any cleanup if needed
 	return nil
+}
+
+// GetAllMessages retrieves all messages from the vector database
+func (db *QdrantDB) GetAllMessages() ([]MessageWithEmbedding, error) {
+	if db.isTestMode {
+		return db.getAllMessagesTest()
+	}
+
+	ctx := context.Background()
+
+	// Get all points from the collection
+	var limit uint32 = 100
+	req := &qdrant.ScrollPoints{
+		CollectionName: db.cfg.Qdrant.CollectionName,
+		WithPayload:    &qdrant.WithPayloadSelector{SelectorOptions: &qdrant.WithPayloadSelector_Enable{Enable: true}},
+		WithVectors:    &qdrant.WithVectorsSelector{SelectorOptions: &qdrant.WithVectorsSelector_Enable{Enable: true}},
+		Limit:          &limit, // Process in batches of 100
+	}
+
+	var allMessages []MessageWithEmbedding
+
+	for {
+		resp, err := db.points.Scroll(ctx, req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scroll points: %w", err)
+		}
+
+		for _, point := range resp.Result {
+			text := ""
+			if textValue, ok := point.Payload["text"]; ok {
+				text = textValue.GetStringValue()
+			}
+
+			msg := MessageWithEmbedding{
+				ID:        point.Id.GetUuid(),
+				Text:      text,
+				Embedding: point.Vectors.GetVector().Data,
+			}
+			allMessages = append(allMessages, msg)
+		}
+
+		if len(resp.Result) < 100 {
+			break // No more points to fetch
+		}
+
+		// Update offset for next batch
+		req.Offset = resp.NextPageOffset
+	}
+
+	return allMessages, nil
+}
+
+// getAllMessagesTest retrieves all messages from the test database file
+func (db *QdrantDB) getAllMessagesTest() ([]MessageWithEmbedding, error) {
+	file, err := os.Open(db.testDBPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open test database file: %w", err)
+	}
+	defer file.Close()
+
+	var messages []MessageWithEmbedding
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var point TestPoint
+		if err := json.Unmarshal(scanner.Bytes(), &point); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal point: %w", err)
+		}
+
+		messages = append(messages, MessageWithEmbedding{
+			ID:        point.ID,
+			Text:      point.Payload["text"],
+			Embedding: point.Vectors,
+		})
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading test database file: %w", err)
+	}
+
+	return messages, nil
 }
