@@ -18,12 +18,25 @@ graph TD
     PI[Personal Info] --> SDB[Semantic Repr]
     C[Context] --> SDB
     A[Action] --> SDB
-    end
-    subgraph Inference
-    UC[Unseen Context]-->P[Predict]
-    P --> SDB[Semantic]
+  end
+
+  subgraph Inference
+    UC[Unseen Context] --> P[Predict]
+    P --> SDB
     SDB --> NA[Agent Action]
-    end
+  end
+
+  %% Styling with accessibility-friendly colors
+  classDef infoNode fill:#007C91,stroke:#222,stroke-width:2px,color:#FFFFFF
+  classDef semanticNode fill:#F4A300,stroke:#222,stroke-width:2px,color:#000000
+  classDef actionNode fill:#1B512D,stroke:#222,stroke-width:2px,color:#FFFFFF
+  classDef predictNode fill:#00274D,stroke:#222,stroke-width:2px,color:#FFFFFF
+
+  %% Assign styles
+  class PI,C,UC infoNode
+  class A,NA actionNode
+  class SDB semanticNode
+  class P predictNode
 ```
 
 # Practical Approach from implementing PSAgent
@@ -67,58 +80,84 @@ The schema for the graph can be derived in multiple ways. Its important that we 
 5. Quantifying the relation strength.
    Conceptually we would like each edge to have a weight and this that we can extract a strongly weighted sub-graph to act as augmention for information retrieval. For now we simpilfy by distance weighted connectivity ie. closer nodes are more relevant.
 
+### State Pruning and Semantic Hierarchy
+
+To avoid the combinatorial explosion of pairwise LLM comparisons across all messages, we employ a structured state pruning strategy built around a two-tier semantic hierarchy. The first tier, called Similarity Anchors, consists of the Top-K messages closest to a given message in embedding space—these represent its immediate semantic neighborhood. The second tier, the Semantic Frontier, is formed by retrieving the Top-M nearest neighbors for each anchor. Rather than evaluating all possible message pairs, we restrict LLM-based relationship extraction to this pruned frontier, where meaningful structural relationships are most likely to emerge. This approach balances scalability with expressiveness, allowing us to discover rich graph structure without incurring O(N²) LLM queries.
+
 ```mermaid
 graph TD
    subgraph KnowledgeGraph
-    %% Main text message nodes
-    TM1[Text Message 1]
-    TM2[Text Message 2]
-    TM3[Text Message 3]
+    %% Level 0: Root message
+    ROOT[Root Message]
 
-    %% Synthetic nodes (NER, Intent, etc.)
-    NER1[NER Node 1]
-    INT1[Intent Node 1]
-    CAU1[Causal Node 1]
+    %% Level 1: Similarity Anchors (Top-K)
+    SA1[Similarity Anchor 1]
+    SA2[Anchor 2]
+    SA3[Anchor N]
 
-    %% Semantic threshold connections (solid lines)
-    TM1 -->|semanticthreshold| TM2
-    TM2 -->|semanticthreshold| TM3
+    %% Level 2: Semantic Frontier (M-neighbors of Anchors)
+    SF1A[Semantic Frontier 1A]
+    SF1B[Frontier 1B]
+    SF2A[Frontier 2A]
+    SF3A[Frontier 3A]
+    SF3B[Frontier 3B]
 
-    %% LLM assisted distant connections (dashed lines)
-    TM1 -.->|LLMAssist| TM3
+    %% Level 3: Synthetic Concept Nodes (NER, Concepts)
+    SY1[Synthetic Concept NER]
+    SY2[Concept Goal]
+    SY3[Concept Link]
 
-    %% Synthetic fanout connections (dotted lines)
-    TM1 ..-> NER1
-    TM1 ..-> INT1
-    TM2 ..-> CAU1
+    %% Connections from Root to Anchors (Similarity)
+    ROOT -->|similarity| SA1
+    ROOT -->|similarity| SA2
+    ROOT -->|similarity| SA3
 
-    %% Closing loop connections (solid lines with different style)
-    NER1 -->|Tsemanticthreshold| INT1
-    INT1 -->|Tsemanticthreshold| CAU1
+    %% Anchor to Frontier Expansion (semantic)
+    SA1 --> SF1A
+    SA1 --> SF1B
+    SA2 --> SF2A
+    SA3 --> SF3A
+    SA3 --> SF3B
 
-    %% Edge weights based on distance (shown as numbers)
-    TM1 -->|0.8| TM2
-    TM2 -->|0.7| TM3
-    TM1 -.->|0.5| TM3
+    %% LLM-based semantic relationship edges from root to frontier
+    ROOT -.->|LLMAssist| SF1A
+    ROOT -.->|LLMAssist| SF2A
+    ROOT -.->|LLMAssist| SF3B
+
+    %% Synthetic concept fan-out from text nodes
+    ROOT ..-> SY1
+    SA2 ..-> SY2
+    SF1A ..-> SY3
+
+    %% Cross-links between synthetic nodes
+    SY1 -->|semantic| SY2
+    SY2 -->|semantic| SY3
+
    end
 
    %% Legend
    subgraph Legend
-      L1["--> Semantic Threshold"]
-      L2["-.-> LLM Assisted"]
-      L3["..-> Synthetic Fanout"]
-      L4["Edge Weight: Closer = Stronger"]
+      L1["--> Similarity Anchors (Top-K)"]
+      L2["--> Semantic Frontier (K × M)"]
+      L3["-.-> LLM-Inferred Structural Link"]
+      L4["..-> Synthetic Concept Extraction"]
+      L5["Level 0 = Query, Level 1 = Anchors, Level 2 = Frontier, Level 3 = Concepts"]
       L1 --- L2
       L2 --- L3
       L3 --- L4
+      L4 --- L5
    end
 
-    %% Styling
-    classDef textNode fill:#009,stroke:#333,stroke-width:2px
-    classDef syntheticNode fill:#55,stroke:#333,stroke-width:2px
+    %% Styling with accessibility-friendly colors
+    classDef rootNode fill:#00274D,stroke:#222,stroke-width:2px,color:#FFFFFF
+    classDef anchorNode fill:#007C91,stroke:#222,stroke-width:2px,color:#FFFFFF
+    classDef frontierNode fill:#F4A300,stroke:#222,stroke-width:2px,color:#000000
+    classDef syntheticNode fill:#1B512D,stroke:#222,stroke-width:2px,color:#FFFFFF
 
-    class TM1,TM2,TM3 textNode
-    class NER1,INT1,CAU1 syntheticNode
+    class ROOT rootNode
+    class SA1,SA2,SA3 anchorNode
+    class SF1A,SF1B,SF2A,SF3A,SF3B frontierNode
+    class SY1,SY2,SY3 syntheticNode
 ```
 
 # PS Agents

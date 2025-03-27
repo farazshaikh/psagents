@@ -42,6 +42,8 @@ type GraphDBConfig struct {
 	Port     int    `mapstructure:"port"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
+	SimilarityAnchors int `mapstructure:"similarity_anchors"`
+	SemanticFrontier int `mapstructure:"semantic_frontier"`
 }
 
 // DevModeConfig represents development mode configuration
