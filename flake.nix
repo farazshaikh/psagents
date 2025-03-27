@@ -85,7 +85,7 @@ EOF
           nohup ${pkgs.qdrant}/bin/qdrant --config-path "$QDRANT_DIR/config.yaml" > "$LOG_FILE" 2>&1 &
           PID=$!
           echo $PID > "$PID_FILE"
-          
+
           # Wait for Qdrant to start
           echo "Waiting for Qdrant to start..."
           for i in {1..30}; do
@@ -95,7 +95,7 @@ EOF
             fi
             sleep 1
           done
-          
+
           echo "Failed to start Qdrant"
           exit 1
         '';
@@ -121,10 +121,89 @@ EOF
           fi
         '';
 
+        # Neo4j service scripts
+        startNeo4j = pkgs.writeScriptBin "start-neo4j" ''
+          #!${pkgs.bash}/bin/bash
+          NEO4J_DIR="$PWD/data/neo4j"
+          DATA_DIR="$NEO4J_DIR/data"
+          LOGS_DIR="$NEO4J_DIR/logs"
+          CONF_DIR="$NEO4J_DIR/conf"
+          PID_FILE="$NEO4J_DIR/neo4j.pid"
+          LOG_FILE="$NEO4J_DIR/neo4j.log"
+
+          # Create required directories
+          mkdir -p "$DATA_DIR" "$LOGS_DIR" "$CONF_DIR"
+
+          # Check if Neo4j is already running
+          if [ -f "$PID_FILE" ]; then
+            PID=$(cat "$PID_FILE")
+            if kill -0 "$PID" 2>/dev/null; then
+              echo "Neo4j is already running (PID: $PID)"
+              exit 0
+            else
+              rm -f "$PID_FILE"
+            fi
+          fi
+
+          # Create Neo4j config
+          cat > "$CONF_DIR/neo4j.conf" << EOF
+dbms.directories.data=$DATA_DIR
+dbms.directories.logs=$LOGS_DIR
+dbms.memory.heap.initial_size=512m
+dbms.memory.heap.max_size=1G
+dbms.default_listen_address=127.0.0.1
+dbms.connector.bolt.enabled=true
+dbms.connector.bolt.listen_address=127.0.0.1:7687
+dbms.connector.http.enabled=true
+dbms.connector.http.listen_address=127.0.0.1:7474
+dbms.security.auth_enabled=false
+EOF
+
+          # Start Neo4j in background
+          echo "Starting Neo4j..."
+          NEO4J_CONF="$CONF_DIR" nohup ${pkgs.neo4j}/bin/neo4j console > "$LOG_FILE" 2>&1 &
+          PID=$!
+          echo $PID > "$PID_FILE"
+
+          # Wait for Neo4j to start
+          echo "Waiting for Neo4j to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:7474 >/dev/null; then
+              echo "Neo4j is running (PID: $PID)"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "Failed to start Neo4j"
+          exit 1
+        '';
+
+        stopNeo4j = pkgs.writeScriptBin "stop-neo4j" ''
+          #!${pkgs.bash}/bin/bash
+          NEO4J_DIR="$PWD/data/neo4j"
+          PID_FILE="$NEO4J_DIR/neo4j.pid"
+
+          if [ -f "$PID_FILE" ]; then
+            PID=$(cat "$PID_FILE")
+            if kill -0 "$PID" 2>/dev/null; then
+              echo "Stopping Neo4j (PID: $PID)..."
+              kill "$PID"
+              rm -f "$PID_FILE"
+              echo "Neo4j stopped"
+            else
+              echo "Neo4j is not running"
+              rm -f "$PID_FILE"
+            fi
+          else
+            echo "Neo4j is not running"
+          fi
+        '';
+
       in
       {
         devShells.default = pkgs.mkShell {
-          buildInputs = devTools ++ [ startQdrant stopQdrant ];
+          buildInputs = devTools ++ [ startQdrant stopQdrant startNeo4j stopNeo4j ];
 
           shellHook = ''
             # Create temporary directory for Go
@@ -158,10 +237,13 @@ EOF
             echo "  - neo4j: Graph database"
             echo "  - qdrant: Vector database"
             echo ""
-            echo "Qdrant commands:"
+            echo "Database commands:"
             echo "  start-qdrant  - Start Qdrant in background"
             echo "  stop-qdrant   - Stop Qdrant"
             echo "  tail -f data/qdrant/qdrant.log  - View Qdrant logs"
+            echo "  start-neo4j   - Start Neo4j in background"
+            echo "  stop-neo4j    - Stop Neo4j"
+            echo "  tail -f data/neo4j/neo4j.log    - View Neo4j logs"
           '';
         };
       }

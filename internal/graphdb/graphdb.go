@@ -7,73 +7,19 @@ import (
 
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	"github.com/yourusername/psagents/config"
-	"github.com/yourusername/psagents/internal/vector_db"
+	"github.com/yourusername/psagents/internal/message"
+	"github.com/yourusername/psagents/internal/vector"
 )
-
-// RelationType represents the type of relationship between messages
-type RelationType string
-
-const (
-	// Core relationship types
-	RelationCausal           RelationType = "Causal"            // Direct cause-effect
-	RelationFollowUp         RelationType = "Follow-up"         // Continues/refines previous
-	RelationContrast         RelationType = "Contrast"          // Contradicts/changes stance
-	RelationElaboration      RelationType = "Elaboration"       // Expands on previous idea
-	RelationReframe          RelationType = "Reframe/Correction" // Rephrases/corrects previous
-	RelationRoleInstruction  RelationType = "Role Instruction"  // Sets behavior/persona
-	RelationScenarioSetup    RelationType = "Scenario Setup"    // Sets up context/world
-	RelationTopicSwitch      RelationType = "Topic Switch"      // Unrelated new context
-	RelationSelfReference    RelationType = "Self-Reference"    // Reflects on own message
-	RelationMetaPrompting    RelationType = "Meta-Prompting"    // Cross-prompt instructions
-	RelationIdentityExpress  RelationType = "Identity Expression" // Self-description/goals
-)
-
-// Relationship represents a classified relationship between messages
-type Relationship struct {
-	SourceID   string       `json:"source_id"`
-	TargetID   string       `json:"target_id"`
-	Type       RelationType `json:"relation"`
-	Confidence float64      `json:"confidence"`
-	Evidence   string       `json:"evidence"`
-}
 
 // GraphDB handles graph database operations
 type GraphDB struct {
 	cfg      *config.Config
 	driver   neo4j.Driver
-	vectorDB *vector_db.QdrantDB
-}
-
-// Message represents a message with its text and metadata
-type Message struct {
-	ID    string   `json:"id"`
-	Text  string   `json:"text"`
-	Score float32  `json:"score,omitempty"`
-}
-
-// BatchRelationshipInput represents the input for batch relationship classification
-type BatchRelationshipInput struct {
-	Batch []struct {
-		SourceMessage    Message   `json:"source_message"`
-		FrontierMessages []Message `json:"frontier_messages"`
-	} `json:"batch"`
-}
-
-// BatchRelationshipOutput represents the output from batch relationship classification
-type BatchRelationshipOutput struct {
-	Results []Relationship `json:"results"`
-}
-
-// LLMPrompt represents the structure for LLM relationship classification
-type LLMPrompt struct {
-	Instructions string `json:"instructions"`
-	InputSchema  string `json:"input_schema"`
-	Input        string `json:"input"`
-	OutputSchema string `json:"output_schema"`
+	vectorDB vector.DB
 }
 
 // NewGraphDB creates a new graph database connection
-func NewGraphDB(cfg *config.Config, vectorDB *vector_db.QdrantDB) (*GraphDB, error) {
+func NewGraphDB(cfg *config.Config, vectorDB vector.DB) (*GraphDB, error) {
 	// Initialize Neo4j driver
 	auth := neo4j.BasicAuth(cfg.GraphDB.Username, cfg.GraphDB.Password, "")
 	driver, err := neo4j.NewDriver(
@@ -97,12 +43,12 @@ func (db *GraphDB) Close() error {
 }
 
 // GetLLMPrompt generates the LLM prompt for relationship classification
-func (db *GraphDB) GetLLMPrompt(sourceMsg Message, frontierMsgs []Message) (*LLMPrompt, error) {
+func (db *GraphDB) GetLLMPrompt(sourceMsg message.Message, frontierMsgs []message.Message) (*message.LLMPrompt, error) {
 	// Create batch input
-	input := BatchRelationshipInput{
+	input := message.BatchRelationshipInput{
 		Batch: []struct {
-			SourceMessage    Message   `json:"source_message"`
-			FrontierMessages []Message `json:"frontier_messages"`
+			SourceMessage    message.Message   `json:"source_message"`
+			FrontierMessages []message.Message `json:"frontier_messages"`
 		}{
 			{
 				SourceMessage:    sourceMsg,
@@ -117,7 +63,7 @@ func (db *GraphDB) GetLLMPrompt(sourceMsg Message, frontierMsgs []Message) (*LLM
 		return nil, err
 	}
 
-	return &LLMPrompt{
+	return &message.LLMPrompt{
 		Instructions: `Classify the relationships between the source message and each frontier message.
 Consider the following relationship types:
 
@@ -266,7 +212,7 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 		var messages []struct {
 			ID      string
 			Text    string
-			Similar []Message
+			Similar []message.Message
 		}
 
 		for result.Next() {
@@ -274,12 +220,12 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 			id, _ := record.Get("m.id")
 			text, _ := record.Get("m.text")
 			similarInterface, _ := record.Get("similar")
-			similar := make([]Message, 0)
+			similar := make([]message.Message, 0)
 
 			if similarArray, ok := similarInterface.([]interface{}); ok {
 				for _, s := range similarArray {
 					if simMap, ok := s.(map[string]interface{}); ok {
-						similar = append(similar, Message{
+						similar = append(similar, message.Message{
 							ID:    simMap["id"].(string),
 							Text:  simMap["text"].(string),
 							Score: float32(simMap["score"].(float64)),
@@ -291,7 +237,7 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 			messages = append(messages, struct {
 				ID      string
 				Text    string
-				Similar []Message
+				Similar []message.Message
 			}{
 				ID:      id.(string),
 				Text:    text.(string),
@@ -309,7 +255,7 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 	messages := result.([]struct {
 		ID      string
 		Text    string
-		Similar []Message
+		Similar []message.Message
 	})
 
 	// Process each message
@@ -334,14 +280,14 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 					return nil, err
 				}
 
-				var frontier []Message
+				var frontier []message.Message
 				for result.Next() {
 					record := result.Record()
 					id, _ := record.Get("f.id")
 					text, _ := record.Get("f.text")
 					score, _ := record.Get("r.score")
 
-					frontier = append(frontier, Message{
+					frontier = append(frontier, message.Message{
 						ID:    id.(string),
 						Text:  text.(string),
 						Score: float32(score.(float64)),
@@ -355,10 +301,10 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 				return fmt.Errorf("failed to get frontier: %w", err)
 			}
 
-			frontierMsgs := frontier.([]Message)
+			frontierMsgs := frontier.([]message.Message)
 
 			// Get LLM prompt for relationship classification
-			llmPrompt, err := db.GetLLMPrompt(Message{ID: msg.ID, Text: msg.Text}, frontierMsgs)
+			llmPrompt, err := db.GetLLMPrompt(message.Message{ID: msg.ID, Text: msg.Text}, frontierMsgs)
 			if err != nil {
 				return fmt.Errorf("failed to generate LLM prompt: %w", err)
 			}
