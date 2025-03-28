@@ -85,5 +85,12 @@ func main() {
 	}
 	fmt.Println("Successfully completed first pass")
 
+	// Perform second pass to build semantic frontier edges
+	fmt.Println("Performing second pass to build semantic frontier edges...")
+	if err := graphDB.SecondPass(context.Background()); err != nil {
+		log.Fatalf("Failed to perform second pass: %v", err)
+	}
+	fmt.Println("Successfully completed second pass")
+
 	fmt.Println("Successfully generated embeddings and initialized knowledge graph")
 }

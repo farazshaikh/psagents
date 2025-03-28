@@ -328,12 +328,16 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 
 				return frontier, nil
 			})
-
+			// Skip LLM query if frontier messages is empty
 			if err != nil {
 				return fmt.Errorf("failed to get frontier: %w", err)
 			}
 
 			frontierMsgs := frontier.([]message.Message)
+			if len(frontierMsgs) == 0 {
+				fmt.Printf("Skipping LLM query for message %s: no frontier messages found\n", msg.ID)
+				continue
+			}
 
 			// Get LLM prompt for relationship classification
 			llmPrompt, err := db.GetLLMPrompt(message.Message{ID: msg.ID, Text: msg.Text}, frontierMsgs)
@@ -341,6 +345,7 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 				return fmt.Errorf("failed to generate LLM prompt: %w", err)
 			}
 
+			fmt.Printf("LLM Prompt: %s\n", llmPrompt.Input)
 			// TODO: Call LLM service to get relationships
 			// This would involve:
 			// 1. Sending the prompt to LLM service
