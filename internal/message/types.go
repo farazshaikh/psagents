@@ -53,4 +53,4 @@ type Relationship struct {
 	Type       RelationType `json:"relation"`
 	Confidence float64      `json:"confidence"`
 	Evidence   string       `json:"evidence"`
-} 
+}

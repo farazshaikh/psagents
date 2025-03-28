@@ -23,8 +23,8 @@ graphdb:
   port: 7687
   username: "neo4j"
   password: "password"
-  similarity_anchors: 5   # see README.md for more details
-  semantic_frontier: 5    # see README.md for more details
+  similarity_anchors: 1   # see README.md for more details
+  semantic_frontier: 2    # see README.md for more details
 
 # Embeddings Configuration
 # Supports local Qdrant vector database storage
@@ -54,7 +54,7 @@ llm:
   llm_threshold:
     min: 0.3
     max: 0.8
-  system_prompt_file: "data/prompts/system.txt"  # Load system prompt from external file
+  system_prompt_file: "data/prompts/system.json"  # Load system prompt from external file
   # Provider-specific configurations
   providers:
     ollama:
@@ -88,7 +88,7 @@ logging:
 # add stages for the ingestion pipeline, such that allows selectively enables/disables stages
 ingestion:
   stages:
-    - embedding: true
+    - embedding: false
     - semantic_search: true
     - graph_construction: true
     - graph_construction_pass_1: true

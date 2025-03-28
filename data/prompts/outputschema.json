@@ -1,0 +1,11 @@
+{
+  "results": [
+    {
+      "source_id": "string",
+      "target_id": "string",
+      "relation": "Causal | Follow-up | Contrast | Elaboration | Reframe/Correction | Role Instruction | Scenario Setup | Identity Expression",
+      "confidence": "float (0.0–1.0)",
+      "evidence": "brief justification of the classification"
+    }
+  ]
+}

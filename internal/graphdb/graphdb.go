@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	"github.com/yourusername/psagents/config"
@@ -12,11 +15,45 @@ import (
 	"github.com/yourusername/psagents/internal/vector"
 )
 
+// Relationship represents a semantic relationship between two messages
+// MUST match the output schema at data/prompts/outputschema.json
+type Relationship struct {
+	SourceID   string  `json:"source_id"`
+	TargetID   string  `json:"target_id"`
+	Relation   string  `json:"relation"`
+	Confidence float64 `json:"confidence"`
+	Evidence   string  `json:"evidence"`
+}
+
 // GraphDB handles graph database operations
 type GraphDB struct {
-	cfg      *config.Config
-	driver   neo4j.Driver
-	vectorDB vector.DB
+	cfg          *config.Config
+	driver       neo4j.Driver
+	vectorDB     vector.DB
+	inputSchema  string
+	outputSchema string
+}
+
+// loadSchema loads a schema from a JSON file
+func loadSchema(filePath string) (string, error) {
+	fileBytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read schema file %s: %w", filePath, err)
+	}
+
+	// Verify it's valid JSON
+	var parsed interface{}
+	if err := json.Unmarshal(fileBytes, &parsed); err != nil {
+		return "", fmt.Errorf("invalid JSON in file %s: %w", filePath, err)
+	}
+
+	// Format the JSON for consistent output
+	formatted, err := json.MarshalIndent(parsed, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to format JSON from %s: %w", filePath, err)
+	}
+
+	return string(formatted), nil
 }
 
 // NewGraphDB creates a new graph database connection
@@ -31,10 +68,23 @@ func NewGraphDB(cfg *config.Config, vectorDB vector.DB) (*GraphDB, error) {
 		return nil, fmt.Errorf("failed to create Neo4j driver: %w", err)
 	}
 
+	// Load schemas from prompt files
+	inputSchema, err := loadSchema(filepath.Join("data", "prompts", "inputschema.json"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load input schema: %w", err)
+	}
+
+	outputSchema, err := loadSchema(filepath.Join("data", "prompts", "outputschema.json"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load output schema: %w", err)
+	}
+
 	return &GraphDB{
-		cfg:      cfg,
-		driver:   driver,
-		vectorDB: vectorDB,
+		cfg:          cfg,
+		driver:       driver,
+		vectorDB:     vectorDB,
+		inputSchema:  inputSchema,
+		outputSchema: outputSchema,
 	}, nil
 }
 
@@ -45,7 +95,7 @@ func (db *GraphDB) Close() error {
 
 // GetLLMPrompt generates the LLM prompt for relationship classification
 func (db *GraphDB) GetLLMPrompt(sourceMsg message.Message, frontierMsgs []message.Message) (*message.LLMPrompt, error) {
-	// Create batch input
+	// Create batch input - must match the input schema at data/prompts/inputschema.json
 	input := message.BatchRelationshipInput{
 		Batch: []struct {
 			SourceMessage    message.Message   `json:"source_message"`
@@ -58,54 +108,39 @@ func (db *GraphDB) GetLLMPrompt(sourceMsg message.Message, frontierMsgs []messag
 		},
 	}
 
-	// Convert input to JSON
-	inputJSON, err := json.MarshalIndent(input, "", "  ")
+	// Parse the schemas to avoid double-wrapping
+	var inputSchemaObj, outputSchemaObj interface{}
+	if err := json.Unmarshal([]byte(db.inputSchema), &inputSchemaObj); err != nil {
+		return nil, fmt.Errorf("failed to parse input schema: %w", err)
+	}
+	if err := json.Unmarshal([]byte(db.outputSchema), &outputSchemaObj); err != nil {
+		return nil, fmt.Errorf("failed to parse output schema: %w", err)
+	}
+
+	// Create a complete prompt as a JSON object
+	prompt := struct {
+		Instructions string      `json:"instructions"`
+		InputSchema  interface{} `json:"input_schema"`
+		Input        interface{} `json:"input"`
+		OutputSchema interface{} `json:"output_schema"`
+	}{
+		Instructions: "Extract meaningful relationships between the source message and each frontier message.",
+		InputSchema:  inputSchemaObj,
+		Input:        input,
+		OutputSchema: outputSchemaObj,
+	}
+
+	// Convert the entire prompt to JSON
+	promptJSON, err := json.MarshalIndent(prompt, "", "  ")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal prompt to JSON: %w", err)
 	}
 
 	return &message.LLMPrompt{
-		Instructions: `Classify the relationships between the source message and each frontier message.
-Consider the following relationship types:
-
-1. Causal: Direct cause-effect relationship, one message leads to another
-2. Follow-up: Continues or refines the inquiry/context
-3. Contrast: Contradicts or changes stance
-4. Elaboration: Expands on previous idea with more detail
-5. Reframe/Correction: Rephrases or corrects previous message
-6. Role Instruction: Sets behavior or persona
-7. Scenario Setup: Sets up context or world
-8. Topic Switch: Unrelated new context
-9. Self-Reference: Reflects on own message
-10. Meta-Prompting: Cross-prompt instructions
-11. Identity Expression: Self-description or goals
-
-For each relationship, provide:
-- The relationship type
-- Confidence score (0.0-1.0)
-- Evidence supporting the classification`,
-		InputSchema: `{
-  "batch": [{
-    "source_message": {
-      "id": "string",
-      "text": "string"
-    },
-    "frontier_messages": [{
-      "id": "string",
-      "text": "string"
-    }]
-  }]
-}`,
-		Input: string(inputJSON),
-		OutputSchema: `{
-  "results": [{
-    "source_id": "string",
-    "target_id": "string",
-    "relation": "string",
-    "confidence": "number",
-    "evidence": "string"
-  }]
-}`,
+		Instructions: string(promptJSON),
+		InputSchema:  "",  // These are now included in the JSON
+		Input:        "",  // These are now included in the JSON
+		OutputSchema: "",  // These are now included in the JSON
 	}, nil
 }
 
@@ -219,6 +254,43 @@ func (db *GraphDB) FirstPass(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// parseLLMResponse parses the LLM response into structured relationships
+func (db *GraphDB) parseLLMResponse(llmResponse string) ([]Relationship, error) {
+	// Clean the response to ensure it's valid JSON
+	cleanedResponse := strings.TrimSpace(llmResponse)
+
+	// Handle potential JSON array or single object formats
+	if !strings.HasPrefix(cleanedResponse, "[") && strings.HasPrefix(cleanedResponse, "{") {
+		cleanedResponse = "[" + cleanedResponse + "]"
+	} else if !strings.HasPrefix(cleanedResponse, "[") {
+		// Try to extract JSON from the response if it's embedded in text
+		startIdx := strings.Index(cleanedResponse, "[")
+		endIdx := strings.LastIndex(cleanedResponse, "]")
+		if startIdx >= 0 && endIdx > startIdx {
+			cleanedResponse = cleanedResponse[startIdx : endIdx+1]
+		} else {
+			// If we can't find array brackets, look for object brackets
+			startIdx = strings.Index(cleanedResponse, "{")
+			endIdx = strings.LastIndex(cleanedResponse, "}")
+			if startIdx >= 0 && endIdx > startIdx {
+				cleanedResponse = "[" + cleanedResponse[startIdx:endIdx+1] + "]"
+			} else {
+				return nil, fmt.Errorf("failed to parse LLM response: invalid JSON format")
+			}
+		}
+	}
+
+	// Parse the JSON response
+	var relationships []Relationship
+	if err := json.Unmarshal([]byte(cleanedResponse), &relationships); err != nil {
+		fmt.Printf("Error parsing LLM response: %v\nResponse: %s\n", err, cleanedResponse)
+		return nil, fmt.Errorf("failed to parse LLM response: %w", err)
+	}
+
+	fmt.Printf("Parsed %d relationships from LLM response\n", len(relationships))
+	return relationships, nil
 }
 
 // SecondPass performs the second pass of graph population:
@@ -341,34 +413,42 @@ func (db *GraphDB) SecondPass(ctx context.Context, llm llm.LLM) error {
 			}
 
 			// Get LLM prompt for relationship classification
-			llmPrompt, err := db.GetLLMPrompt(message.Message{ID: msg.ID, Text: msg.Text}, frontierMsgs)
+			llmPrompt, err := db.GetLLMPrompt(message.Message{ID: msg.ID, Text: msg.Text}, msg.Similar)
 			if err != nil {
 				return fmt.Errorf("failed to generate LLM prompt: %w", err)
 			}
 
-			//fmt.Printf("LLM Prompt: %s\n", llmPrompt.Input)
-			llmResponse, err := llm.GetInference(llmPrompt.Input)
+			//fmt.Printf("LLM Prompt: %s\n", llmPrompt.Instructions)
+
+			llmResponse, err := llm.GetInference(llmPrompt.Instructions)
 			if err != nil {
 				return fmt.Errorf("failed to get LLM response: %w", err)
 			}
 			fmt.Printf("LLM Response: %s\n", llmResponse)
 
-			_ = llmPrompt // Use the prompt variable to avoid linter error
+			// Parse the LLM response
+			relationships, err := db.parseLLMResponse(llmResponse)
+			if err != nil {
+				return fmt.Errorf("failed to parse LLM response: %w", err)
+			}
 
-			// For now, we'll just create placeholder relationships
+			// Create relationships in Neo4j
 			_, err = session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
-				for _, f := range frontierMsgs {
+				for _, rel := range relationships {
 					_, err := tx.Run(
 						`MERGE (m:Message {id: $sourceId})
 						 SET m.text = $sourceText
 						 MERGE (n:Message {id: $targetId})
 						 SET n.text = $targetText
-						 MERGE (m)-[r:RELATED_TO {type: "Placeholder", confidence: 0.5}]->(n)`,
+						 MERGE (m)-[r:RELATED_TO {type: $relationType, confidence: $confidence, evidence: $evidence}]->(n)`,
 						map[string]interface{}{
-							"sourceId":   msg.ID,
-							"sourceText": msg.Text,
-							"targetId":   f.ID,
-							"targetText": f.Text,
+							"sourceId":     rel.SourceID,
+							"sourceText":   msg.Text,
+							"targetId":     rel.TargetID,
+							"targetText":   rel.Evidence,
+							"relationType": rel.Relation,
+							"confidence":   rel.Confidence,
+							"evidence":     rel.Evidence,
 						},
 					)
 					if err != nil {

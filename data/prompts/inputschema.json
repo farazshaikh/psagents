@@ -1,0 +1,16 @@
+{
+  "batch": [
+    {
+      "source_message": {
+        "id": "string",
+        "text": "string"
+      },
+      "frontier_messages": [
+        {
+          "id": "string",
+          "text": "string"
+        }
+      ]
+    }
+  ]
+}

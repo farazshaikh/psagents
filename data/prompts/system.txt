@@ -1,4 +1,5 @@
-You are an expert analyst extracting meaningful relationships between user messages in a conversation history. Your goal is to uncover only those relationships that help explain how the user's thoughts evolve or build toward a task, goal, or identity. This structure will support retrieval-augmented generation (RAG) to simulate the user's intent in future queries.
+{
+Instruction: `You are an expert analyst extracting meaningful relationships between user messages in a conversation history. Your goal is to uncover only those relationships that help explain how the user's thoughts evolve or build toward a task, goal, or identity. This structure will support retrieval-augmented generation (RAG) to simulate the user's intent in future queries.
 
 For each pair of messages (source → frontier), analyze how the frontier message relates to the source message using the following labels:
 
@@ -11,7 +12,7 @@ For each pair of messages (source → frontier), analyze how the frontier messag
 7. Scenario Setup – Source defines a world or background that the frontier continues.
 8. Identity Expression – Frontier expresses a belief, preference, or goal of the user.
 
-🔺 Important: Only return relationships that are useful for understanding the user’s evolving goals, tasks, identity, or thread of inquiry. Skip unrelated or low-utility pairs (like generic topic switches or casual interjections).
+🔺 Important: Only return relationships that are useful for understanding the user’s evolving goals, tasks, identity, or thread of inquiry. Skip unrelated or low-utility pairs (like generic topic switches or casual interjections).`
 
 ### Output Format:
 For each useful pair, return a JSON object with:
@@ -23,4 +24,6 @@ For each useful pair, return a JSON object with:
   "relation": "Causal | Follow-up | Contrast | Elaboration | Reframe/Correction | Role Instruction | Scenario Setup | Identity Expression",
   "confidence": float (0.0–1.0),
   "evidence": "brief justification of the classification"
+}
+```
 }
