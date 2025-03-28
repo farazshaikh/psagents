@@ -14,7 +14,7 @@ pipeline:
 
 devmode:
   enabled: true
-  max_messages: 10
+  max_messages: 100
 
 # Graph Database Configuration
 graphdb:
@@ -23,8 +23,8 @@ graphdb:
   port: 7687
   username: "neo4j"
   password: "password"
-  similarity_anchors: 2   # see README.md for more details
-  semantic_frontier: 2    # see README.md for more details
+  similarity_anchors: 5   # see README.md for more details
+  semantic_frontier: 5    # see README.md for more details
 
 # Embeddings Configuration
 # Supports local Qdrant vector database storage
@@ -46,16 +46,32 @@ embeddings:
 
 # LLM Configuration
 llm:
-  provider: "ollama"
-  endpoint: "http://localhost:11434/api/chat"  # LLM-specific endpoint
-  timeout_seconds: 30
-  model: "gpt-4"
-  api_key: "${OPENAI_API_KEY}"
+  # Common LLM settings
+  provider: "openai"
+  timeout_seconds: 600
   max_tokens: 1000
   temperature: 0.7
   llm_threshold:
     min: 0.3
     max: 0.8
+  system_prompt_file: "data/prompts/system.txt"  # Load system prompt from external file
+  # Provider-specific configurations
+  providers:
+    ollama:
+      enabled: false
+      endpoint: "http://localhost:11434/api/chat"  # Ollama chat endpoint
+      model: "llama2"  # Default model that's commonly available
+      api_key: "${OLLAMA_API_KEY}"  # If needed
+
+    openai:
+      enabled: true
+      endpoint: "https://openrouter.ai/api/v1/chat/completions"  # OpenRouter endpoint
+      model: "gpt-4o-mini"  # OpenRouter model
+      api_key: "${OPENAI_API_KEY}"
+      # Override common settings if needed
+      # timeout_seconds: 300
+      # max_tokens: 2000
+      # temperature: 0.5
 
 # Data Configuration
 data:
@@ -68,3 +84,13 @@ logging:
   level: "info"
   format: "json"
   output: "logs/app.log"
+
+# add stages for the ingestion pipeline, such that allows selectively enables/disables stages
+ingestion:
+  stages:
+    - embedding: true
+    - semantic_search: true
+    - graph_construction: true
+    - graph_construction_pass_1: true
+    - graph_construction_pass_2: true
+    - graph_compression: true

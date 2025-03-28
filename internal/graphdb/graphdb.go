@@ -7,6 +7,7 @@ import (
 
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	"github.com/yourusername/psagents/config"
+	"github.com/yourusername/psagents/internal/llm"
 	"github.com/yourusername/psagents/internal/message"
 	"github.com/yourusername/psagents/internal/vector"
 )
@@ -224,7 +225,7 @@ func (db *GraphDB) FirstPass(ctx context.Context) error {
 // For each message in the graph, get its similar connections,
 // then for each connection get semantic_frontier count neighbors
 // and do pairwise LLM classification
-func (db *GraphDB) SecondPass(ctx context.Context) error {
+func (db *GraphDB) SecondPass(ctx context.Context, llm llm.LLM) error {
 	session := db.driver.NewSession(neo4j.SessionConfig{})
 	defer session.Close()
 
@@ -345,12 +346,13 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 				return fmt.Errorf("failed to generate LLM prompt: %w", err)
 			}
 
-			fmt.Printf("LLM Prompt: %s\n", llmPrompt.Input)
-			// TODO: Call LLM service to get relationships
-			// This would involve:
-			// 1. Sending the prompt to LLM service
-			// 2. Parsing the response
-			// 3. Creating the relationships in Neo4j
+			//fmt.Printf("LLM Prompt: %s\n", llmPrompt.Input)
+			llmResponse, err := llm.GetInference(llmPrompt.Input)
+			if err != nil {
+				return fmt.Errorf("failed to get LLM response: %w", err)
+			}
+			fmt.Printf("LLM Response: %s\n", llmResponse)
+
 			_ = llmPrompt // Use the prompt variable to avoid linter error
 
 			// For now, we'll just create placeholder relationships

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -19,6 +20,7 @@ type Config struct {
 	Logging    LoggingConfig    `mapstructure:"logging"`
 	DevMode    DevModeConfig    `mapstructure:"devmode"`
 	Qdrant     QdrantConfig     `mapstructure:"qdrant"`
+	Ingestion  IngestionConfig  `mapstructure:"ingestion"`
 }
 
 // ServerConfig represents server-related configuration
@@ -64,14 +66,22 @@ type EmbeddingsConfig struct {
 
 // LLMConfig represents LLM-related configuration
 type LLMConfig struct {
-	Provider      string        `mapstructure:"provider"`
-	Model         string        `mapstructure:"model"`
-	APIKey        string        `mapstructure:"api_key"`
-	Endpoint      string        `mapstructure:"endpoint"`
-	Timeout       int           `mapstructure:"timeout_seconds"`
-	MaxTokens     int           `mapstructure:"max_tokens"`
-	Temperature   float64       `mapstructure:"temperature"`
-	LLMThreshold  ThresholdConfig `mapstructure:"llm_threshold"`
+	Provider         string                 `mapstructure:"provider"`
+	Timeout          int                    `mapstructure:"timeout_seconds"`
+	MaxTokens        int                    `mapstructure:"max_tokens"`
+	Temperature      float64                `mapstructure:"temperature"`
+	LLMThreshold     ThresholdConfig        `mapstructure:"llm_threshold"`
+	SystemPromptFile string                 `mapstructure:"system_prompt_file"`
+	SystemPrompt     string                 `mapstructure:"-"` // Loaded from file
+	Providers        map[string]ProviderConfig `mapstructure:"providers"`
+}
+
+// ProviderConfig represents configuration for a specific LLM provider
+type ProviderConfig struct {
+	Enabled   bool   `mapstructure:"enabled"`
+	Endpoint  string `mapstructure:"endpoint"`
+	Model     string `mapstructure:"model"`
+	APIKey    string `mapstructure:"api_key"`
 }
 
 // QdrantConfig represents Qdrant-related configuration
@@ -105,6 +115,11 @@ type LoggingConfig struct {
 	Output string `mapstructure:"output"`
 }
 
+// IngestionConfig represents ingestion-related configuration
+type IngestionConfig struct {
+	Stages []map[string]interface{} `mapstructure:"stages"`
+}
+
 // LoadConfig reads and parses the configuration file
 func LoadConfig(configPath string) (*Config, error) {
 	// Create a new viper instance
@@ -113,8 +128,11 @@ func LoadConfig(configPath string) (*Config, error) {
 	// Set the config file path
 	v.SetConfigFile(configPath)
 
-	// Read environment variables
+	// Enable environment variable substitution and interpolation
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetEnvPrefix("")  // Remove prefix for direct env var names like OPENAI_API_KEY
 	v.AutomaticEnv()
+	v.AllowEmptyEnv(true)
 
 	// Read the config file
 	if err := v.ReadInConfig(); err != nil {
@@ -127,6 +145,58 @@ func LoadConfig(configPath string) (*Config, error) {
 	// Unmarshal the config into our struct
 	if err := v.Unmarshal(config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	// Load system prompt from file if specified
+	if config.LLM.SystemPromptFile != "" {
+		// Get the directory of the config file
+		configDir := filepath.Dir(configPath)
+		// Resolve the system prompt file path relative to the config file
+		promptPath := filepath.Join(configDir, "..", config.LLM.SystemPromptFile)
+		// Read the system prompt file
+		promptBytes, err := os.ReadFile(promptPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read system prompt file: %w", err)
+		}
+		config.LLM.SystemPrompt = string(promptBytes)
+	}
+
+	// Handle environment variable substitution for API keys
+	if openaiCfg, ok := config.LLM.Providers["openai"]; ok {
+		// Try direct environment variable first
+		if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
+			openaiCfg.APIKey = apiKey
+			config.LLM.Providers["openai"] = openaiCfg
+		} else if strings.HasPrefix(openaiCfg.APIKey, "${") && strings.HasSuffix(openaiCfg.APIKey, "}") {
+			// Try the variable name from config
+			envVar := strings.TrimSuffix(strings.TrimPrefix(openaiCfg.APIKey, "${"), "}")
+			if apiKey := os.Getenv(envVar); apiKey != "" {
+				openaiCfg.APIKey = apiKey
+				config.LLM.Providers["openai"] = openaiCfg
+			}
+		}
+
+		// Ensure the endpoint is correct
+		if openaiCfg.Endpoint == "" || !strings.HasSuffix(openaiCfg.Endpoint, "/v1/chat/completions") {
+			openaiCfg.Endpoint = "https://api.openai.com/v1/chat/completions"
+			config.LLM.Providers["openai"] = openaiCfg
+		}
+
+		// Validate model name
+		if openaiCfg.Model == "" {
+			openaiCfg.Model = "gpt-3.5-turbo" // Default to a commonly available model
+			config.LLM.Providers["openai"] = openaiCfg
+		}
+	}
+
+	if ollamaCfg, ok := config.LLM.Providers["ollama"]; ok {
+		if strings.HasPrefix(ollamaCfg.APIKey, "${") && strings.HasSuffix(ollamaCfg.APIKey, "}") {
+			envVar := strings.TrimSuffix(strings.TrimPrefix(ollamaCfg.APIKey, "${"), "}")
+			if apiKey := os.Getenv(envVar); apiKey != "" {
+				ollamaCfg.APIKey = apiKey
+				config.LLM.Providers["ollama"] = ollamaCfg
+			}
+		}
 	}
 
 	return config, nil
