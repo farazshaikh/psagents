@@ -83,7 +83,6 @@ type QdrantConfig struct {
 	Distance            string `mapstructure:"distance"`
 	OnDiskPayload       bool   `mapstructure:"on_disk_payload"`
 	OptimizeForDiskAccess bool   `mapstructure:"optimize_for_disk_access"`
-	TestMode            bool   `mapstructure:"test_mode"`
 }
 
 // ThresholdConfig represents threshold configuration

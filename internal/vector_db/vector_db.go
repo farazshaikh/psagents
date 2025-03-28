@@ -14,6 +14,7 @@ import (
 	qdrant "github.com/qdrant/go-client/qdrant"
 	"github.com/sirupsen/logrus"
 	"github.com/yourusername/psagents/config"
+	"github.com/yourusername/psagents/internal/vector"
 	"google.golang.org/grpc"
 )
 
@@ -33,6 +34,13 @@ type QdrantDB struct {
 	isTestMode  bool
 	testDBPath  string
 	testPoints  []*TestPoint
+}
+
+// DB defines the interface for Qdrant-specific operations
+type DB interface {
+	vector.DB
+	CreateCollection() error
+	InjectMessages() error
 }
 
 // MessageEmbedding represents a message with its embedding and ID
@@ -57,7 +65,7 @@ type MessageWithEmbedding struct {
 }
 
 // NewQdrantDB creates a new Qdrant database connection
-func NewQdrantDB(cfg *config.Config) (*QdrantDB, error) {
+func NewQdrantDB(cfg *config.Config) (DB, error) {
 	// Setup logging
 	logger := logrus.New()
 	if cfg.Logging.Format == "json" {
@@ -80,8 +88,8 @@ func NewQdrantDB(cfg *config.Config) (*QdrantDB, error) {
 		logger: logger,
 	}
 
-	// Check if we're in test mode
-	if cfg.Qdrant.TestMode {
+	// Check if we're in dev mode
+	if cfg.DevMode.Enabled {
 		db.isTestMode = true
 		db.testDBPath = filepath.Join(cfg.Qdrant.Path, "test.jsonl")
 		db.testPoints = make([]*TestPoint, 0)
@@ -329,8 +337,140 @@ func (db *QdrantDB) upsertBatch(points []*qdrant.PointStruct) error {
 	return nil
 }
 
+// GetAllMessages retrieves all messages from the vector database
+func (db *QdrantDB) GetAllMessages() ([]vector.Message, error) {
+	messages, err := db.getAllMessagesInternal()
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to vector.Message format
+	result := make([]vector.Message, len(messages))
+	for i, msg := range messages {
+		result[i] = vector.Message{
+			ID:        msg.ID,
+			Text:      msg.Text,
+			Embedding: msg.Embedding,
+		}
+	}
+	return result, nil
+}
+
 // Search searches for similar vectors in the database
-func (db *QdrantDB) Search(vector []float32, limit int) ([]SearchResult, error) {
+func (db *QdrantDB) Search(embedding []float32, limit int) ([]vector.Message, error) {
+	results, err := db.searchInternal(embedding, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to vector.Message format
+	messages := make([]vector.Message, len(results))
+	for i, result := range results {
+		messages[i] = vector.Message{
+			ID:        result.ID,
+			Text:      result.Text,
+			Score:     result.Score,
+		}
+	}
+	return messages, nil
+}
+
+// getAllMessagesInternal is the internal implementation of GetAllMessages
+func (db *QdrantDB) getAllMessagesInternal() ([]MessageWithEmbedding, error) {
+	if db.isTestMode {
+		return db.getAllMessagesTest()
+	}
+
+	ctx := context.Background()
+
+	// First, get the total count of points
+	countReq := &qdrant.CountPoints{
+		CollectionName: db.cfg.Qdrant.CollectionName,
+	}
+	countResp, err := db.points.Count(ctx, countReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get points count: %w", err)
+	}
+	totalPoints := countResp.Result.Count
+
+	db.logger.WithFields(logrus.Fields{
+		"total_points": totalPoints,
+	}).Info("Starting to fetch all points")
+
+	var limit uint32 = 100
+	req := &qdrant.ScrollPoints{
+		CollectionName: db.cfg.Qdrant.CollectionName,
+		WithPayload:    &qdrant.WithPayloadSelector{SelectorOptions: &qdrant.WithPayloadSelector_Enable{Enable: true}},
+		WithVectors:    &qdrant.WithVectorsSelector{SelectorOptions: &qdrant.WithVectorsSelector_Enable{Enable: true}},
+		Limit:          &limit,
+	}
+
+	var allMessages []MessageWithEmbedding
+	pointsProcessed := uint64(0)
+
+	for {
+		resp, err := db.points.Scroll(ctx, req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scroll points: %w", err)
+		}
+
+		batchSize := len(resp.Result)
+		if batchSize == 0 {
+			break // No more points to process
+		}
+
+		for _, point := range resp.Result {
+			text := ""
+			if textValue, ok := point.Payload["text"]; ok {
+				text = textValue.GetStringValue()
+			}
+
+			vectors := point.Vectors.GetVector()
+			if vectors == nil {
+				db.logger.WithField("point_id", point.Id).Warn("Point has no vectors")
+				continue
+			}
+
+			msg := MessageWithEmbedding{
+				ID:        point.Id.GetUuid(),
+				Text:      text,
+				Embedding: vectors.Data,
+			}
+			allMessages = append(allMessages, msg)
+		}
+
+		pointsProcessed += uint64(batchSize)
+		db.logger.WithFields(logrus.Fields{
+			"batch_size":       batchSize,
+			"points_processed": pointsProcessed,
+			"total_points":     totalPoints,
+		}).Debug("Processed batch of points")
+
+		if resp.NextPageOffset == nil {
+			break // No more pages to process
+		}
+
+		req.Offset = resp.NextPageOffset
+	}
+
+	if pointsProcessed < totalPoints {
+		db.logger.WithFields(logrus.Fields{
+			"points_processed": pointsProcessed,
+			"total_points":     totalPoints,
+			"missing_points":   totalPoints - pointsProcessed,
+		}).Warn("Not all points were processed")
+	}
+
+	db.logger.WithFields(logrus.Fields{
+		"total_messages": len(allMessages),
+		"points_processed": pointsProcessed,
+	}).Info("Finished fetching all points")
+
+	return allMessages, nil
+}
+
+// searchInternal is the internal implementation of Search
+func (db *QdrantDB) searchInternal(vector []float32, limit int) ([]SearchResult, error) {
 	if db.isTestMode {
 		return db.searchTest(vector, limit)
 	}
@@ -434,58 +574,23 @@ func (db *QdrantDB) Close() error {
 	return nil
 }
 
-// GetAllMessages retrieves all messages from the vector database
-func (db *QdrantDB) GetAllMessages() ([]MessageWithEmbedding, error) {
-	if db.isTestMode {
-		return db.getAllMessagesTest()
-	}
-
-	ctx := context.Background()
-
-	// Get all points from the collection
-	var limit uint32 = 100
-	req := &qdrant.ScrollPoints{
-		CollectionName: db.cfg.Qdrant.CollectionName,
-		WithPayload:    &qdrant.WithPayloadSelector{SelectorOptions: &qdrant.WithPayloadSelector_Enable{Enable: true}},
-		WithVectors:    &qdrant.WithVectorsSelector{SelectorOptions: &qdrant.WithVectorsSelector_Enable{Enable: true}},
-		Limit:          &limit, // Process in batches of 100
-	}
-
-	var allMessages []MessageWithEmbedding
-
-	for {
-		resp, err := db.points.Scroll(ctx, req)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scroll points: %w", err)
-		}
-
-		for _, point := range resp.Result {
-			text := ""
-			if textValue, ok := point.Payload["text"]; ok {
-				text = textValue.GetStringValue()
-			}
-
-			msg := MessageWithEmbedding{
-				ID:        point.Id.GetUuid(),
-				Text:      text,
-				Embedding: point.Vectors.GetVector().Data,
-			}
-			allMessages = append(allMessages, msg)
-		}
-
-		if len(resp.Result) < 100 {
-			break // No more points to fetch
-		}
-
-		// Update offset for next batch
-		req.Offset = resp.NextPageOffset
-	}
-
-	return allMessages, nil
-}
-
 // getAllMessagesTest retrieves all messages from the test database file
 func (db *QdrantDB) getAllMessagesTest() ([]MessageWithEmbedding, error) {
+	// First check if we have points in memory
+	if len(db.testPoints) > 0 {
+		db.logger.WithField("count", len(db.testPoints)).Debug("Using in-memory points")
+		messages := make([]MessageWithEmbedding, len(db.testPoints))
+		for i, point := range db.testPoints {
+			messages[i] = MessageWithEmbedding{
+				ID:        point.ID,
+				Text:      point.Payload["text"],
+				Embedding: point.Vectors,
+			}
+		}
+		return messages, nil
+	}
+
+	// If no points in memory, read from file
 	file, err := os.Open(db.testDBPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open test database file: %w", err)
@@ -493,22 +598,62 @@ func (db *QdrantDB) getAllMessagesTest() ([]MessageWithEmbedding, error) {
 	defer file.Close()
 
 	var messages []MessageWithEmbedding
+	var pointsRead int
 	scanner := bufio.NewScanner(file)
+
 	for scanner.Scan() {
 		var point TestPoint
 		if err := json.Unmarshal(scanner.Bytes(), &point); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal point: %w", err)
+			db.logger.WithError(err).WithField("line", pointsRead+1).Error("Failed to unmarshal point")
+			return nil, fmt.Errorf("failed to unmarshal point at line %d: %w", pointsRead+1, err)
+		}
+
+		// Validate point data
+		if point.ID == "" {
+			db.logger.WithField("line", pointsRead+1).Warn("Point has empty ID")
+			continue
+		}
+		if point.Vectors == nil {
+			db.logger.WithField("point_id", point.ID).Warn("Point has no vectors")
+			continue
+		}
+		if point.Payload == nil {
+			db.logger.WithField("point_id", point.ID).Warn("Point has no payload")
+			continue
+		}
+		text, ok := point.Payload["text"]
+		if !ok || text == "" {
+			db.logger.WithField("point_id", point.ID).Warn("Point has no text")
+			continue
 		}
 
 		messages = append(messages, MessageWithEmbedding{
 			ID:        point.ID,
-			Text:      point.Payload["text"],
+			Text:      text,
 			Embedding: point.Vectors,
 		})
+		pointsRead++
 	}
 
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error reading test database file: %w", err)
+	}
+
+	db.logger.WithFields(logrus.Fields{
+		"points_read": pointsRead,
+		"messages_loaded": len(messages),
+	}).Info("Successfully loaded messages from test database file")
+
+	// Cache the points in memory for future use
+	db.testPoints = make([]*TestPoint, len(messages))
+	for i, msg := range messages {
+		db.testPoints[i] = &TestPoint{
+			ID:      msg.ID,
+			Vectors: msg.Embedding,
+			Payload: map[string]string{
+				"text": msg.Text,
+			},
+		}
 	}
 
 	return messages, nil

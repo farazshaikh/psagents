@@ -1,19 +1,22 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 
 	"github.com/yourusername/psagents/config"
 	"github.com/yourusername/psagents/internal/embeddings"
+	"github.com/yourusername/psagents/internal/graphdb"
+	"github.com/yourusername/psagents/internal/vector"
 	"github.com/yourusername/psagents/internal/vector_db"
 )
 
 func main() {
 	// Parse command line flags
 	configPath := flag.String("config", "config/config.example.yaml", "path to config file")
-
+	flag.Parse()
 
 	// Load configuration
 	cfg, err := config.LoadConfig(*configPath)
@@ -39,29 +42,48 @@ func main() {
 	if err := gen.GenerateEmbeddings(); err != nil {
 		log.Fatalf("Failed to generate embeddings: %v", err)
 	}
-	// Insert embeddings into Qdrant database
-	if cfg.Qdrant.Enabled {
-		fmt.Println("Inserting embeddings into Qdrant database...")
 
-		// Initialize vector database
-		db, err := vector_db.NewQdrantDB(cfg)
+	// Initialize vector database
+	fmt.Println("Initializing vector database...")
+	var vectorDB vector.DB
+	if cfg.Qdrant.Enabled {
+		// Initialize Qdrant database
+		qdrantDB, err := vector_db.NewQdrantDB(cfg)
 		if err != nil {
 			log.Fatalf("Failed to initialize vector database: %v", err)
 		}
-		defer db.Close()
+		defer qdrantDB.Close()
 
 		// Create collection if it doesn't exist
-		if err := db.CreateCollection(); err != nil {
+		if err := qdrantDB.(vector_db.DB).CreateCollection(); err != nil {
 			log.Fatalf("Failed to create collection: %v", err)
 		}
 
 		// Inject messages into the database
-		if err := db.InjectMessages(); err != nil {
+		if err := qdrantDB.(vector_db.DB).InjectMessages(); err != nil {
 			log.Fatalf("Failed to inject messages into vector database: %v", err)
 		}
 
-		fmt.Println("Successfully inserted embeddings into Qdrant database")
+		fmt.Println("Successfully initialized vector database")
+		vectorDB = qdrantDB
+	} else {
+		log.Fatal("No vector database enabled in configuration")
 	}
 
-	fmt.Println("Successfully generated embeddings")
+	// Initialize graph database
+	fmt.Println("Initializing graph database...")
+	graphDB, err := graphdb.NewGraphDB(cfg, vectorDB)
+	if err != nil {
+		log.Fatalf("Failed to initialize graph database: %v", err)
+	}
+	defer graphDB.Close()
+
+	// Perform first pass to build similarity anchor edges
+	fmt.Println("Performing first pass to build similarity anchor edges...")
+	if err := graphDB.FirstPass(context.Background()); err != nil {
+		log.Fatalf("Failed to perform first pass: %v", err)
+	}
+	fmt.Println("Successfully completed first pass")
+
+	fmt.Println("Successfully generated embeddings and initialized knowledge graph")
 }

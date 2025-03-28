@@ -13,4 +13,4 @@ type DB interface {
 	Close() error
 	GetAllMessages() ([]Message, error)
 	Search(embedding []float32, limit int) ([]Message, error)
-} 
+}

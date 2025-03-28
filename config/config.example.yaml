@@ -13,8 +13,8 @@ pipeline:
   timeout: "30s"
 
 devmode:
-  enabled: false
-  max_messages: 25
+  enabled: true
+  max_messages: 10
 
 # Graph Database Configuration
 graphdb:
@@ -23,8 +23,8 @@ graphdb:
   port: 7687
   username: "neo4j"
   password: "password"
-  similarity_anchors: 10   # see README.md for more details
-  semantic_frontier: 10    # see README.md for more details
+  similarity_anchors: 2   # see README.md for more details
+  semantic_frontier: 2    # see README.md for more details
 
 # Embeddings Configuration
 # Supports local Qdrant vector database storage

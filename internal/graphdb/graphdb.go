@@ -133,13 +133,17 @@ func (db *GraphDB) FirstPass(ctx context.Context) error {
 		return fmt.Errorf("failed to get messages: %w", err)
 	}
 
+	fmt.Printf("Processing %d messages from vector database\n", len(messages))
+
 	// Process each message
-	for _, msg := range messages {
+	for i, msg := range messages {
 		// Find top K similar messages
 		similar, err := db.vectorDB.Search(msg.Embedding, db.cfg.GraphDB.SimilarityAnchors)
 		if err != nil {
 			return fmt.Errorf("failed to search similar messages: %w", err)
 		}
+
+		fmt.Printf("Message %d/%d: Found %d similar messages for ID %s\n", i+1, len(messages), len(similar), msg.ID)
 
 		// Create relationships in Neo4j
 		_, err = session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
@@ -161,17 +165,19 @@ func (db *GraphDB) FirstPass(ctx context.Context) error {
 					continue // Skip self-relationships
 				}
 
-				// Create or merge target node and relationship
+				// Create or merge source node and target node with text properties
 				_, err := tx.Run(
 					`MERGE (m:Message {id: $sourceId})
+					 SET m.text = $sourceText
 					 MERGE (n:Message {id: $targetId})
-					 MERGE (m)-[r:IS_SIMILAR {score: $score}]->(n)
-					 SET n.text = $targetText`,
+					 SET n.text = $targetText
+					 MERGE (m)-[r:IS_SIMILAR {score: $score}]->(n)`,
 					map[string]interface{}{
 						"sourceId":   msg.ID,
+						"sourceText": msg.Text,
 						"targetId":   sim.ID,
-						"score":      sim.Score,
 						"targetText": sim.Text,
+						"score":      sim.Score,
 					},
 				)
 				if err != nil {
@@ -183,6 +189,32 @@ func (db *GraphDB) FirstPass(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to create relationships: %w", err)
 		}
+	}
+
+	// Verify all nodes have text property
+	_, err = session.ReadTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+		result, err := tx.Run(
+			`MATCH (m:Message)
+			 WHERE m.text IS NULL
+			 RETURN count(m) as missing_text`,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if result.Next() {
+			missingText, _ := result.Record().Get("missing_text")
+			if missingText.(int64) > 0 {
+				fmt.Printf("Warning: Found %d nodes with missing text property\n", missingText)
+			} else {
+				fmt.Println("All nodes have text property set correctly")
+			}
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to verify nodes: %w", err)
 	}
 
 	return nil
@@ -321,11 +353,15 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 				for _, f := range frontierMsgs {
 					_, err := tx.Run(
 						`MERGE (m:Message {id: $sourceId})
+						 SET m.text = $sourceText
 						 MERGE (n:Message {id: $targetId})
+						 SET n.text = $targetText
 						 MERGE (m)-[r:RELATED_TO {type: "Placeholder", confidence: 0.5}]->(n)`,
 						map[string]interface{}{
-							"sourceId": msg.ID,
-							"targetId": f.ID,
+							"sourceId":   msg.ID,
+							"sourceText": msg.Text,
+							"targetId":   f.ID,
+							"targetText": f.Text,
 						},
 					)
 					if err != nil {
@@ -341,4 +377,4 @@ func (db *GraphDB) SecondPass(ctx context.Context) error {
 	}
 
 	return nil
-} 
+}
