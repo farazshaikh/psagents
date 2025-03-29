@@ -376,7 +376,7 @@ func (l *OpenAILLM) GetInference(prompt string) (string, error) {
 			"model":   providerCfg.Model,
 			"messages": messages,
 			"timeout": l.cfg.LLM.Timeout,
-		}).Info("Sending request to OpenRouter")
+		}).Debug("Sending request to OpenRouter")
 	}
 
 	// Send request with retries

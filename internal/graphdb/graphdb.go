@@ -413,7 +413,7 @@ func (db *GraphDB) SecondPass(ctx context.Context, llm llm.LLM) error {
 			}
 
 			// Get LLM prompt for relationship classification
-			llmPrompt, err := db.GetLLMPrompt(message.Message{ID: msg.ID, Text: msg.Text}, msg.Similar)
+			llmPrompt, err := db.GetLLMPrompt(message.Message{ID: msg.ID, Text: msg.Text}, frontierMsgs)
 			if err != nil {
 				return fmt.Errorf("failed to generate LLM prompt: %w", err)
 			}
@@ -424,7 +424,7 @@ func (db *GraphDB) SecondPass(ctx context.Context, llm llm.LLM) error {
 			if err != nil {
 				return fmt.Errorf("failed to get LLM response: %w", err)
 			}
-			fmt.Printf("LLM Response: %s\n", llmResponse)
+			//fmt.Printf("LLM Response: %s\n", llmResponse)
 
 			// Parse the LLM response
 			relationships, err := db.parseLLMResponse(llmResponse)
@@ -432,20 +432,58 @@ func (db *GraphDB) SecondPass(ctx context.Context, llm llm.LLM) error {
 				return fmt.Errorf("failed to parse LLM response: %w", err)
 			}
 
+			// Pretty print the relationships for debugging
+			//prettyJSON, _ := json.MarshalIndent(relationships, "", "  ")
+			//fmt.Printf("Relationships:\n%s\n", string(prettyJSON))
+
+
 			// Create relationships in Neo4j
 			_, err = session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
 				for _, rel := range relationships {
-					_, err := tx.Run(
-						`MERGE (m:Message {id: $sourceId})
-						 SET m.text = $sourceText
-						 MERGE (n:Message {id: $targetId})
-						 SET n.text = $targetText
+					// Skip relationships with empty source or target IDs
+					if rel.SourceID == "" || rel.TargetID == "" {
+						fmt.Printf("Warning: Skipping relationship with empty ID - Source: '%s', Target: '%s', Relation: '%s'\n",
+							rel.SourceID, rel.TargetID, rel.Relation)
+						continue
+					}
+
+					// Check if both nodes exist in the graph before creating the relationship
+					result, err := tx.Run(
+						`MATCH (m:Message {id: $sourceId})
+						 MATCH (n:Message {id: $targetId})
+						 RETURN count(*) > 0 as exists`,
+						map[string]interface{}{
+							"sourceId": rel.SourceID,
+							"targetId": rel.TargetID,
+						},
+					)
+					if err != nil {
+						return nil, err
+					}
+
+					exists := false
+					if result.Next() {
+						existsInterface, _ := result.Record().Get("exists")
+						exists = existsInterface.(bool)
+					}
+
+					if !exists {
+						fmt.Printf("Warning: Skipping relationship - one or both nodes not found in graph - Source: '%s', Target: '%s'\n",
+							rel.SourceID, rel.TargetID)
+						continue
+					}
+
+					// Log the relationship being created
+					fmt.Printf("Creating relationship: Source: '%s', Target: '%s', Type: '%s', Confidence: %.2f\n",
+						rel.SourceID, rel.TargetID, rel.Relation, rel.Confidence)
+					// Create the relationship since both nodes exist
+					_, err = tx.Run(
+						`MATCH (m:Message {id: $sourceId})
+						 MATCH (n:Message {id: $targetId})
 						 MERGE (m)-[r:RELATED_TO {type: $relationType, confidence: $confidence, evidence: $evidence}]->(n)`,
 						map[string]interface{}{
 							"sourceId":     rel.SourceID,
-							"sourceText":   msg.Text,
 							"targetId":     rel.TargetID,
-							"targetText":   rel.Evidence,
 							"relationType": rel.Relation,
 							"confidence":   rel.Confidence,
 							"evidence":     rel.Evidence,
