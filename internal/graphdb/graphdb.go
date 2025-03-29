@@ -428,8 +428,11 @@ func (db *GraphDB) SecondPass(ctx context.Context, llm llm.LLM) error {
 
 			// Parse the LLM response
 			relationships, err := db.parseLLMResponse(llmResponse)
+			var parseErrors int
 			if err != nil {
-				return fmt.Errorf("failed to parse LLM response: %w", err)
+				parseErrors++
+				fmt.Printf("Warning: Failed to parse LLM response for message %s: %v\n", msg.ID, err)
+				relationships = []Relationship{} // Use empty relationships instead of failing
 			}
 
 			// Pretty print the relationships for debugging

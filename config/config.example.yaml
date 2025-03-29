@@ -14,7 +14,7 @@ pipeline:
 
 devmode:
   enabled: true
-  max_messages: 100
+  max_messages: 1000
 
 # Graph Database Configuration
 graphdb:
@@ -23,8 +23,8 @@ graphdb:
   port: 7687
   username: "neo4j"
   password: "password"
-  similarity_anchors: 1   # see README.md for more details
-  semantic_frontier: 2    # see README.md for more details
+  similarity_anchors: 10   # see README.md for more details
+  semantic_frontier: 10    # see README.md for more details
 
 # Embeddings Configuration
 # Supports local Qdrant vector database storage
@@ -89,8 +89,8 @@ logging:
 ingestion:
   stages:
     - embedding: false
-    - semantic_search: true
+    - semantic_search: false
     - graph_construction: true
-    - graph_construction_pass_1: true
+    - graph_construction_pass_1: false
     - graph_construction_pass_2: true
     - graph_compression: true
