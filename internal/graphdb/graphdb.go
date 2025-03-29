@@ -33,6 +33,7 @@ type GraphDB struct {
 	vectorDB     vector.DB
 	inputSchema  string
 	outputSchema string
+	logFile      *os.File  // Log file for the current run
 }
 
 // loadSchema loads a schema from a JSON file
@@ -80,17 +81,65 @@ func NewGraphDB(cfg *config.Config, vectorDB vector.DB) (*GraphDB, error) {
 		return nil, fmt.Errorf("failed to load output schema: %w", err)
 	}
 
+	// Create logs directory if it doesn't exist
+	logsDir := "data/logs"
+	if err := os.MkdirAll(logsDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create logs directory: %w", err)
+	}
+
+	// Find the next available log file number
+	var logFile *os.File
+	for i := 0; i <= 9999; i++ {
+		filename := fmt.Sprintf("llminference_%04d.log", i)
+		filepath := filepath.Join(logsDir, filename)
+		if _, err := os.Stat(filepath); os.IsNotExist(err) {
+			logFile, err = os.Create(filepath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create log file: %w", err)
+			}
+			// Write initial header with config dump
+			fmt.Fprintf(logFile, "=== LLM Inference Log ===\n")
+			fmt.Fprintf(logFile, "Started at: %s\n\n", time.Now().Format(time.RFC3339))
+			
+			// Dump configuration
+			fmt.Fprintf(logFile, "=== Configuration ===\n")
+			fmt.Fprintf(logFile, "GraphDB Settings:\n")
+			fmt.Fprintf(logFile, "  Host: %s\n", cfg.GraphDB.Host)
+			fmt.Fprintf(logFile, "  Port: %d\n", cfg.GraphDB.Port)
+			fmt.Fprintf(logFile, "  Username: %s\n", cfg.GraphDB.Username)
+			fmt.Fprintf(logFile, "  SimilarityAnchors: %d\n", cfg.GraphDB.SimilarityAnchors)
+			fmt.Fprintf(logFile, "  SemanticFrontier: %d\n", cfg.GraphDB.SemanticFrontier)
+			
+			fmt.Fprintf(logFile, "\nLLM Settings:\n")
+			fmt.Fprintf(logFile, "  Provider: %s\n", cfg.LLM.Provider)
+			fmt.Fprintf(logFile, "  InferenceBatchSize: %d\n", cfg.LLM.InferenceBatchSize)
+			fmt.Fprintf(logFile, "  MaxTokens: %d\n", cfg.LLM.MaxTokens)
+			fmt.Fprintf(logFile, "  Temperature: %.2f\n", cfg.LLM.Temperature)
+			fmt.Fprintf(logFile, "\n")
+			break
+		}
+	}
+
+	if logFile == nil {
+		return nil, fmt.Errorf("no available log file names (reached limit of 9999)")
+	}
+
 	return &GraphDB{
 		cfg:          cfg,
 		driver:       driver,
 		vectorDB:     vectorDB,
 		inputSchema:  inputSchema,
 		outputSchema: outputSchema,
+		logFile:      logFile,
 	}, nil
 }
 
-// Close closes the graph database connection
+// Close closes the graph database connection and log file
 func (db *GraphDB) Close() error {
+	if db.logFile != nil {
+		fmt.Fprintf(db.logFile, "\nEnded at: %s\n", time.Now().Format(time.RFC3339))
+		db.logFile.Close()
+	}
 	return db.driver.Close()
 }
 
@@ -471,36 +520,44 @@ func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.
 		return fmt.Errorf("failed to generate LLM prompt: %w", err)
 	}
 
-	// Log the prompt to file
-	logFile, err := os.OpenFile("data/llminference.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open log file: %w", err)
-	}
-	defer logFile.Close()
-
 	// Write prompt with timestamp and separator
-	fmt.Fprintf(logFile, "\n\n=== LLM Prompt at %s ===\n", time.Now().Format(time.RFC3339))
-	fmt.Fprintf(logFile, "%s\n", llmPrompt.Instructions)
+	fmt.Fprintf(db.logFile, "\n=== Batch Processing at %s ===\n", time.Now().Format(time.RFC3339))
+	fmt.Fprintf(db.logFile, "Batch Size: %d\n\n", len(batch))
+
+	fmt.Fprintf(db.logFile, "=== Source Messages ===\n")
+	for _, pair := range batch {
+		fmt.Fprintf(db.logFile, "Source ID: %s\n", pair.SourceMessage.ID)
+		fmt.Fprintf(db.logFile, "Source Text: %s\n", pair.SourceMessage.Text)
+		fmt.Fprintf(db.logFile, "Frontier Count: %d\n\n", len(pair.FrontierMessages))
+	}
+
+	fmt.Fprintf(db.logFile, "=== LLM Prompt ===\n")
+	fmt.Fprintf(db.logFile, "%s\n\n", llmPrompt.Instructions)
 
 	// Get LLM inference
 	llmResponse, err := llm.GetInference(llmPrompt.Instructions)
 	if err != nil {
+		fmt.Fprintf(db.logFile, "=== Error ===\n")
+		fmt.Fprintf(db.logFile, "Failed to get LLM response: %v\n", err)
 		return fmt.Errorf("failed to get LLM response: %w", err)
 	}
 
 	// Log the response
-	fmt.Fprintf(logFile, "\n=== LLM Response ===\n")
-	fmt.Fprintf(logFile, "%s\n", llmResponse)
-	fmt.Fprintf(logFile, "\n=== End of Interaction ===\n")
+	fmt.Fprintf(db.logFile, "=== LLM Response ===\n")
+	fmt.Fprintf(db.logFile, "%s\n\n", llmResponse)
 
 	// Parse the LLM response
 	relationships, err := db.parseLLMResponse(llmResponse)
-	var parseErrors int
 	if err != nil {
-		parseErrors++
-		fmt.Printf("Warning: Failed to parse LLM response %v: %s\n", err, llmResponse)
-		relationships = []Relationship{} // Use empty relationships instead of failing
+		fmt.Fprintf(db.logFile, "=== Parse Error ===\n")
+		fmt.Fprintf(db.logFile, "Failed to parse response: %v\n", err)
 		return nil
+	}
+
+	fmt.Fprintf(db.logFile, "=== Parsed Relationships ===\n")
+	for _, rel := range relationships {
+		fmt.Fprintf(db.logFile, "Source: %s, Target: %s, Type: %s, Confidence: %.2f\n",
+			rel.SourceID, rel.TargetID, rel.Relation, rel.Confidence)
 	}
 
 	// Create relationships in Neo4j
@@ -508,8 +565,8 @@ func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.
 		for _, rel := range relationships {
 			// Skip relationships with empty source or target IDs
 			if rel.SourceID == "" || rel.TargetID == "" {
-				fmt.Printf("Warning: Skipping relationship with empty ID - Source: '%s', Target: '%s', Relation: '%s'\n",
-					rel.SourceID, rel.TargetID, rel.Relation)
+				fmt.Fprintf(db.logFile, "Warning: Skipping relationship with empty ID - Source: '%s', Target: '%s'\n",
+					rel.SourceID, rel.TargetID)
 				continue
 			}
 
@@ -534,13 +591,13 @@ func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.
 			}
 
 			if !exists {
-				fmt.Printf("Warning: Skipping relationship - one or both nodes not found in graph - Source: '%s', Target: '%s'\n",
+				fmt.Fprintf(db.logFile, "Warning: Skipping relationship - nodes not found - Source: '%s', Target: '%s'\n",
 					rel.SourceID, rel.TargetID)
 				continue
 			}
 
 			// Log the relationship being created
-			fmt.Printf("Creating relationship: Source: '%s', Target: '%s', Type: '%s', Confidence: %.2f\n",
+			fmt.Fprintf(db.logFile, "Creating relationship: Source: '%s', Target: '%s', Type: '%s', Confidence: %.2f\n",
 				rel.SourceID, rel.TargetID, rel.Relation, rel.Confidence)
 
 			// Create the relationship
@@ -563,5 +620,11 @@ func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.
 		return nil, nil
 	})
 
+	if err != nil {
+		fmt.Fprintf(db.logFile, "\n=== Database Error ===\n")
+		fmt.Fprintf(db.logFile, "Failed to create relationships: %v\n", err)
+	}
+
+	fmt.Fprintf(db.logFile, "\n=== End of Batch ===\n")
 	return err
 }

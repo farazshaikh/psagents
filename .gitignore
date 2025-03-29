@@ -6,3 +6,4 @@ storage/**
 .qdrant-initialized
 data/qdrant
 data/neo4j
+data_*/**
