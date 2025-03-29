@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	"github.com/yourusername/psagents/config"
@@ -94,18 +95,27 @@ func (db *GraphDB) Close() error {
 }
 
 // GetLLMPrompt generates the LLM prompt for relationship classification
-func (db *GraphDB) GetLLMPrompt(sourceMsg message.Message, frontierMsgs []message.Message) (*message.LLMPrompt, error) {
+func (db *GraphDB) GetLLMPrompt(pairs []struct {
+	SourceMessage    message.Message
+	FrontierMessages []message.Message
+}) (*message.LLMPrompt, error) {
 	// Create batch input - must match the input schema at data/prompts/inputschema.json
 	input := message.BatchRelationshipInput{
-		Batch: []struct {
+		Batch: make([]struct {
+			SourceMessage    message.Message   `json:"source_message"`
+			FrontierMessages []message.Message `json:"frontier_messages"`
+		}, len(pairs)),
+	}
+
+	// Fill the batch with the provided pairs
+	for i, pair := range pairs {
+		input.Batch[i] = struct {
 			SourceMessage    message.Message   `json:"source_message"`
 			FrontierMessages []message.Message `json:"frontier_messages"`
 		}{
-			{
-				SourceMessage:    sourceMsg,
-				FrontierMessages: frontierMsgs,
-			},
-		},
+			SourceMessage:    pair.SourceMessage,
+			FrontierMessages: pair.FrontierMessages,
+		}
 	}
 
 	// Parse the schemas to avoid double-wrapping
@@ -124,7 +134,7 @@ func (db *GraphDB) GetLLMPrompt(sourceMsg message.Message, frontierMsgs []messag
 		Input        interface{} `json:"input"`
 		OutputSchema interface{} `json:"output_schema"`
 	}{
-		Instructions: "Extract meaningful relationships between the source message and each frontier message.",
+		Instructions: "For each source message in the batch, analyze its relationships with its corresponding frontier messages only. Extract meaningful relationships between each source message and its frontier messages. Each source message should only be related to messages in its own frontier list.",
 		InputSchema:  inputSchemaObj,
 		Input:        input,
 		OutputSchema: outputSchemaObj,
@@ -363,11 +373,19 @@ func (db *GraphDB) SecondPass(ctx context.Context, llm llm.LLM) error {
 		Similar []message.Message
 	})
 
-	// Process each message
+	// Process messages in batches
+	var batch []struct {
+		SourceMessage    message.Message
+		FrontierMessages []message.Message
+	}
+	batchSize := db.cfg.LLM.InferenceBatchSize
+
 	for _, msg := range messages {
-		// For each similar message
+		// Get all frontier messages for this source message
+		var allFrontierMsgs []message.Message
+
+		// For each similar message, get its frontier
 		for _, sim := range msg.Similar {
-			// Get semantic frontier neighbors
 			frontier, err := session.ReadTransaction(func(tx neo4j.Transaction) (interface{}, error) {
 				result, err := tx.Run(
 					`MATCH (n:Message {id: $id})-[r:IS_SIMILAR]->(f:Message)
@@ -401,108 +419,149 @@ func (db *GraphDB) SecondPass(ctx context.Context, llm llm.LLM) error {
 
 				return frontier, nil
 			})
-			// Skip LLM query if frontier messages is empty
 			if err != nil {
 				return fmt.Errorf("failed to get frontier: %w", err)
 			}
 
 			frontierMsgs := frontier.([]message.Message)
-			if len(frontierMsgs) == 0 {
-				fmt.Printf("Skipping LLM query for message %s: no frontier messages found\n", msg.ID)
-				continue
+			allFrontierMsgs = append(allFrontierMsgs, frontierMsgs...)
+		}
+
+		if len(allFrontierMsgs) == 0 {
+			fmt.Printf("Skipping message %s: no frontier messages found\n", msg.ID)
+			continue
+		}
+
+		// Add to batch
+		batch = append(batch, struct {
+			SourceMessage    message.Message
+			FrontierMessages []message.Message
+		}{
+			SourceMessage:    message.Message{ID: msg.ID, Text: msg.Text},
+			FrontierMessages: allFrontierMsgs,
+		})
+
+		// Process batch when it reaches the desired size
+		if len(batch) >= batchSize {
+			if err := db.processBatch(ctx, llm, session, batch); err != nil {
+				return fmt.Errorf("failed to process batch: %w", err)
 			}
+			batch = nil // Clear the batch
+		}
+	}
 
-			// Get LLM prompt for relationship classification
-			llmPrompt, err := db.GetLLMPrompt(message.Message{ID: msg.ID, Text: msg.Text}, frontierMsgs)
-			if err != nil {
-				return fmt.Errorf("failed to generate LLM prompt: %w", err)
-			}
-
-			//fmt.Printf("LLM Prompt: %s\n", llmPrompt.Instructions)
-
-			llmResponse, err := llm.GetInference(llmPrompt.Instructions)
-			if err != nil {
-				return fmt.Errorf("failed to get LLM response: %w", err)
-			}
-			//fmt.Printf("LLM Response: %s\n", llmResponse)
-
-			// Parse the LLM response
-			relationships, err := db.parseLLMResponse(llmResponse)
-			var parseErrors int
-			if err != nil {
-				parseErrors++
-				fmt.Printf("Warning: Failed to parse LLM response for message %s: %v\n", msg.ID, err)
-				relationships = []Relationship{} // Use empty relationships instead of failing
-			}
-
-			// Pretty print the relationships for debugging
-			//prettyJSON, _ := json.MarshalIndent(relationships, "", "  ")
-			//fmt.Printf("Relationships:\n%s\n", string(prettyJSON))
-
-
-			// Create relationships in Neo4j
-			_, err = session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
-				for _, rel := range relationships {
-					// Skip relationships with empty source or target IDs
-					if rel.SourceID == "" || rel.TargetID == "" {
-						fmt.Printf("Warning: Skipping relationship with empty ID - Source: '%s', Target: '%s', Relation: '%s'\n",
-							rel.SourceID, rel.TargetID, rel.Relation)
-						continue
-					}
-
-					// Check if both nodes exist in the graph before creating the relationship
-					result, err := tx.Run(
-						`MATCH (m:Message {id: $sourceId})
-						 MATCH (n:Message {id: $targetId})
-						 RETURN count(*) > 0 as exists`,
-						map[string]interface{}{
-							"sourceId": rel.SourceID,
-							"targetId": rel.TargetID,
-						},
-					)
-					if err != nil {
-						return nil, err
-					}
-
-					exists := false
-					if result.Next() {
-						existsInterface, _ := result.Record().Get("exists")
-						exists = existsInterface.(bool)
-					}
-
-					if !exists {
-						fmt.Printf("Warning: Skipping relationship - one or both nodes not found in graph - Source: '%s', Target: '%s'\n",
-							rel.SourceID, rel.TargetID)
-						continue
-					}
-
-					// Log the relationship being created
-					fmt.Printf("Creating relationship: Source: '%s', Target: '%s', Type: '%s', Confidence: %.2f\n",
-						rel.SourceID, rel.TargetID, rel.Relation, rel.Confidence)
-					// Create the relationship since both nodes exist
-					_, err = tx.Run(
-						`MATCH (m:Message {id: $sourceId})
-						 MATCH (n:Message {id: $targetId})
-						 MERGE (m)-[r:RELATED_TO {type: $relationType, confidence: $confidence, evidence: $evidence}]->(n)`,
-						map[string]interface{}{
-							"sourceId":     rel.SourceID,
-							"targetId":     rel.TargetID,
-							"relationType": rel.Relation,
-							"confidence":   rel.Confidence,
-							"evidence":     rel.Evidence,
-						},
-					)
-					if err != nil {
-						return nil, err
-					}
-				}
-				return nil, nil
-			})
-			if err != nil {
-				return fmt.Errorf("failed to create relationships: %w", err)
-			}
+	// Process any remaining messages in the final batch
+	if len(batch) > 0 {
+		if err := db.processBatch(ctx, llm, session, batch); err != nil {
+			return fmt.Errorf("failed to process final batch: %w", err)
 		}
 	}
 
 	return nil
+}
+
+// processBatch handles the LLM inference and relationship creation for a batch of messages
+func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.Session, batch []struct {
+	SourceMessage    message.Message
+	FrontierMessages []message.Message
+}) error {
+	// Get LLM prompt for the batch
+	llmPrompt, err := db.GetLLMPrompt(batch)
+	if err != nil {
+		return fmt.Errorf("failed to generate LLM prompt: %w", err)
+	}
+
+	// Log the prompt to file
+	logFile, err := os.OpenFile("data/llminference.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open log file: %w", err)
+	}
+	defer logFile.Close()
+
+	// Write prompt with timestamp and separator
+	fmt.Fprintf(logFile, "\n\n=== LLM Prompt at %s ===\n", time.Now().Format(time.RFC3339))
+	fmt.Fprintf(logFile, "%s\n", llmPrompt.Instructions)
+
+	// Get LLM inference
+	llmResponse, err := llm.GetInference(llmPrompt.Instructions)
+	if err != nil {
+		return fmt.Errorf("failed to get LLM response: %w", err)
+	}
+
+	// Log the response
+	fmt.Fprintf(logFile, "\n=== LLM Response ===\n")
+	fmt.Fprintf(logFile, "%s\n", llmResponse)
+	fmt.Fprintf(logFile, "\n=== End of Interaction ===\n")
+
+	// Parse the LLM response
+	relationships, err := db.parseLLMResponse(llmResponse)
+	var parseErrors int
+	if err != nil {
+		parseErrors++
+		fmt.Printf("Warning: Failed to parse LLM response %v: %s\n", err, llmResponse)
+		relationships = []Relationship{} // Use empty relationships instead of failing
+		return nil
+	}
+
+	// Create relationships in Neo4j
+	_, err = session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+		for _, rel := range relationships {
+			// Skip relationships with empty source or target IDs
+			if rel.SourceID == "" || rel.TargetID == "" {
+				fmt.Printf("Warning: Skipping relationship with empty ID - Source: '%s', Target: '%s', Relation: '%s'\n",
+					rel.SourceID, rel.TargetID, rel.Relation)
+				continue
+			}
+
+			// Check if both nodes exist
+			result, err := tx.Run(
+				`MATCH (m:Message {id: $sourceId})
+				 MATCH (n:Message {id: $targetId})
+				 RETURN count(*) > 0 as exists`,
+				map[string]interface{}{
+					"sourceId": rel.SourceID,
+					"targetId": rel.TargetID,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			exists := false
+			if result.Next() {
+				existsInterface, _ := result.Record().Get("exists")
+				exists = existsInterface.(bool)
+			}
+
+			if !exists {
+				fmt.Printf("Warning: Skipping relationship - one or both nodes not found in graph - Source: '%s', Target: '%s'\n",
+					rel.SourceID, rel.TargetID)
+				continue
+			}
+
+			// Log the relationship being created
+			fmt.Printf("Creating relationship: Source: '%s', Target: '%s', Type: '%s', Confidence: %.2f\n",
+				rel.SourceID, rel.TargetID, rel.Relation, rel.Confidence)
+
+			// Create the relationship
+			_, err = tx.Run(
+				`MATCH (m:Message {id: $sourceId})
+				 MATCH (n:Message {id: $targetId})
+				 MERGE (m)-[r:RELATED_TO {type: $relationType, confidence: $confidence, evidence: $evidence}]->(n)`,
+				map[string]interface{}{
+					"sourceId":     rel.SourceID,
+					"targetId":     rel.TargetID,
+					"relationType": rel.Relation,
+					"confidence":   rel.Confidence,
+					"evidence":     rel.Evidence,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	})
+
+	return err
 }

@@ -70,6 +70,7 @@ type LLMConfig struct {
 	Timeout          int                    `mapstructure:"timeout_seconds"`
 	MaxTokens        int                    `mapstructure:"max_tokens"`
 	Temperature      float64                `mapstructure:"temperature"`
+	InferenceBatchSize int                    `mapstructure:"inference_batch_size"`
 	LLMThreshold     ThresholdConfig        `mapstructure:"llm_threshold"`
 	SystemPromptFile string                 `mapstructure:"system_prompt_file"`
 	SystemPrompt     string                 `mapstructure:"-"` // Loaded from file
