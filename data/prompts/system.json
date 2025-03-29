@@ -1,4 +1,4 @@
-# Main instruction for the LLM
+# System prompt for the RAG LLM
 {
   "instruction": "You are an expert analyst extracting meaningful relationships between user messages in a conversation history. Your goal is to uncover only those relationships that help explain how the user's thoughts evolve or build toward a task, goal, or identity. This structure will support retrieval-augmented generation (RAG) to simulate the user's intent in future queries.\n\
 \n\

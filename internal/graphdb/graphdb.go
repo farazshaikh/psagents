@@ -82,7 +82,7 @@ func NewGraphDB(cfg *config.Config, vectorDB vector.DB) (*GraphDB, error) {
 	}
 
 	// Create logs directory if it doesn't exist
-	logsDir := "data/logs"
+	logsDir := "data/logs/graphdb"
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create logs directory: %w", err)
 	}
@@ -141,6 +141,11 @@ func (db *GraphDB) Close() error {
 		db.logFile.Close()
 	}
 	return db.driver.Close()
+}
+
+// GetSession returns a new Neo4j session
+func (db *GraphDB) GetSession() neo4j.Session {
+	return db.driver.NewSession(neo4j.SessionConfig{})
 }
 
 // GetLLMPrompt generates the LLM prompt for relationship classification
@@ -535,7 +540,7 @@ func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.
 	fmt.Fprintf(db.logFile, "%s\n\n", llmPrompt.Instructions)
 
 	// Get LLM inference
-	llmResponse, err := llm.GetInference(llmPrompt.Instructions)
+	llmResponse, err := llm.GetInference(llmPrompt.Instructions, db.cfg.LLM.InferenceSystemPrompt)
 	if err != nil {
 		fmt.Fprintf(db.logFile, "=== Error ===\n")
 		fmt.Fprintf(db.logFile, "Failed to get LLM response: %v\n", err)
@@ -604,7 +609,17 @@ func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.
 			_, err = tx.Run(
 				`MATCH (m:Message {id: $sourceId})
 				 MATCH (n:Message {id: $targetId})
-				 MERGE (m)-[r:RELATED_TO {type: $relationType, confidence: $confidence, evidence: $evidence}]->(n)`,
+				 WITH m, n, $relationType as type
+				 CALL apoc.case([
+					type = "Causal" AND "MERGE (m)-[r:CAUSAL {confidence: $confidence, evidence: $evidence}]->(n)",
+					type = "Follow-up" AND "MERGE (m)-[r:FOLLOW_UP {confidence: $confidence, evidence: $evidence}]->(n)",
+					type = "Contrast" AND "MERGE (m)-[r:CONTRAST {confidence: $confidence, evidence: $evidence}]->(n)",
+					type = "Elaboration" AND "MERGE (m)-[r:ELABORATION {confidence: $confidence, evidence: $evidence}]->(n)",
+					type = "Reframe/Correction" AND "MERGE (m)-[r:REFRAME {confidence: $confidence, evidence: $evidence}]->(n)",
+					type = "Role Instruction" AND "MERGE (m)-[r:ROLE_INSTRUCTION {confidence: $confidence, evidence: $evidence}]->(n)",
+					type = "Scenario Setup" AND "MERGE (m)-[r:SCENARIO_SETUP {confidence: $confidence, evidence: $evidence}]->(n)",
+					type = "Identity Expression" AND "MERGE (m)-[r:IDENTITY_EXPRESSION {confidence: $confidence, evidence: $evidence}]->(n)"
+				], "MERGE (m)-[r:RELATED_TO {type: $relationType, confidence: $confidence, evidence: $evidence}]->(n)")`,
 				map[string]interface{}{
 					"sourceId":     rel.SourceID,
 					"targetId":     rel.TargetID,

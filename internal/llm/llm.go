@@ -16,7 +16,7 @@ import (
 
 // LLM represents the language model interface
 type LLM interface {
-	GetInference(prompt string) (string, error)
+	GetInference(prompt string, system_prompt string) (string, error)
 	HealthCheck() error
 	Close() error
 }
@@ -250,13 +250,17 @@ func (l *OpenAILLM) HealthCheck() error {
 }
 
 // GetInference gets an inference from Ollama for the given prompt
-func (l *OllamaLLM) GetInference(prompt string) (string, error) {
+func (l *OllamaLLM) GetInference(prompt string, system_prompt string) (string, error) {
 	startTime := time.Now()
 	providerCfg := l.cfg.LLM.Providers["ollama"]
 	// Create request body
 	reqBody := ChatRequest{
 		Model: providerCfg.Model,
 		Messages: []Message{
+			{
+				Role:    "system",
+				Content: system_prompt,
+			},
 			{
 				Role:    "user",
 				Content: prompt,
@@ -329,7 +333,7 @@ func (l *OllamaLLM) GetInference(prompt string) (string, error) {
 }
 
 // GetInference gets an inference from OpenAI for the given prompt
-func (l *OpenAILLM) GetInference(prompt string) (string, error) {
+func (l *OpenAILLM) GetInference(prompt string, system_prompt string) (string, error) {
 	startTime := time.Now()
 	providerCfg := l.cfg.LLM.Providers["openai"]
 
@@ -337,7 +341,7 @@ func (l *OpenAILLM) GetInference(prompt string) (string, error) {
 	messages := []Message{
 		{
 			Role:    "system",
-			Content: l.cfg.LLM.SystemPrompt,
+			Content: system_prompt,
 		},
 		{
 			Role:    "user",

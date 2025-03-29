@@ -72,7 +72,7 @@ func (g *Generator) GenerateEmbeddings() error {
 	// Generate embeddings
 	embeddings := make([]MessageEmbeddingOut, 0, len(messages))
 	for _, msg := range messages {
-		embedding, err := g.generateEmbedding(msg)
+		embedding, err := g.GenerateEmbedding(msg)
 		if err != nil {
 			g.logger.WithError(err).WithField("message", msg).Error("Failed to generate embedding")
 			continue
@@ -138,8 +138,8 @@ func (g *Generator) readMessages() ([]string, error) {
 	return messages, nil
 }
 
-// generateEmbedding generates an embedding for a single message
-func (g *Generator) generateEmbedding(text string) ([]float32, error) {
+// GenerateEmbedding generates an embedding for a single message
+func (g *Generator) GenerateEmbedding(text string) ([]float32, error) {
 	// Create HTTP client
 	client := &http.Client{
 		Timeout: time.Duration(g.cfg.LLM.Timeout) * time.Second,

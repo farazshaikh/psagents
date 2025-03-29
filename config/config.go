@@ -21,6 +21,15 @@ type Config struct {
 	DevMode    DevModeConfig    `mapstructure:"devmode"`
 	Qdrant     QdrantConfig     `mapstructure:"qdrant"`
 	Ingestion  IngestionConfig  `mapstructure:"ingestion"`
+	Inference  InferenceConfig  `mapstructure:"inference"`
+}
+
+// InferenceConfig represents inference-related configuration
+type InferenceConfig struct {
+	MaxHops int `mapstructure:"max_hops"`
+	MaxSimilarityAnchors int `mapstructure:"max_similarity_anchors"`
+	MinConfidence float64 `mapstructure:"min_confidence"`
+	MaxRelatedMessages int `mapstructure:"max_related_messages"`
 }
 
 // ServerConfig represents server-related configuration
@@ -70,10 +79,12 @@ type LLMConfig struct {
 	Timeout          int                    `mapstructure:"timeout_seconds"`
 	MaxTokens        int                    `mapstructure:"max_tokens"`
 	Temperature      float64                `mapstructure:"temperature"`
-	InferenceBatchSize int                    `mapstructure:"inference_batch_size"`
+	InferenceBatchSize int                  `mapstructure:"inference_batch_size"`
 	LLMThreshold     ThresholdConfig        `mapstructure:"llm_threshold"`
 	SystemPromptFile string                 `mapstructure:"system_prompt_file"`
 	SystemPrompt     string                 `mapstructure:"-"` // Loaded from file
+	InferenceSystemPromptFile string        `mapstructure:"inference_system_prompt_file"`
+	InferenceSystemPrompt     string        `mapstructure:"-"` // Loaded from file
 	Providers        map[string]ProviderConfig `mapstructure:"providers"`
 }
 
@@ -160,6 +171,20 @@ func LoadConfig(configPath string) (*Config, error) {
 			return nil, fmt.Errorf("failed to read system prompt file: %w", err)
 		}
 		config.LLM.SystemPrompt = string(promptBytes)
+	}
+
+	// Load inference system prompt from file if specified
+	if config.LLM.InferenceSystemPromptFile != "" {
+		// Get the directory of the config file
+		configDir := filepath.Dir(configPath)
+		// Resolve the inference system prompt file path relative to the config file
+		promptPath := filepath.Join(configDir, "..", config.LLM.InferenceSystemPromptFile)
+		// Read the inference system prompt file
+		promptBytes, err := os.ReadFile(promptPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read inference system prompt file: %w", err)
+		}
+		config.LLM.InferenceSystemPrompt = string(promptBytes)
 	}
 
 	// Handle environment variable substitution for API keys

@@ -34,7 +34,7 @@ if err != nil {
 defer model.Close()
 
 // Get inference
-response, err := model.GetInference("Your prompt here")
+response, err := model.GetInference("Your prompt here", "Your system prompt here")
 if err != nil {
     log.Fatal(err)
 }

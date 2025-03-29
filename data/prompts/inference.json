@@ -1,0 +1,75 @@
+{
+  "instructions": "Given a question and a set of related messages with their relationships, generate a comprehensive answer. Use the relationships between messages to understand how different pieces of information connect and support each other. IMPORTANT: Return your response as a clean JSON object WITHOUT any markdown formatting or code fence blocks (no backticks).",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "question": {
+        "type": "string",
+        "description": "The question to be answered"
+      },
+      "context": {
+        "type": "object",
+        "properties": {
+          "direct_match": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string" }
+            }
+          },
+          "related_messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "text": { "type": "string" }
+                  }
+                },
+                "relation": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "confidence": { "type": "number" },
+                    "evidence": { "type": "string" }
+                  }
+                },
+                "path": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "IDs of nodes in path from direct match to this message"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "answer": {
+        "type": "string",
+        "description": "The generated answer to the question"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence score between 0 and 1"
+      },
+      "supporting_evidence": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "message_id": { "type": "string" },
+            "relevance": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

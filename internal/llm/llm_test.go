@@ -93,7 +93,7 @@ func TestOllamaLLM(t *testing.T) {
 	defer llm.Close()
 
 	// Test GetInference
-	response, err := llm.GetInference("test prompt")
+	response, err := llm.GetInference("test prompt", "test system prompt")
 	if err != nil {
 		t.Fatalf("Failed to get inference: %v", err)
 	}
@@ -143,7 +143,7 @@ func TestOllamaLLMError(t *testing.T) {
 	defer llm.Close()
 
 	// Test GetInference with error
-	_, err = llm.GetInference("test prompt")
+	_, err = llm.GetInference("test prompt", "test system prompt")
 	if err == nil {
 		t.Error("Expected error, got nil")
 	}
