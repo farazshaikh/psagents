@@ -52,6 +52,10 @@
     color: rgb(191, 219, 254);
 }
 
+.evidence-container {
+    color: rgb(209, 213, 219) !important; /* Lighter gray for better visibility */
+}
+
 /* Tippy tooltip customization */
 .tippy-box[data-theme~='light'] {
     background-color: #1f2937;
@@ -74,6 +78,9 @@
 .loading-dots {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
+    padding: 8px 12px;
+    color: rgb(156, 163, 175);
 }
 
 .loading-dots::before,
@@ -97,28 +104,87 @@
 
 /* Ensure the chat container fills available space */
 html, body {
-    height: 100%;
+    height: 100vh;
     margin: 0;
     padding: 0;
     overflow: hidden;
 }
 
-#chat-container {
-    min-height: 0;
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-width: 320px; /* Minimum width for mobile */
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow container to shrink */
     height: 100%;
+    width: 100%;
+    max-width: 1024px; /* Maximum width */
+    padding: 1rem;
+    margin: 0 auto;
+    gap: 1rem;
 }
 
-/* Chat container height adjustment for viewport */
-@media (min-height: 800px) {
+header {
+    flex-shrink: 0; /* Prevent header from shrinking */
+    padding: 1rem 0;
+}
+
+#chat-container {
+    flex: 1;
+    min-height: 300px; /* Minimum height */
+    max-height: calc(100vh - 200px); /* Maximum height accounting for header and input */
+    overflow-y: auto;
+    width: 100%;
+}
+
+#chat-form {
+    flex-shrink: 0; /* Prevent form from shrinking */
+    padding: 1rem 0;
+    width: 100%;
+    background-color: #111827; /* Match body background */
+    position: sticky;
+    bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .container {
+        padding: 0.5rem;
+    }
+
+    header {
+        padding: 0.5rem 0;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    p {
+        font-size: 1rem;
+    }
+
     #chat-container {
-        min-height: 600px;
+        min-height: 200px;
+    }
+
+    #chat-form {
+        padding: 0.5rem 0;
+    }
+
+    .message-text {
+        font-size: 0.875rem;
     }
 }
 
-@media (max-height: 800px) {
-    #chat-container {
-        min-height: 400px;
-    }
+/* Message max-width adjustments */
+.max-w-\[80\%\] {
+    max-width: min(80%, 800px);
 }
 
 /* Input placeholder color */

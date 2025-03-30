@@ -10,29 +10,30 @@
     <script src="https://unpkg.com/tippy.js@6"></script>
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/light.css"/>
 </head>
-<body class="bg-gray-900 h-screen text-gray-100">
-    <div class="container mx-auto px-4 h-full max-w-4xl flex flex-col">
+<body class="bg-gray-900">
+    <div class="container">
         <!-- Header -->
-        <header class="py-8">
+        <header>
             <h1 class="text-4xl font-bold text-gray-100 text-center mb-2">PSAgent - Your Personal Sovereign Agent</h1>
             <p class="text-gray-300 text-center text-xl italic">Empowering You with AI-Driven Autonomy</p>
         </header>
 
         <!-- Chat Container -->
-        <div id="chat-container" class="flex-1 overflow-y-auto bg-gray-800 rounded-lg shadow-xl mb-4 p-4">
+        <div id="chat-container" class="bg-gray-800 rounded-lg shadow-xl p-4">
             <!-- Messages will be inserted here -->
         </div>
 
         <!-- Loading Indicator -->
-        <div id="loading-indicator" class="hidden fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg">
-            <div class="flex items-center">
-                <div class="loading-dots mr-2"></div>
-                <span>Thinking...</span>
+        <div id="loading-indicator" class="hidden">
+            <div class="flex justify-start mb-4">
+                <div class="bg-gray-700 text-gray-100 rounded-lg py-2 px-4">
+                    <div class="loading-dots"></div>
+                </div>
             </div>
         </div>
 
         <!-- Input Form -->
-        <form id="chat-form" class="flex gap-4 py-4">
+        <form id="chat-form" class="flex gap-4">
             <input type="text" 
                    id="user-input" 
                    class="flex-1 p-4 border rounded-lg bg-gray-800 text-gray-100 border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -66,4 +67,4 @@
     <script src="config.js"></script>
     <script src="chat.js"></script>
 </body>
-</html> 
+</html>

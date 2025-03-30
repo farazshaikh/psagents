@@ -24,10 +24,15 @@ class ChatUI {
 
     showLoading() {
         this.loadingIndicator.classList.remove('hidden');
+        this.chatContainer.appendChild(this.loadingIndicator);
+        this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
     }
 
     hideLoading() {
         this.loadingIndicator.classList.add('hidden');
+        if (this.loadingIndicator.parentNode === this.chatContainer) {
+            this.chatContainer.removeChild(this.loadingIndicator);
+        }
     }
 
     async handleUserMessage(message) {
