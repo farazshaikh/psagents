@@ -8,4 +8,5 @@ data/qdrant
 data/neo4j
 data/evaluations
 data_*/**
+bin/**
 
