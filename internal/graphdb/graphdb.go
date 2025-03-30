@@ -643,3 +643,41 @@ func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.
 	fmt.Fprintf(db.logFile, "\n=== End of Batch ===\n")
 	return err
 }
+
+// GetMessageByID retrieves a message from Neo4j by its ID
+func (db *GraphDB) GetMessageByID(session neo4j.Session, id string) (*message.Message, error) {
+	result, err := session.ReadTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+		result, err := tx.Run(
+			"MATCH (m:Message {id: $id}) RETURN m.id, m.text",
+			map[string]interface{}{
+				"id": id,
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute query: %w", err)
+		}
+
+		if !result.Next() {
+			return nil, nil
+		}
+
+		record := result.Record()
+		id, _ := record.Get("m.id")
+		text, _ := record.Get("m.text")
+
+		return &message.Message{
+			ID:   id.(string),
+			Text: text.(string),
+		}, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+
+	return result.(*message.Message), nil
+}
