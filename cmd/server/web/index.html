@@ -10,16 +10,16 @@
     <script src="https://unpkg.com/tippy.js@6"></script>
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/light.css"/>
 </head>
-<body class="bg-gray-50 h-screen">
+<body class="bg-gray-900 h-screen text-gray-100">
     <div class="container mx-auto px-4 h-full max-w-4xl flex flex-col">
         <!-- Header -->
-        <header class="py-4">
-            <h1 class="text-4xl font-bold text-gray-800 text-center">PSAgents Chat</h1>
-            <p class="text-gray-600 text-center">Your personal sovregign digital twin</p>
+        <header class="py-8">
+            <h1 class="text-4xl font-bold text-gray-100 text-center mb-2">PSAgent - Your Personal Sovereign Agent</h1>
+            <p class="text-gray-300 text-center text-xl italic">Empowering You with AI-Driven Autonomy</p>
         </header>
 
         <!-- Chat Container -->
-        <div id="chat-container" class="flex-1 overflow-y-auto bg-white rounded-lg shadow mb-4 p-4">
+        <div id="chat-container" class="flex-1 overflow-y-auto bg-gray-800 rounded-lg shadow-xl mb-4 p-4">
             <!-- Messages will be inserted here -->
         </div>
 
@@ -35,11 +35,11 @@
         <form id="chat-form" class="flex gap-4 py-4">
             <input type="text" 
                    id="user-input" 
-                   class="flex-1 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   class="flex-1 p-4 border rounded-lg bg-gray-800 text-gray-100 border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                    placeholder="Type your message here..."
                    required>
             <button type="submit" 
-                    class="px-6 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    class="px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 Send
             </button>
         </form>
@@ -48,7 +48,7 @@
     <!-- Message Templates -->
     <template id="user-message-template">
         <div class="flex justify-end mb-4">
-            <div class="bg-blue-500 text-white rounded-lg py-2 px-4 max-w-[80%]">
+            <div class="bg-blue-600 text-white rounded-lg py-2 px-4 max-w-[80%]">
                 <p class="message-text"></p>
             </div>
         </div>
@@ -56,9 +56,9 @@
 
     <template id="assistant-message-template">
         <div class="flex justify-start mb-4">
-            <div class="bg-gray-200 rounded-lg py-2 px-4 max-w-[80%]">
+            <div class="bg-gray-700 text-gray-100 rounded-lg py-2 px-4 max-w-[80%]">
                 <p class="message-text"></p>
-                <div class="evidence-container mt-2 text-sm text-gray-600 flex flex-wrap gap-2"></div>
+                <div class="evidence-container mt-2 text-sm text-gray-300 flex flex-wrap gap-2"></div>
             </div>
         </div>
     </template>
