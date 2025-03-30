@@ -83,6 +83,7 @@ data:
 
 # Logging Configuration
 logging:
+  dir: "data/logs"
   level: "info"
   format: "json"
   output: "logs/app.log"
