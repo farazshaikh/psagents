@@ -1,4 +1,8 @@
-# A billion PSAgents - Personal sovreign agents
+# PSAgents - Personal sovreign agents
+
+[![PSAgents Overview](https://img.youtube.com/vi/BPsUmFxVc3Y/0.jpg)](https://youtu.be/BPsUmFxVc3Y)
+
+
 
 PSAgent are sovreign AI artifacts(models or otherwise) that can perform social/financial interaction on behalf on an individual. The agent performed actions should ideally pass the "*personal indistinguistability experiment*" where an third party observer should not be able to distinguish actions as initiated by actual individual or his/her digital PSAgent incarnation.
 
@@ -166,36 +170,91 @@ A Go application for processing and analyzing messages using embeddings and grap
 
 ## Development Environment
 
+
+
 ### Prerequisites
 
-- Go 1.22 or later
 - Nix package manager
-- Neo4j (for graph database)
+Install it from here https://determinate.systems/
+Get to a point where you can run
+```
+nix run nixpkgs#hello
+```
 
-### Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/psagents.git
+### Clone the repository:
+```bash
+ git clone https://github.com/yourusername/psagents.git
    cd psagents
-   ```
+```
 
-2. Enter the Nix development shell:
-   ```bash
-   nix develop
-   ```
+### Development shell
 
-3. Install dependencies:
-   ```bash
+This repo uses NIX to download/install/maintain all dependencies.
+The command ```nix develop``` should land you into already setup dev environment.
+
+```
+/psagents  🍣 main 📦 📝 ×1🏎️ 💨 ×5via 🐹 v1.22.12 via ❄️  impure (nix-shell-env) 🐏 23GiB/30GiB | 1GiB/1GiB 
+✖  nix develop
+warning: Git tree '/wrk/psagents' is dirty
+Color test:
+🚀 Go Development Environment
+Go version: go version go1.22.12 linux/amd64
+GOPATH: /home/faraz/go
+GOROOT: /nix/store/mdw3nfcaxld4g00rmcfa4rs2ywm17fdq-go-1.22.12/share/go
+
+Available tools:
+  - go: Go compiler and tools
+  - gopls: Go language server
+  - golangci-lint: Go linter
+  - dlv: Go debugger
+  - gotools: Go tools (gofmt, etc.)
+  - git: Version control
+  - gh: GitHub CLI
+  - rg: Fast grep
+  - fd: Fast find
+  - jq: JSON processor
+  - yq: YAML processor
+  - neo4j: Graph database
+  - qdrant: Vector database
+
+Database commands:
+  start-qdrant  - Start Qdrant in background
+  stop-qdrant   - Stop Qdrant
+  tail -f data/qdrant/qdrant.log  - View Qdrant logs
+  start-neo4j   - Start Neo4j in background
+  stop-neo4j    - Stop Neo4j
+  tail -f data/neo4j/neo4j.log    - View Neo4j logs
+```
+
+
+### Install dependencies:
+This is one time setup and is intentionally not done as part of ```nix develop```
+```bash
    go mod download
-   ```
+```
 
-4. Copy the example config:
-   ```bash
-   cp config/config.example.yaml config/config.yaml
-   ```
+### Copy the example config:
+Directly edit the config/config.example.yaml
+Most tools and libs take the config file as a parameter, but by default use the config.example.yaml file
+```bash
+   cp config/config.example.yaml config/config.example.yaml.backup
+```
 
-5. Edit `config/config.yaml` with your settings.
+### Compile the binaries
+```bash
+./build.sh
+...
+✅ Build complete! Binaries are in the bin directory:
+total 56M
+-rwxr-xr-x 1 faraz faraz 19M Mar 30 01:14 infer
+-rwxr-xr-x 1 faraz faraz 19M Mar 30 01:14 ingest
+-rwxr-xr-x 1 faraz faraz 19M Mar 30 01:14 server
+
+You can run the binaries using:
+  ./bin/server  - Start the web server
+  ./bin/infer   - Run inference
+  ./bin/ingest  - Run ingestion
+```
 
 ### Running Tests
 
@@ -217,39 +276,85 @@ go run cmd/ingest/main.go -config config/config.yaml
 go run cmd/ingest/main.go -config config/config.yaml -dev
 ```
 
-Command line flags:
-- `-config`: Path to config file (default: "config/config.example.yaml")
-- `-dev`: Use development file with first 20 messages (default: false)
+### Inference CLI
 
-The command will:
-1. Load the configuration file
-2. Create a development file if `-dev` flag is used
-3. Generate embeddings for the messages
-4. Save the embeddings to the configured output directory
+The inference CLI provides a command-line interface for running queries against your PSAgent. It supports both interactive and batch processing modes.
+```bash
+/psagents  🍣 main 📦 📝 ×1🏎️ 💨 ×5via 🐹 v1.22.12 via ❄️  impure (nix-shell-env) 🐏 21GiB/30GiB | 1GiB/1GiB
+✖  ./bin/infer
+Please specify either -i for interactive mode or -f for batch mode
 
-## Project Structure
+/wrk/psagents  🍣 main 📦 📝 ×1🏎️ 💨 ×5via 🐹 v1.22.12 via ❄️  impure (nix-shell-env) 🐏 21GiB/30GiB | 1GiB/1GiB
+✖  ./bin/infer -i
+
+Enter your question (or 'quit' to exit): who am i ?
+
+ Answer:
+{
+  "answer": "I appreciate your curiosity! While I can't tell you exactly who you are, I can suggest that you think about your interests, experiences, and the roles you play in your life. Reflecting on these aspects can help you gain insights into your identity. Just like I mentioned before, let's engage in a little game or conversation where you can express yourself more freely. For instance, what are some things you enjoy doing? This could be a great starting point to explore your identity further.",
+  "confidence": 0.85,
+  "supporting_evidence": [
+    {
+      "message_id": "ef46de1501a004099d905867a0d617b922bec157272b15b4bb244166d0644119",
+      "relevance": "The message discusses understanding identity and invites a conversation to help explore that."
+    },
+    {
+      "message_id": "52e758abd5fe08a42e3f20689d48f44a831ed666c2ed4349515076ad0665bb69",
+      "relevance": "This message encourages engagement and connection, which directly relates to exploring one's identity."
+    },
+    {
+      "message_id": "1913d671684f842fb7fde5724b9e13f9d8678a68639215af4d47b2daa54e8695",
+      "relevance": "The message expresses confusion, indicating a desire for understanding, which aligns with the theme of identity exploration."
+    }./build.sh
+
+  ]
+}
+
+# Interactive mode
+./bin/infer -i -config path/to/config.yaml
+
+# Batch mode with query file
+./bin/infer -f queries.jsonl -config path/to/config.yaml
+
+# Filter queries by difficulty
+./bin/infer -f queries.jsonl -d easy -config path/to/config.yaml
+```
+
+
+### WebUI
+
+The PSAgent WebUI provides a modern, responsive chat interface for interacting with your personal sovereign agent.
+
+```
+/psagents  🍣 main 📦 📝 ×1🏎️ 💨 ×5via 🐹 v1.22.12 via ❄️  impure (nix-shell-env) 🐏 22GiB/30GiB | 1GiB/1GiB
+✖  ./bin/server
+2025/03/30 01:22:00 Starting server on :8080
+2025/03/30 01:22:00 Web interface available at http://localhost:8080
+```
+
+
+### Structure of the repo
 
 ```
 .
-├── cmd/
-│   └── ingest/          # Ingest command for processing messages
-├── config/              # Configuration package
-├── internal/
-│   ├── embeddings/      # Embedding generation
-│   └── graph/          # Graph database operations
-└── README.md
+├── bin/                    # Compiled binaries
+├── cmd/                    # Command-line applications
+│   ├── infer/             # Inference CLI
+│   ├── ingest/            # Data ingestion tool
+│   └── server/            # Web server
+│       └── web/           # Static web assets
+├── config/                # Configuration files
+├── data/                  # Data directory
+│   ├── evaluations/       # Inference evaluation outputs
+│   ├── logs/             # Application logs
+│   └── prompts/          # System prompts
+├── internal/              # Internal packages
+│   ├── embeddings/       # Embedding generation
+│   ├── graphdb/          # Graph database interface
+│   ├── inference/        # Core inference logic
+│   ├── llm/             # LLM client interface
+│   ├── message/         # Message handling
+│   └── vector_db/       # Vector database interface
+├── build.sh              # Build script
+└── README.md            # Project documentation
 ```
-
-## Configuration
-
-The application uses a YAML configuration file with the following sections:
-
-- `server`: Server configuration
-- `pipeline`: Pipeline settings
-- `graph`: Graph database configuration
-- `embeddings`: Embedding model settings
-- `llm`: Language model configuration
-- `data`: Data directory paths
-- `logging`: Logging configuration
-
-See `config/config.example.yaml` for a complete example.
