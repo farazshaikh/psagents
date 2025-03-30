@@ -22,12 +22,12 @@ import (
 )
 
 type Query struct {
-	ID         string  `json:"id"`
-	Question   string  `json:"question"`
-	Difficulty string  `json:"difficulty,omitempty"`
-	Answer     string  `json:"answer,omitempty"`
-	Evaluation string  `json:"evaluation,omitempty"`
-	Confidence float64 `json:"confidence,omitempty"`
+	ID                   string  `json:"id"`
+	Question            string  `json:"question"`
+	Difficulty          string  `json:"difficulty"`
+	ExampleCorrectAnswer string  `json:"exampleCorrectAnswer"`
+	PsaAgentAnswer      string  `json:"psaAgentAnswer,omitempty"`
+	PsaAgentConfidence  float64 `json:"psaAgentConfidence,omitempty"`
 }
 
 type RelatedMessage struct {
@@ -232,6 +232,61 @@ func runInteractiveMode(ctx context.Context, cfg *config.Config, vectorDB vector
 	}
 }
 
+func getNextEvaluationFile() (*os.File, error) {
+	// Find the next available evaluation file number
+	logsDir := "data/evaluations"
+	if err := os.MkdirAll(logsDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create evaluations directory: %w", err)
+	}
+
+	var evalFile *os.File
+	for i := 0; i <= 999; i++ {
+		filename := fmt.Sprintf("evaluation_%03d.jsonl", i)
+		filepath := filepath.Join(logsDir, filename)
+		if _, err := os.Stat(filepath); os.IsNotExist(err) {
+			evalFile, err = os.Create(filepath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create evaluation file: %w", err)
+			}
+			break
+		}
+	}
+
+	if evalFile == nil {
+		return nil, fmt.Errorf("no available evaluation file names (reached limit of 999)")
+	}
+
+	return evalFile, nil
+}
+
+func writeEvaluation(file *os.File, result Query) error {
+	// Create evaluation entry with the required schema
+	evaluation := struct {
+		Difficulty          string  `json:"difficulty"`
+		Question           string  `json:"question"`
+		ExampleCorrectAnswer string `json:"exampleCorrectAnswer"`
+		PsaAgentAnswer      string  `json:"psaAgentAnswer"`
+		PsaAgentConfidence  float64 `json:"psaAgentConfidence"`
+	}{
+		Difficulty:          result.Difficulty,
+		Question:           result.Question,
+		ExampleCorrectAnswer: result.ExampleCorrectAnswer,
+		PsaAgentAnswer:      result.PsaAgentAnswer,
+		PsaAgentConfidence:  result.PsaAgentConfidence,
+	}
+
+	// Marshal to JSON and write with newline
+	if bytes, err := json.Marshal(evaluation); err != nil {
+		return fmt.Errorf("failed to marshal evaluation: %w", err)
+	} else if _, err := file.Write(bytes); err != nil {
+		return fmt.Errorf("failed to write evaluation: %w", err)
+	} else if _, err := file.WriteString("\n"); err != nil {
+		return fmt.Errorf("failed to write newline: %w", err)
+	}
+
+	return nil
+}
+
 func runBatchMode(ctx context.Context, cfg *config.Config, vectorDB vector.DB, graphDB *graphdb.GraphDB, llmClient llm.LLM, batchFile, difficulty string, logger *Logger) {
 	// Read queries from file
 	queries, err := loadQueries(batchFile)
@@ -251,8 +306,15 @@ func runBatchMode(ctx context.Context, cfg *config.Config, vectorDB vector.DB, g
 		queries = filtered
 	}
 
-	// Process each query
-	results := make([]Query, 0, len(queries))
+	// Create evaluation file
+	evalFile, err := getNextEvaluationFile()
+	if err != nil {
+		fmt.Printf("Error creating evaluation file: %v\n", err)
+		os.Exit(1)
+	}
+	defer evalFile.Close()
+
+	// Process each query and stream results
 	for _, query := range queries {
 		fmt.Printf("Processing query %s: %s\n", query.ID, query.Question)
 
@@ -262,15 +324,14 @@ func runBatchMode(ctx context.Context, cfg *config.Config, vectorDB vector.DB, g
 			continue
 		}
 
-		query.Answer = answer
-		query.Confidence = confidence
-		results = append(results, query)
-	}
+		query.PsaAgentAnswer = answer
+		query.PsaAgentConfidence = confidence
 
-	// Write results to evaluations file
-	if err := saveEvaluations(results); err != nil {
-		fmt.Printf("Error saving evaluations: %v\n", err)
-		os.Exit(1)
+		// Write evaluation immediately
+		if err := writeEvaluation(evalFile, query); err != nil {
+			fmt.Printf("Error writing evaluation for query %s: %v\n", query.ID, err)
+			continue
+		}
 	}
 }
 
@@ -309,40 +370,106 @@ func findRelatedMessages(tx neo4j.Transaction, directMatch vector.Message, minCo
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to execute Neo4j query: %w", err)
 	}
 
 	var related []RelatedMessage
 	for result.Next() {
 		record := result.Record()
-		id, _ := record.Get("n.id")
-		text, _ := record.Get("n.text")
-		relationType, _ := record.Get("relation_type")
-		confidence, _ := record.Get("confidence")
-		evidence, _ := record.Get("evidence")
-		pathIds, _ := record.Get("path_ids")
-
-		// Convert []interface{} to []string
-		pathIdsInterface := pathIds.([]interface{})
-		pathIdsString := make([]string, len(pathIdsInterface))
-		for i, id := range pathIdsInterface {
-			pathIdsString[i] = id.(string)
+		
+		// Get and validate all required fields
+		id, ok := record.Get("n.id")
+		if !ok || id == nil {
+			continue
+		}
+		idStr, ok := id.(string)
+		if !ok {
+			continue
 		}
 
+		text, ok := record.Get("n.text")
+		if !ok || text == nil {
+			continue
+		}
+		textStr, ok := text.(string)
+		if !ok {
+			continue
+		}
+
+		relationType, ok := record.Get("relation_type")
+		if !ok || relationType == nil {
+			continue
+		}
+		relationTypeStr, ok := relationType.(string)
+		if !ok {
+			continue
+		}
+
+		confidence, ok := record.Get("confidence")
+		if !ok || confidence == nil {
+			continue
+		}
+		confidenceFloat, ok := confidence.(float64)
+		if !ok {
+			continue
+		}
+
+		evidence, ok := record.Get("evidence")
+		if !ok || evidence == nil {
+			continue
+		}
+		evidenceStr, ok := evidence.(string)
+		if !ok {
+			continue
+		}
+
+		pathIds, ok := record.Get("path_ids")
+		if !ok || pathIds == nil {
+			continue
+		}
+
+		// Convert []interface{} to []string
+		pathIdsInterface, ok := pathIds.([]interface{})
+		if !ok {
+			continue
+		}
+		pathIdsString := make([]string, len(pathIdsInterface))
+		validPath := true
+		for i, pathId := range pathIdsInterface {
+			if pathId == nil {
+				validPath = false
+				break
+			}
+			pathIdStr, ok := pathId.(string)
+			if !ok {
+				validPath = false
+				break
+			}
+			pathIdsString[i] = pathIdStr
+		}
+		if !validPath {
+			continue
+		}
+
+		// Create RelatedMessage with validated values
 		related = append(related, RelatedMessage{
 			Message: message.Message{
-				ID:   id.(string),
-				Text: text.(string),
+				ID:   idStr,
+				Text: textStr,
 			},
 			Relation: graphdb.Relationship{
 				SourceID:   directMatch.ID,
-				TargetID:   id.(string),
-				Relation:   relationType.(string),
-				Confidence: confidence.(float64),
-				Evidence:   evidence.(string),
+				TargetID:   idStr,
+				Relation:   relationTypeStr,
+				Confidence: confidenceFloat,
+				Evidence:   evidenceStr,
 			},
 			Path: pathIdsString,
 		})
+	}
+
+	if err := result.Err(); err != nil {
+		return nil, fmt.Errorf("error while iterating results: %w", err)
 	}
 
 	return related, nil
@@ -461,6 +588,7 @@ func processQuery(ctx context.Context, cfg *config.Config, vectorDB vector.DB, g
 		} `json:"relation"`
 		Path []string `json:"path"`
 	}, len(allRelatedMessages))
+
 	for i, msg := range allRelatedMessages {
 		inferencePrompt.Input.Context.RelatedMessages[i].Message.ID = msg.Message.ID
 		inferencePrompt.Input.Context.RelatedMessages[i].Message.Text = msg.Message.Text
@@ -538,23 +666,4 @@ func loadQueries(filePath string) ([]Query, error) {
 	}
 
 	return queries, scanner.Err()
-}
-
-func saveEvaluations(results []Query) error {
-	file, err := os.Create(filepath.Join("data", "evaluations.jsonl"))
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-
-	for _, result := range results {
-		if err := encoder.Encode(result); err != nil {
-			return fmt.Errorf("failed to encode result: %w", err)
-		}
-	}
-
-	return nil
 }
