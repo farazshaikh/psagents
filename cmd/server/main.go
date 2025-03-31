@@ -20,9 +20,10 @@ type Server struct {
 }
 
 type ChatCompletionRequest struct {
-	Prompt              string `json:"prompt"`
-	InferenceStrategy   string `json:"inferenceStrategy"`
+	Prompt            string `json:"prompt"`
+	InferenceStrategy string `json:"inferenceStrategy"`
 }
+
 func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize vector database (needed for graphdb)
 	vectorDB, err := vector_db.NewQdrantDB(cfg)
@@ -104,7 +105,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 	var req ChatCompletionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
@@ -123,7 +124,8 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	response, err := s.inferenceEngine.Infer(inferenceParams)
 
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Inference error: %v", err), http.StatusInternalServerError)
+		log.Printf("Error processing chat completion: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
