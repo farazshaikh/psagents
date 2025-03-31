@@ -212,37 +212,44 @@ func NewEngine(cfg *config.Config) (*Engine, error) {
 	}, nil
 }
 
-func findRelatedMessages(tx neo4j.Transaction, directMatch vector.Message, minConfidence float64, limit int) ([]RelatedMessage, error) {
-	result, err := tx.Run(
-		`MATCH path = (m:Message {id: $id})-[r*1..3]-(n:Message)
-		 WHERE ALL(rel in r WHERE rel.confidence >= $minConfidence)
-			   AND n.id <> $id
-		 WITH path, n,
-			  LAST(relationships(path)) as last_rel,
-			  [rel in relationships(path) |
+func findRelatedMessages(tx neo4j.Transaction, directMatch vector.Message, minConfidence float64, maxMessages int, maxDepth int) ([]RelatedMessage, error) {
+	// findRelatedMessages finds messages related to the directMatch within maxDepth hops.
+	// Note: Neo4j does not support parameterized relationship pattern lengths in MATCH clauses
+	// (e.g., cannot use -[r*1..$maxDepth]-). Therefore, we need to construct the query string
+	// dynamically using fmt.Sprintf. This is safe as maxDepth is an internal parameter,
+	// not user input.
+	query := fmt.Sprintf(`MATCH path = (m:Message {id: $id})-[r*1..%d]-(n:Message)
+		WHERE ALL(rel in r WHERE rel.confidence >= $minConfidence)
+			AND n.id <> $id
+		WITH path, n,
+			LAST(relationships(path)) as last_rel,
+			[rel in relationships(path) |
 				CASE type(rel)
 					WHEN 'RELATED_TO' THEN rel.type
 					ELSE type(rel)
 				END
-			  ] as rel_types,
-			  [rel in relationships(path) | rel.confidence] as confidences,
-			  [rel in relationships(path) | rel.evidence] as evidences
-		 WITH path, n,
-			  LAST(rel_types) as relation_type,
-			  REDUCE(acc = 1.0, x IN confidences | acc * x) as confidence,
-			  LAST(evidences) as evidence,
-			  [node in nodes(path) | node.id] as path_ids
-		 RETURN n.id, n.text,
-				relation_type,
-				confidence,
-				evidence,
-				path_ids
-		 ORDER BY confidence DESC
-		 LIMIT $limit`,
+			] as rel_types,
+			[rel in relationships(path) | rel.confidence] as confidences,
+			[rel in relationships(path) | rel.evidence] as evidences
+		WITH path, n,
+			LAST(rel_types) as relation_type,
+			REDUCE(acc = 1.0, x IN confidences | acc * x) as confidence,
+			LAST(evidences) as evidence,
+			[node in nodes(path) | node.id] as path_ids
+		RETURN n.id, n.text,
+			relation_type,
+			confidence,
+			evidence,
+			path_ids
+		ORDER BY confidence DESC
+		LIMIT $limit`, maxDepth)
+
+	result, err := tx.Run(
+		query,
 		map[string]interface{}{
 			"id":            directMatch.ID,
 			"minConfidence": minConfidence,
-			"limit":         limit,
+			"limit":         maxMessages,
 		},
 	)
 
@@ -352,11 +359,71 @@ func findRelatedMessages(tx neo4j.Transaction, directMatch vector.Message, minCo
 	return related, nil
 }
 
+type SamplingStrategy int
 
-func (e *Engine) Infer(query Query) (Response, error) {
+const (
+	SamplingStrategy_Greedy SamplingStrategy = iota
+	SamplingStrategy_Uniform
+)
+
+type InferenceParams struct {
+	Query                Query
+	MaxSimilarityAnchors int
+	MaxRelatedMessages   int
+	MaxRelatedDepth      int
+	SystemPrompt         string
+	SamplingStrategy     SamplingStrategy
+}
+
+func sampleRelatedMessages(bins [][]RelatedMessage, maxMessages int, strategy SamplingStrategy) []RelatedMessage {
+	if len(bins) == 0 {
+		return nil
+	}
+
+	var sampled []RelatedMessage
+
+	switch strategy {
+	case SamplingStrategy_Greedy:
+		// Start with the first bin (most relevant)
+		remaining := maxMessages
+		for i := 0; i < len(bins) && remaining > 0; i++ {
+			bin := bins[i]
+			// Take as many messages as possible from current bin
+			if remaining < len(bin) {
+				sampled = append(sampled, bin[:remaining]...)
+				remaining = 0
+			} else {
+				sampled = append(sampled, bin...)
+				remaining -= len(bin)
+			}
+		}
+
+	case SamplingStrategy_Uniform:
+		// Calculate messages per bin
+		if len(bins) > 0 {
+			messagesPerBin := maxMessages / len(bins)
+			extraMessages := maxMessages % len(bins)
+
+			for i, bin := range bins {
+				take := messagesPerBin
+				if i < extraMessages {
+					take++ // Distribute remainder evenly
+				}
+				if take > len(bin) {
+					take = len(bin)
+				}
+				sampled = append(sampled, bin[:take]...)
+			}
+		}
+	}
+
+	return sampled
+}
+
+func (e *Engine) Infer(params InferenceParams) (Response, error) {
 	// Create message for the question
 	questionMsg := message.Message{
-		Text: query.Question,
+		Text: params.Query.Question,
 	}
 
 	// Generate embedding for the question
@@ -366,7 +433,7 @@ func (e *Engine) Infer(query Query) (Response, error) {
 	}
 
 	// Find closest message in the database
-	similar, err := e.vectorDB.Search(embedding, e.cfg.Inference.MaxSimilarityAnchors)
+	similar, err := e.vectorDB.Search(embedding, params.MaxSimilarityAnchors)
 	if err != nil {
 		return Response{}, fmt.Errorf("failed to find closest message: %w", err)
 	}
@@ -374,22 +441,17 @@ func (e *Engine) Infer(query Query) (Response, error) {
 		return Response{}, fmt.Errorf("no matching messages found")
 	}
 
-	// Initialize pairs with all similar messages
-	pairs := make([]struct {
-		SourceMessage    message.Message
-		FrontierMessages []message.Message
-	}, len(similar))
-
 	// Find related messages for each similar match
 	session := e.graphDB.GetSession()
 	defer session.Close()
 
-	var allRelatedMessages []RelatedMessage
+	// Initialize slice with correct size
+	allRelatedMessages := make([][]RelatedMessage, len(similar))
 
 	for i, directMatch := range similar {
 		// Find related messages using Neo4j traversal
 		relatedResult, err := session.ReadTransaction(func(tx neo4j.Transaction) (interface{}, error) {
-			return findRelatedMessages(tx, directMatch, 0.0, e.cfg.GraphDB.SemanticFrontier)
+			return findRelatedMessages(tx, directMatch, 0.0, params.MaxRelatedMessages, params.MaxRelatedDepth)
 		})
 
 		if err != nil {
@@ -397,30 +459,12 @@ func (e *Engine) Infer(query Query) (Response, error) {
 		}
 
 		relatedMessages := relatedResult.([]RelatedMessage)
-		allRelatedMessages = append(allRelatedMessages, relatedMessages...)
-
-		// Initialize pair for this similar match
-		pairs[i] = struct {
-			SourceMessage    message.Message
-			FrontierMessages []message.Message
-		}{
-			SourceMessage: message.Message{
-				ID:   directMatch.ID,
-				Text: directMatch.Text,
-			},
-			FrontierMessages: make([]message.Message, len(relatedMessages)),
-		}
-
-		// Convert related messages to frontier messages
-		for j, msg := range relatedMessages {
-			pairs[i].FrontierMessages[j] = message.Message{
-				ID:   msg.Message.ID,
-				Text: msg.Message.Text,
-			}
-		}
+		allRelatedMessages[i] = relatedMessages
 	}
 
-	if len(allRelatedMessages) == 0 {
+	// Sample related messages based on sampling strategy
+	sampledRelatedMessages := sampleRelatedMessages(allRelatedMessages, params.MaxRelatedMessages, params.SamplingStrategy)
+	if len(sampledRelatedMessages) == 0 {
 		return Response{}, fmt.Errorf("no related messages found for any similar matches")
 	}
 
@@ -437,7 +481,7 @@ func (e *Engine) Infer(query Query) (Response, error) {
 	}
 
 	// Populate the input
-	inferencePrompt.Input.Question = query.Question
+	inferencePrompt.Input.Question = params.Query.Question
 	inferencePrompt.Input.Context.DirectMatch = make([]struct {
 		ID   string `json:"id"`
 		Text string `json:"text"`
@@ -458,9 +502,9 @@ func (e *Engine) Infer(query Query) (Response, error) {
 			Evidence   string  `json:"evidence"`
 		} `json:"relation"`
 		Path []string `json:"path"`
-	}, len(allRelatedMessages))
+	}, len(sampledRelatedMessages))
 
-	for i, msg := range allRelatedMessages {
+	for i, msg := range sampledRelatedMessages {
 		inferencePrompt.Input.Context.RelatedMessages[i].Message.ID = msg.Message.ID
 		inferencePrompt.Input.Context.RelatedMessages[i].Message.Text = msg.Message.Text
 		inferencePrompt.Input.Context.RelatedMessages[i].Relation.Type = msg.Relation.Relation
@@ -476,19 +520,19 @@ func (e *Engine) Infer(query Query) (Response, error) {
 	}
 
 	// Call LLM with both system prompt and inference prompt
-	answer, err := e.llmClient.GetInference(string(promptBytes), e.cfg.LLM.InferenceSystemPrompt)
+	answer, err := e.llmClient.GetInference(string(promptBytes), params.SystemPrompt)
 	if err != nil {
 		return Response{}, fmt.Errorf("failed to get LLM inference: %w", err)
 	}
 
 	// Log inference details
 	e.logger.LogInference(
-		query.Question,
+		params.Query.Question,
 		embedding,
 		similar,
-		allRelatedMessages,
+		sampledRelatedMessages,
 		&inferencePrompt,
-		e.cfg.LLM.InferenceSystemPrompt,
+		params.SystemPrompt,
 		answer,
 	)
 

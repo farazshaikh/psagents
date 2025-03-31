@@ -164,6 +164,82 @@ graph TD
     class SY1,SY2,SY3 syntheticNode
 ```
 
+---
+
+### ✅ Naming Convention Summary
+
+| Term | Meaning | Notes |
+|------|--------|-------|
+| **Similarity Anchors** | Top-K direct hits from vector DB (semantic similarity to the query) | These are your *entry points* into the graph. The term "anchor" implies structural expansion will follow. |
+| **Semantic Frontier** | Neighboring messages structurally linked to the anchors (e.g., causal, elaboration, follow-up) | This is your *K×M expanded context*, forming a local semantic neighborhood around the anchors. |
+
+---
+
+### 🔍 Why This Works Well
+
+- **Consistency**: You're separating *selection* (similarity anchors) from *expansion* (semantic frontier).
+- **Graph Awareness**: "Frontier" implies traversal, which aligns with the idea of structured relationship hops.
+- **Avoids Ambiguity**: You’re not overloading "semantic" for both vector similarity and message expansion. That helps downstream debugging and LLM prompting.
+
+---
+
+### Minor Tip
+
+If you ever want to simplify for prompting or JSON schema, you could still alias them in a user-facing context as:
+
+```json
+"context": {
+  "direct_match": <similarity anchor>,
+  "related_messages": <semantic frontier>
+}
+```
+
+Internally, though, your naming is 💯. No confusion, solid abstraction.
+
+Exactly — you're outlining three useful **retrieval + reasoning strategies** depending on how broad or deep the system should reason through the message corpus.
+
+Here’s a cleaner version of your three strategies, expressed clearly and with purpose:
+
+---
+
+### 🔍 Inference Retrieval Strategies
+
+#### 1. **Similarity-Only Strategy**
+- **Config**:
+  - `similarity_anchors = 100`
+  - `semantic_frontier = 0`
+- **Description**:  
+  Retrieve top 100 semantically similar messages via vector search. Do **not** traverse the graph.
+- **Use Case**:  
+  Shallow recall when only the most lexically or topically aligned content is sufficient. Fast, low-latency.
+
+---
+
+#### 2. **Semantic-Only Strategy**
+- **Config**:
+  - `similarity_anchors = 10`
+  - `semantic_frontier = 10` (per anchor)
+- **Description**:
+  Retrieve 10 anchors and **only** use their graph-connected frontier nodes (up to 100). Discard the anchors themselves from final reasoning.
+- **Use Case**:
+  Leverages structural relationships (e.g. causality, elaboration) to infer deeper intent/context. Ignores superficial similarity.
+
+---
+
+#### 3. **Hybrid Strategy**
+- **Config**:
+  - `similarity_anchors = 10`
+  - `semantic_frontier = 10` (per anchor)
+- **Description**:
+  Retrieve 10 similar anchors, then expand each into 10 related messages. Use **both** anchors and frontier messages (up to 110).
+- **Use Case**:
+  Balances direct relevance with structural context. Ideal when both surface similarity and inferred structure are important.
+
+---
+
+Each of these can be toggled dynamically based on user query type, confidence threshold, or system budget.
+
+
 # PS Agents
 
 A Go application for processing and analyzing messages using embeddings and graph databases.

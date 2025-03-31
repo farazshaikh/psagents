@@ -107,9 +107,10 @@ vector:
 
 inference:
   max_hops: 3  # Maximum number of hops to traverse in the graph
-  max_similarity_anchors: 10  # Maximum number of similarity anchors to use
-  min_confidence: 0.7  # Minimum confidence score for relationships
+  max_similarity_anchors: 10  # Maximum number of similarity/semantic anchors to use
   max_related_messages: 20  # Maximum number of related messages to include
+  max_related_depth: 3  # Maximum depth of related messages to include
+  min_confidence: 0.7  # Minimum confidence score for relationships
   difficulty_levels:  # Mapping of difficulty levels to confidence thresholds
     easy: 0.8
     medium: 0.6

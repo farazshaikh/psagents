@@ -64,9 +64,18 @@ func runInterActiveMode(cfg *config.Config) {
 			break
 		}
 
-		response, err := engine.Infer(inference.Query {
-			Question: question,
-		})
+		inferenceParams := inference.InferenceParams{
+			Query: inference.Query{
+				Question: question,
+			},
+			SamplingStrategy: inference.SamplingStrategy_Greedy,
+			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
+			MaxRelatedMessages: cfg.Inference.MaxRelatedMessages,
+			MaxRelatedDepth: cfg.Inference.MaxRelatedDepth,
+			SystemPrompt: cfg.LLM.InferenceSystemPrompt,
+		}
+
+		response, err := engine.Infer(inferenceParams)
 		if err != nil {
 			fmt.Printf("Error processing question: %v\n", err)
 			continue
@@ -173,7 +182,14 @@ func runBatchMode(cfg *config.Config, batchFile, difficulty string) {
 	for _, query := range queries {
 		fmt.Printf("Processing query %s: %s\n", query.ID, query.Question)
 
-		response, err := engine.Infer(inference.Query{ Question: query.Question})
+		response, err := engine.Infer(inference.InferenceParams{
+			Query: inference.Query{ Question: query.Question},
+			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
+			MaxRelatedMessages: cfg.Inference.MaxRelatedMessages,
+			MaxRelatedDepth: cfg.Inference.MaxRelatedDepth,
+			SystemPrompt: cfg.LLM.InferenceSystemPrompt,
+			SamplingStrategy: inference.SamplingStrategy_Greedy,
+		})
 		if err != nil {
 			fmt.Printf("Error processing query %s: %v\n", query.ID, err)
 			continue

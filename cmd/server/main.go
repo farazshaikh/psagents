@@ -16,10 +16,15 @@ import (
 type Server struct {
 	inferenceEngine *inference.Engine
 	graphDB        *graphdb.GraphDB
+	cfg            *config.Config
 }
 
 type ChatCompletionRequest struct {
-	Prompt string `json:"prompt"`
+	Prompt              string `json:"prompt"`
+	MaxSimilarityAnchors int    `json:"maxSimilarityAnchors"`
+	MaxRelatedMessages   int    `json:"maxRelatedMessages"`
+	MaxRelatedDepth      int    `json:"maxRelatedDepth"`
+	SamplingStrategy     string `json:"samplingStrategy"`
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
@@ -44,6 +49,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	return &Server{
 		inferenceEngine: inferenceEngine,
 		graphDB:        graphDB,
+		cfg:            cfg,
 	}, nil
 }
 
@@ -74,8 +80,14 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := s.inferenceEngine.Infer(inference.Query{
-		Question: req.Prompt,
+	response, err := s.inferenceEngine.Infer(inference.InferenceParams{
+		Query: inference.Query{
+			Question: req.Prompt,
+		},
+		MaxSimilarityAnchors: req.MaxSimilarityAnchors,
+		MaxRelatedMessages:   req.MaxRelatedMessages,
+		MaxRelatedDepth:      req.MaxRelatedDepth,
+		SystemPrompt:         s.cfg.LLM.InferenceSystemPrompt,
 	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Inference error: %v", err), http.StatusInternalServerError)

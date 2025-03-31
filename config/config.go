@@ -30,6 +30,7 @@ type InferenceConfig struct {
 	MaxSimilarityAnchors int `mapstructure:"max_similarity_anchors"`
 	MinConfidence float64 `mapstructure:"min_confidence"`
 	MaxRelatedMessages int `mapstructure:"max_related_messages"`
+	MaxRelatedDepth int `mapstructure:"max_related_depth"`
 }
 
 // ServerConfig represents server-related configuration
