@@ -136,6 +136,15 @@ class ChatUI {
         return await response.json();
     }
 
+    getStrategyLabel(strategy) {
+        const labels = {
+            'hybrid': 'Hybrid',
+            'similarity': 'Similarity (Vector)',
+            'semantic': 'Semantic (LLM Knowledge Graph)'
+        };
+        return labels[strategy] || strategy;
+    }
+
     addMessage(message, role) {
         const template = role === 'user' ? this.userTemplate : this.assistantTemplate;
         const messageElement = template.content.cloneNode(true);
@@ -162,7 +171,7 @@ class ChatUI {
             // Add strategy info
             const strategyElement = document.createElement('div');
             strategyElement.classList.add('strategy-info');
-            strategyElement.textContent = `Strategy: ${this.currentStrategy.charAt(0).toUpperCase() + this.currentStrategy.slice(1)}`;
+            strategyElement.textContent = `Strategy: ${this.getStrategyLabel(this.currentStrategy)}`;
             metadataContainer.appendChild(strategyElement);
             
             // Add evidence links if present

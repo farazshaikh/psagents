@@ -43,26 +43,29 @@
             </div>
             <div class="flex gap-4 items-center">
                 <button type="submit"
-                        class="bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-shrink-0">
+                        class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-shrink-0">
                     Send
                 </button>
-                <div class="relative">
-                    <button id="strategy-button" type="button" class="strategy-button">
+                <div class="relative inline-block">
+                    <button id="strategy-button" type="button" class="flex items-center gap-2">
                         <span id="selected-strategy">Hybrid</span>
-                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
                     <div id="strategy-selector" class="strategy-selector hidden">
-                        <div class="strategy-option" data-strategy="hybrid" data-tippy-content="Balances direct relevance with structural context. Retrieves 10 similar anchors, then expands each into 10 related messages. Uses both anchors and frontier messages (up to 110). Ideal when both surface similarity and inferred structure are important.">
-                            <span class="strategy-name">Hybrid (Default)</span>
-                            <span class="strategy-checkmark text-blue-400 ml-2">✓</span>
+                        <div class="strategy-option" data-strategy="hybrid" 
+                             data-tippy-content="Balances direct relevance with structural context. Retrieves 10 similar anchors, then expands each into 10 related messages. Uses both anchors and frontier messages (up to 110). Ideal when both surface similarity and inferred structure are important.">
+                            <span class="strategy-name">Hybrid</span>
+                            <span class="strategy-checkmark">✓</span>
                         </div>
-                        <div class="strategy-option" data-strategy="similarity" data-tippy-content="Fast retrieval of semantically similar messages via vector search. Retrieves top 100 similar messages without graph traversal. Best for shallow recall when only the most lexically or topically aligned content is sufficient. Fast, low-latency.">
-                            <span class="strategy-name">Similarity</span>
+                        <div class="strategy-option" data-strategy="similarity" 
+                             data-tippy-content="Fast retrieval of semantically similar messages via vector search. Retrieves top 100 similar messages without graph traversal. Best for shallow recall when only the most lexically or topically aligned content is sufficient. Fast, low-latency.">
+                            <span class="strategy-name">Similarity (Vector)</span>
                         </div>
-                        <div class="strategy-option" data-strategy="semantic" data-tippy-content="Leverages structural relationships (causality, elaboration) to infer deeper intent/context. Retrieves 10 anchors and only uses their graph-connected frontier nodes (up to 100). Uses graph-connected messages while ignoring superficial similarity.">
-                            <span class="strategy-name">Semantic</span>
+                        <div class="strategy-option" data-strategy="semantic" 
+                             data-tippy-content="Leverages structural relationships (causality, elaboration) to infer deeper intent/context. Retrieves 10 anchors and only uses their graph-connected frontier nodes (up to 100). Uses graph-connected messages while ignoring superficial similarity.">
+                            <span class="strategy-name">Semantic (LLM Knowledge Graph)</span>
                         </div>
                     </div>
                 </div>
