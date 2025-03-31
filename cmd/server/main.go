@@ -21,13 +21,8 @@ type Server struct {
 
 type ChatCompletionRequest struct {
 	Prompt              string `json:"prompt"`
-	MaxSimilarityAnchors int    `json:"maxSimilarityAnchors"`
-	MaxRelatedMessages   int    `json:"maxRelatedMessages"`
-	MaxRelatedDepth      int    `json:"maxRelatedDepth"`
-	IncludeDirectMatches bool   `json:"includeDirectMatches"`
-	SamplingStrategy     string `json:"samplingStrategy"`
+	InferenceStrategy   string `json:"inferenceStrategy"`
 }
-
 func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize vector database (needed for graphdb)
 	vectorDB, err := vector_db.NewQdrantDB(cfg)
@@ -69,6 +64,38 @@ func enableCORS(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+/* Implement inference strategy based on README.md */
+func parseInferenceStrategy(cfg *config.Config, strategy string) (inference.InferenceParams, error) {
+	switch strategy {
+	case "similarity":
+		return inference.InferenceParams{
+			SamplingStrategy: inference.SamplingStrategy_Greedy,
+			IncludeDirectMatches: true,
+			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors * cfg.Inference.MaxRelatedMessages,
+			MaxRelatedMessages: 0,
+			MaxRelatedDepth: 0,
+		}, nil
+	case "semantic":
+		return inference.InferenceParams{
+			SamplingStrategy: inference.SamplingStrategy_Uniform,
+			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
+			MaxRelatedMessages: cfg.Inference.MaxRelatedMessages,
+			MaxRelatedDepth: cfg.Inference.MaxRelatedDepth,
+			IncludeDirectMatches: false,
+		}, nil
+	// default to hybrid
+	//case "hybrid":
+	default:
+		return inference.InferenceParams{
+			SamplingStrategy: inference.SamplingStrategy_Uniform,
+			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
+			MaxRelatedMessages: cfg.Inference.MaxRelatedMessages,
+			MaxRelatedDepth: cfg.Inference.MaxRelatedDepth,
+			IncludeDirectMatches: true,
+		}, nil
+	}
+}
+
 func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -81,16 +108,20 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := s.inferenceEngine.Infer(inference.InferenceParams{
-		Query: inference.Query{
-			Question: req.Prompt,
-		},
-		MaxSimilarityAnchors: req.MaxSimilarityAnchors,
-		MaxRelatedMessages:   req.MaxRelatedMessages,
-		MaxRelatedDepth:      req.MaxRelatedDepth,
-		IncludeDirectMatches: req.IncludeDirectMatches,
-		SystemPrompt:         s.cfg.LLM.InferenceSystemPrompt,
-	})
+	inferenceParams, err := parseInferenceStrategy(s.cfg, req.InferenceStrategy)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid inference strategy: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	inferenceParams.Query = inference.Query{
+		Question: req.Prompt,
+	}
+
+	inferenceParams.SystemPrompt = s.cfg.LLM.InferenceSystemPrompt
+
+	response, err := s.inferenceEngine.Infer(inferenceParams)
+
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Inference error: %v", err), http.StatusInternalServerError)
 		return
