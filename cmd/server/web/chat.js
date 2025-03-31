@@ -7,18 +7,55 @@ class ChatUI {
         this.assistantTemplate = document.getElementById('assistant-message-template');
         this.loadingIndicator = document.getElementById('loading-indicator');
         this.evidenceCounter = 0;
+        this.strategySelector = document.getElementById('strategy-selector');
+        this.strategyButton = document.getElementById('strategy-button');
+        this.selectedStrategy = document.getElementById('selected-strategy');
+        this.currentStrategy = 'hybrid';
         
         this.setupEventListeners();
+        this.setupStrategySelector();
+        
+        tippy('[data-tippy-content]', {
+            theme: 'light',
+            placement: 'top',
+        });
     }
 
     setupEventListeners() {
-        this.chatForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const message = this.userInput.value.trim();
-            if (message) {
-                await this.handleUserMessage(message);
-                this.userInput.value = '';
+        this.chatForm.addEventListener('submit', this.handleSubmit.bind(this));
+    }
+
+    setupStrategySelector() {
+        // Toggle strategy selector
+        this.strategyButton.addEventListener('click', () => {
+            this.strategySelector.classList.toggle('hidden');
+        });
+
+        // Close strategy selector when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.strategyButton.contains(e.target) && !this.strategySelector.contains(e.target)) {
+                this.strategySelector.classList.add('hidden');
             }
+        });
+
+        // Handle strategy selection
+        document.querySelectorAll('.strategy-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const strategy = option.dataset.strategy;
+                this.currentStrategy = strategy;
+                this.selectedStrategy.textContent = option.querySelector('.strategy-name').textContent.replace(' (Default)', '');
+                
+                // Remove existing checkmarks
+                document.querySelectorAll('.strategy-checkmark').forEach(check => check.remove());
+                
+                // Add new checkmark
+                const checkmark = document.createElement('span');
+                checkmark.className = 'strategy-checkmark text-blue-400 ml-2';
+                checkmark.textContent = '✓';
+                option.appendChild(checkmark);
+                
+                this.strategySelector.classList.add('hidden');
+            });
         });
     }
 
@@ -35,39 +72,58 @@ class ChatUI {
         }
     }
 
-    async handleUserMessage(message) {
-        // Add user message to chat
-        this.addMessage('user', message);
-        
+    async handleSubmit(e) {
+        e.preventDefault();
+        const message = this.userInput.value.trim();
+        if (!message) return;
+
+        // Add user message
+        this.addMessage(message, 'user');
+        this.userInput.value = '';
+
+        // Show loading indicator
+        this.showLoading();
+
         try {
-            this.showLoading();
-            // Send message to API
-            const response = await this.sendMessage(message);
-            
-            // Add assistant response to chat
-            this.addMessage('assistant', response.answer, response.supporting_evidence);
+            const response = await fetch('/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt: message,
+                    inferenceStrategy: this.currentStrategy
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            this.addMessage(data, 'assistant');
         } catch (error) {
             console.error('Error:', error);
-            this.addMessage('assistant', 'Sorry, there was an error processing your request.');
+            let errorMessage = 'An error occurred while processing your request.';
+            
+            if (!navigator.onLine) {
+                errorMessage = 'You appear to be offline. Please check your internet connection.';
+            } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                errorMessage = 'Cannot reach the server. Please check if the server is running and try again.';
+            } else if (error.message.includes('status: 404')) {
+                errorMessage = 'Server endpoint not found. Please check the server configuration.';
+            } else if (error.message.includes('status: 5')) {
+                errorMessage = 'Server error. Please try again later.';
+            }
+
+            this.addMessage({
+                answer: errorMessage,
+                confidence: 0,
+                supporting_evidence: []
+            }, 'assistant');
         } finally {
             this.hideLoading();
         }
-    }
-
-    async sendMessage(message) {
-        const response = await fetch(`${config.apiBaseUrl}${config.endpoints.chat}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ prompt: message }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        return await response.json();
     }
 
     async fetchMessageById(messageId) {
@@ -80,67 +136,75 @@ class ChatUI {
         return await response.json();
     }
 
-    addMessage(type, text, evidence = []) {
-        const template = type === 'user' ? this.userTemplate : this.assistantTemplate;
+    addMessage(message, role) {
+        const template = role === 'user' ? this.userTemplate : this.assistantTemplate;
         const messageElement = template.content.cloneNode(true);
+        const messageText = messageElement.querySelector('.message-text');
         
-        // Set message text
-        messageElement.querySelector('.message-text').textContent = text;
-
-        // Add evidence if present
-        if (evidence && evidence.length > 0) {
-            const evidenceContainer = messageElement.querySelector('.evidence-container');
+        if (role === 'user') {
+            messageText.textContent = message;
+        } else {
+            // Handle assistant response
+            messageText.textContent = message.answer;
             
-            // Add "Grounding:" label
-            const groundingLabel = document.createElement('span');
-            groundingLabel.className = 'text-gray-600 mr-2';
-            groundingLabel.textContent = 'Grounding:';
-            evidenceContainer.appendChild(groundingLabel);
-
-            // Add numbered links
-            evidence.forEach((ev, index) => {
-                // Add number link
-                const evidenceLink = document.createElement('span');
-                evidenceLink.className = 'evidence-link cursor-pointer';
-                evidenceLink.textContent = (index + 1).toString();
+            // Add evidence links if present
+            if (message.supporting_evidence && message.supporting_evidence.length > 0) {
+                const evidenceContainer = document.createElement('div');
+                evidenceContainer.classList.add('evidence-container', 'mt-2', 'text-sm', 'text-gray-400');
                 
-                // Create tooltip instance
-                const tooltip = tippy(evidenceLink, {
-                    ...config.ui.evidenceTooltip,
-                    allowHTML: true,
-                    content: 'Loading...',
-                    onShow: async (instance) => {
-                        try {
-                            const message = await this.fetchMessageById(ev.message_id);
-                            instance.setContent(`
-                                <div class="p-2">
-                                    <div class="font-bold mb-1">Supporting Evidence #${index + 1}</div>
-                                    <div class="text-sm">${message.text}</div>
-                                    <div class="mt-1 text-xs text-gray-500">Relevance: ${ev.relevance}</div>
-                                </div>
-                            `);
-                        } catch (error) {
-                            instance.setContent('Error loading message');
+                // Add "Grounding:" text once
+                evidenceContainer.appendChild(document.createTextNode('Grounding: '));
+                
+                // Add numbered links
+                message.supporting_evidence.forEach((evidence, index) => {
+                    if (index > 0) {
+                        evidenceContainer.appendChild(document.createTextNode(' '));
+                    }
+                    
+                    const link = document.createElement('a');
+                    link.href = '#';
+                    link.textContent = (index + 1).toString();
+                    link.classList.add('text-blue-400', 'hover:text-blue-600', 'evidence-link');
+                    
+                    // Create tooltip instance immediately with loading state
+                    const tooltip = tippy(link, {
+                        theme: 'light',
+                        placement: 'top',
+                        content: evidence.relevance,
+                        interactive: true,
+                        onShow: async (instance) => {
+                            try {
+                                const response = await fetch(`/api/v1/message/id?id=${evidence.message_id}`);
+                                if (!response.ok) throw new Error('Failed to fetch message');
+                                const data = await response.json();
+                                instance.setContent(`${evidence.relevance}\n\nOriginal message: "${data.text}"`);
+                            } catch (error) {
+                                console.error('Error fetching message:', error);
+                                instance.setContent('Error loading message details');
+                            }
                         }
-                    },
+                    });
+                    
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                    });
+                    
+                    evidenceContainer.appendChild(link);
                 });
                 
-                evidenceContainer.appendChild(evidenceLink);
-
-                // Add space after each number except the last one
-                if (index < evidence.length - 1) {
-                    const space = document.createElement('span');
-                    space.className = 'mx-1';
-                    space.textContent = ' ';
-                    evidenceContainer.appendChild(space);
-                }
-            });
+                messageText.appendChild(evidenceContainer);
+            }
+            
+            // Add confidence score if present
+            if (message.confidence) {
+                const confidenceElement = document.createElement('div');
+                confidenceElement.classList.add('text-sm', 'text-gray-400', 'mt-1');
+                confidenceElement.textContent = `Confidence: ${(message.confidence * 100).toFixed(1)}%`;
+                messageText.appendChild(confidenceElement);
+            }
         }
-
-        // Add message to chat
-        this.chatContainer.appendChild(messageElement);
         
-        // Scroll to bottom
+        this.chatContainer.appendChild(messageElement);
         this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
     }
 }
