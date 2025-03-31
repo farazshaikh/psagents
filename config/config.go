@@ -86,6 +86,8 @@ type LLMConfig struct {
 	SystemPrompt     string                 `mapstructure:"-"` // Loaded from file
 	InferenceSystemPromptFile string        `mapstructure:"inference_system_prompt_file"`
 	InferenceSystemPrompt     string        `mapstructure:"-"` // Loaded from file
+	EvaluationSystemPromptFile string        `mapstructure:"evaluation_system_prompt_file"`
+	EvaluationSystemPrompt     string        `mapstructure:"-"` // Loaded from file
 	Providers        map[string]ProviderConfig `mapstructure:"providers"`
 }
 
@@ -186,6 +188,20 @@ func LoadConfig(configPath string) (*Config, error) {
 			return nil, fmt.Errorf("failed to read inference system prompt file: %w", err)
 		}
 		config.LLM.InferenceSystemPrompt = string(promptBytes)
+	}
+
+	// Load evaluation system prompt from file if specified
+	if config.LLM.EvaluationSystemPromptFile != "" {
+		// Get the directory of the config file
+		configDir := filepath.Dir(configPath)
+		// Resolve the evaluation system prompt file path relative to the config file
+		promptPath := filepath.Join(configDir, "..", config.LLM.EvaluationSystemPromptFile)
+		// Read the evaluation system prompt file
+		promptBytes, err := os.ReadFile(promptPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read evaluation system prompt file: %w", err)
+		}
+		config.LLM.EvaluationSystemPrompt = string(promptBytes)
 	}
 
 	// Handle environment variable substitution for API keys

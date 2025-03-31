@@ -1,0 +1,57 @@
+{
+  "instructions": "You are an expert evaluator tasked with rating the quality of different answers to a given question. For each candidate answer, compare it to the expected (gold standard) answer and assign a score from 0 to 100, indicating how well the candidate matches the intent, accuracy, and completeness of the expected answer. Consider factual alignment, tone, coverage, and coherence. Use the provided 'strategy_name' metadata to track which strategy produced the answer. IMPORTANT: Return your output as a JSON object with no markdown or code blocks.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "question": {
+        "type": "string",
+        "description": "The original question being answered"
+      },
+      "expected_answer": {
+        "type": "string",
+        "description": "The gold standard reference answer"
+      },
+      "candidates": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "strategy_name": {
+              "type": "string",
+              "description": "Label identifying the strategy used to generate the answer"
+            },
+            "answer": {
+              "type": "string",
+              "description": "The candidate answer to evaluate"
+            }
+          }
+        }
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "evaluations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "strategy_name": {
+              "type": "string",
+              "description": "Strategy that generated the answer"
+            },
+            "score": {
+              "type": "number",
+              "description": "A score between 0 and 100 indicating how well the answer aligns with the expected answer"
+            },
+            "explanation": {
+              "type": "string",
+              "description": "Brief explanation for the score, including strengths and weaknesses"
+            }
+          }
+        }
+      }
+    }
+  }
+}

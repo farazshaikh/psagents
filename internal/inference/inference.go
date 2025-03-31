@@ -18,6 +18,35 @@ import (
 	"github.com/yourusername/psagents/internal/vector_db"
 )
 
+// evaluation
+type Evaluation struct {
+	StrategyName string  `json:"strategy_name"`
+	Score       float64 `json:"score"`
+	Explanation string  `json:"explanation"`
+}
+
+type EvaluationParams struct {
+	Question       string `json:"question"`
+	ExpectedAnswer string `json:"expected_answer"`
+	Candidates     []struct {
+		StrategyName string `json:"strategy_name"`
+		Answer      string `json:"answer"`
+	} `json:"candidates"`
+}
+
+type EvaluationResponse struct {
+	Evaluations []Evaluation `json:"evaluations"`
+}
+
+	// Parse the template
+type EvaluationPrompt struct {
+	Instructions string                 `json:"instructions"`
+	InputSchema  map[string]interface{} `json:"input_schema"`
+	OutputSchema map[string]interface{} `json:"output_schema"`
+	Input        EvaluationParams      `json:"input"`
+}
+
+// inference
 type Query struct {
 	Question string `json:"question"`
 }
@@ -154,6 +183,30 @@ func (l *Logger) LogInference(question string, embedding []float32, directMatche
 	l.Printf("\n\n===================\n\n")
 }
 
+func (l *Logger) LogEvaluation(question string, expectedAnswer string, evaluationParams EvaluationParams, prompt *EvaluationPrompt, systemPrompt string, llmResponse string) {
+	l.Printf("=== Evaluation Request ===\n")
+	l.Printf("Question: %s\n", question)
+	l.Printf("Expected Answer: %s\n", expectedAnswer)
+
+	l.Printf("\n\n=== Candidates ===")
+	for i, candidate := range evaluationParams.Candidates {
+		l.Printf("\n%d. Candidate:", i+1)
+		l.Printf("\n   Strategy Name: %s", candidate.StrategyName)
+		l.Printf("\n   Answer: %s", candidate.Answer)
+	}
+
+	l.Printf("\n\n=== Evaluation Prompt ===")
+	l.Printf("\nInstructions:\n%s", prompt.Instructions)
+	l.Printf("\nInput Schema:\n%s", prompt.InputSchema)
+	l.Printf("\nOutput Schema:\n%s", prompt.OutputSchema)
+	inputBytes, _ := json.MarshalIndent(prompt.Input, "", "  ")
+	l.Printf("\nInput:\n%s", string(inputBytes))
+
+	l.Printf("\n\n=== LLM Response ===")
+	l.Printf("\n%s", llmResponse)
+
+	l.Printf("\n\n===================\n\n")
+}
 
 
 type Engine struct {
@@ -210,6 +263,65 @@ func NewEngine(cfg *config.Config) (*Engine, error) {
 		embeddingsGen: embeddingsGen,
 		cfg: cfg,
 	}, nil
+}
+
+func (e *Engine) Evaluate(params EvaluationParams) (EvaluationResponse, error) {
+
+	// Load evaluation prompt template
+	evaluationPromptBytes, err := os.ReadFile("data/prompts/evaluation.json")
+	if err != nil {
+		return EvaluationResponse{}, fmt.Errorf("failed to read evaluation prompt: %w", err)
+	}
+
+	var evaluationPrompt EvaluationPrompt;
+	if err := json.Unmarshal(evaluationPromptBytes, &evaluationPrompt); err != nil {
+		return EvaluationResponse{}, fmt.Errorf("failed to parse evaluation prompt template: %w", err)
+	}
+
+	// Populate the input
+	evaluationPrompt.Input = params
+
+	// Convert prompt to JSON
+	promptBytes, err := json.Marshal(evaluationPrompt)
+	if err != nil {
+		return EvaluationResponse{}, fmt.Errorf("failed to marshal evaluation prompt: %w", err)
+	}
+
+	// Call LLM with evaluation prompt and system prompt from config
+	answer, err := e.llmClient.GetInference(string(promptBytes), e.cfg.LLM.EvaluationSystemPrompt)
+	if err != nil {
+		return EvaluationResponse{}, fmt.Errorf("failed to get LLM evaluation: %w", err)
+	}
+
+	// Clean the response by removing markdown code fence blocks
+	cleanAnswer := answer
+	if strings.Contains(answer, "```") {
+		parts := strings.Split(answer, "```")
+		if len(parts) >= 3 {
+			cleanAnswer = strings.TrimSpace(parts[1])
+			if strings.Contains(cleanAnswer, "\n") {
+				cleanAnswer = cleanAnswer[strings.Index(cleanAnswer, "\n")+1:]
+			}
+		}
+	}
+
+	// Log evaluation details
+	e.logger.LogEvaluation(
+		params.Question,
+		params.ExpectedAnswer,
+		params,
+		&evaluationPrompt,
+		e.cfg.LLM.EvaluationSystemPrompt,
+		cleanAnswer,
+	)
+
+	var response EvaluationResponse
+	if err := json.Unmarshal([]byte(cleanAnswer), &response); err != nil {
+		return EvaluationResponse{}, fmt.Errorf("failed to parse LLM evaluation response: %w", err)
+	}
+
+	return response, nil
+
 }
 
 func findRelatedMessages(tx neo4j.Transaction, directMatch vector.Message, minConfidence float64, maxMessages int, maxDepth int) ([]RelatedMessage, error) {

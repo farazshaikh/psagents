@@ -57,6 +57,8 @@ llm:
     max: 0.8
   system_prompt_file: "data/prompts/system.json"  # Load system prompt from external file
   inference_system_prompt_file: "data/prompts/inference_system.json"  # Load inference system prompt from external file
+  evaluation_system_prompt_file: "data/prompts/evaluation_system.json"  # Load evaluation system prompt from external file
+
   # Provider-specific configurations
   providers:
     ollama:
