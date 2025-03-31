@@ -260,4 +260,32 @@ button[type="submit"] {
     align-items: center;
     justify-content: center;
     min-width: 100px;
+}
+
+.metadata-container {
+    border-top: 1px solid rgba(156, 163, 175, 0.1);
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.confidence-info,
+.strategy-info,
+.evidence-info {
+    display: inline-flex;
+    align-items: center;
+    color: #9ca3af;
+    font-size: 0.875rem;
+}
+
+.evidence-link {
+    display: inline-block;
+    min-width: 1.5rem;
+    text-align: center;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.evidence-link:hover {
+    background-color: rgba(96, 165, 250, 0.1);
 } 

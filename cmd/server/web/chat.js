@@ -147,12 +147,30 @@ class ChatUI {
             // Handle assistant response
             messageText.textContent = message.answer;
             
+            // Create metadata container
+            const metadataContainer = document.createElement('div');
+            metadataContainer.classList.add('metadata-container', 'mt-2', 'text-sm', 'text-gray-400', 'flex', 'flex-wrap', 'items-center', 'gap-4');
+            
+            // Add confidence score if present
+            if (message.confidence) {
+                const confidenceElement = document.createElement('div');
+                confidenceElement.classList.add('confidence-info');
+                confidenceElement.textContent = `Confidence: ${(message.confidence * 100).toFixed(1)}%`;
+                metadataContainer.appendChild(confidenceElement);
+            }
+
+            // Add strategy info
+            const strategyElement = document.createElement('div');
+            strategyElement.classList.add('strategy-info');
+            strategyElement.textContent = `Strategy: ${this.currentStrategy.charAt(0).toUpperCase() + this.currentStrategy.slice(1)}`;
+            metadataContainer.appendChild(strategyElement);
+            
             // Add evidence links if present
             if (message.supporting_evidence && message.supporting_evidence.length > 0) {
                 const evidenceContainer = document.createElement('div');
-                evidenceContainer.classList.add('evidence-container', 'mt-2', 'text-sm', 'text-gray-400');
+                evidenceContainer.classList.add('evidence-info', 'flex', 'items-center', 'gap-2');
                 
-                // Add "Grounding:" text once
+                // Add "Grounding:" text
                 evidenceContainer.appendChild(document.createTextNode('Grounding: '));
                 
                 // Add numbered links
@@ -192,16 +210,10 @@ class ChatUI {
                     evidenceContainer.appendChild(link);
                 });
                 
-                messageText.appendChild(evidenceContainer);
+                metadataContainer.appendChild(evidenceContainer);
             }
             
-            // Add confidence score if present
-            if (message.confidence) {
-                const confidenceElement = document.createElement('div');
-                confidenceElement.classList.add('text-sm', 'text-gray-400', 'mt-1');
-                confidenceElement.textContent = `Confidence: ${(message.confidence * 100).toFixed(1)}%`;
-                messageText.appendChild(confidenceElement);
-            }
+            messageText.appendChild(metadataContainer);
         }
         
         this.chatContainer.appendChild(messageElement);
