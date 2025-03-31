@@ -72,27 +72,59 @@
 
 /* Tippy tooltip customization */
 .tippy-box[data-theme~='light'] {
-    background-color: #1f2937;
-    color: #f3f4f6;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+    background-color: #1a1f2e;
+    color: #e2e8f0;
+    border: 1px solid #2d3748;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     border-radius: 0.5rem;
-    max-width: 300px !important;
-    font-size: 0.875rem;
-    line-height: 1.5;
 }
 
 .tippy-box[data-theme~='light'] .tippy-content {
-    padding: 0.75rem;
-    white-space: pre-wrap;
-    word-break: break-word;
+    color: #e2e8f0;
+    padding: 0;
 }
 
 .tippy-box[data-theme~='light'][data-placement^='top'] > .tippy-arrow::before {
-    border-top-color: #1f2937;
+    border-top-color: #1a1f2e;
 }
 
 .tippy-box[data-theme~='light'][data-placement^='bottom'] > .tippy-arrow::before {
-    border-bottom-color: #1f2937;
+    border-bottom-color: #1a1f2e;
+}
+
+.tooltip-content {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    background-color: #1a1f2e;
+    color: #e2e8f0;
+}
+
+.tooltip-relevance {
+    color: #60a5fa;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    background-color: transparent;
+}
+
+.tooltip-divider {
+    height: 1px;
+    background-color: #2d3748;
+    margin: 0.5rem 0;
+}
+
+.tooltip-message-id {
+    color: #9ca3af;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    background-color: transparent;
+}
+
+.tooltip-message {
+    color: #e2e8f0;
+    line-height: 1.4;
+    margin-top: 0.5rem;
+    word-break: break-word;
+    background-color: transparent;
 }
 
 /* Loading animation */
@@ -393,29 +425,23 @@ button[type="submit"] {
 }
 
 .grounding-number {
-    display: inline-flex;
+    background-color: #2563eb;
+    color: #ffffff;
+    border-radius: 9999px;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 1.5rem;
-    height: 1.5rem;
-    padding: 0 0.25rem;
-    background-color: rgba(37, 99, 235, 0.1);
-    border: 1px solid rgba(37, 99, 235, 0.2);
-    border-radius: 9999px;
-    color: #60a5fa;
     font-size: 0.75rem;
     font-weight: 500;
-    line-height: 1;
-    transition: all 0.15s ease;
-    cursor: pointer;
-    user-select: none;
+    transition: all 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .grounding-number:hover {
-    background-color: rgba(37, 99, 235, 0.15);
-    border-color: rgba(37, 99, 235, 0.3);
-    color: #93c5fd;
-    transform: translateY(-1px);
+    background-color: #1d4ed8;
+    transform: scale(1.05);
 }
 
 .grounding-number:active {

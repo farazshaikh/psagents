@@ -181,6 +181,14 @@ class ChatUI {
             strategyInfo.style.display = 'none';
         }
 
+        // Function to truncate text
+        const truncateText = (text, maxLength = 150) => {
+            if (text && text.length > maxLength) {
+                return text.substring(0, maxLength) + '...';
+            }
+            return text;
+        };
+
         // Handle evidence/grounding
         const groundingNumbers = messageNode.querySelector('.grounding-numbers');
         if (metadata.evidence && Array.isArray(metadata.evidence) && metadata.evidence.length > 0) {
@@ -191,25 +199,78 @@ class ChatUI {
             numbersContainer.className = 'flex items-center gap-1';
             
             metadata.evidence.forEach((evidence, index) => {
-                // Get evidence text, handling different possible formats
-                let evidenceText = '';
+                // Get evidence text and format tooltip content
+                let tooltipContent = '';
                 if (typeof evidence === 'string') {
-                    evidenceText = evidence;
+                    tooltipContent = truncateText(evidence);
                 } else if (evidence && typeof evidence === 'object') {
-                    if (evidence.text) {
-                        evidenceText = evidence.text;
+                    if (evidence.relevance && evidence.message) {
+                        // Format for supporting_evidence with message text
+                        tooltipContent = `
+                            <div class="tooltip-content">
+                                <div class="tooltip-relevance">${evidence.relevance}</div>
+                                <div class="tooltip-divider"></div>
+                                <div class="tooltip-message">${truncateText(evidence.message)}</div>
+                            </div>
+                        `;
+                    } else if (evidence.relevance && evidence.message_id) {
+                        // Format for supporting_evidence with message_id
+                        tooltipContent = `
+                            <div class="tooltip-content">
+                                <div class="tooltip-relevance">${evidence.relevance}</div>
+                                <div class="tooltip-divider"></div>
+                                <div class="tooltip-message-id">ID: ${truncateText(evidence.message_id, 20)}</div>
+                                <div class="tooltip-divider"></div>
+                                <div class="tooltip-message">Loading message...</div>
+                            </div>
+                        `;
+
+                        // Create grounding number button
+                        const numberButton = document.createElement('button');
+                        numberButton.className = 'grounding-number';
+                        numberButton.textContent = index + 1;
+                        
+                        // Initialize tooltip
+                        const tooltip = tippy(numberButton, {
+                            content: tooltipContent,
+                            theme: 'light',
+                            placement: 'bottom',
+                            interactive: true,
+                            allowHTML: true,
+                            maxWidth: 400,
+                            delay: [0, 200],
+                            animation: 'fade'
+                        });
+
+                        // Fetch the message text if not provided
+                        if (!evidence.text) {
+                            this.fetchMessageText(evidence.message_id).then(messageText => {
+                                if (messageText) {
+                                    tooltip.setContent(`
+                                        <div class="tooltip-content">
+                                            <div class="tooltip-relevance">${evidence.relevance}</div>
+                                            <div class="tooltip-divider"></div>
+                                            <div class="tooltip-message-id">ID: ${truncateText(evidence.message_id, 20)}</div>
+                                            <div class="tooltip-divider"></div>
+                                            <div class="tooltip-message">${truncateText(messageText)}</div>
+                                        </div>
+                                    `);
+                                }
+                            });
+                        }
+                        
+                        numbersContainer.appendChild(numberButton);
+                    } else if (evidence.text) {
+                        tooltipContent = truncateText(evidence.text);
                     } else if (evidence.message) {
-                        evidenceText = evidence.message;
-                    } else if (evidence.relevance) {
-                        // Handle supporting_evidence format
-                        evidenceText = evidence.relevance;
+                        tooltipContent = truncateText(evidence.message);
                     } else {
-                        evidenceText = JSON.stringify(evidence);
+                        tooltipContent = truncateText(JSON.stringify(evidence));
                     }
                 }
                 
-                if (evidenceText) {
-                    console.log(`Creating grounding number ${index + 1} with text:`, evidenceText);
+                if (tooltipContent && !evidence.message_id) {
+                    console.log(`Creating grounding number ${index + 1} with content:`, tooltipContent);
                     
                     // Create grounding number button
                     const numberButton = document.createElement('button');
@@ -218,12 +279,12 @@ class ChatUI {
                     
                     // Initialize tooltip
                     tippy(numberButton, {
-                        content: evidenceText,
+                        content: tooltipContent,
                         theme: 'light',
                         placement: 'bottom',
                         interactive: true,
                         allowHTML: true,
-                        maxWidth: 300,
+                        maxWidth: 400,
                         delay: [0, 200],
                         animation: 'fade'
                     });
@@ -298,6 +359,21 @@ class ChatUI {
 
     scrollToBottom() {
         this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
+    }
+
+    // Helper function to fetch message text by ID
+    async fetchMessageText(messageId) {
+        try {
+            const response = await fetch(`/api/v1/message/id?id=${messageId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            return data.text || data.message || data.content || data.Message;
+        } catch (error) {
+            console.error('Error fetching message text:', error);
+            return 'Failed to load message';
+        }
     }
 }
 
