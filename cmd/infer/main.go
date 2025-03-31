@@ -73,6 +73,26 @@ It supports both interactive and batch modes for processing questions.`,
 		},
 	}
 
+	// Evaluation mode command
+	evaluateCmd := &cobra.Command{
+		Use:   "evaluate",
+		Short: "Run evaluation mode",
+		Long:  `Process queries and evaluate responses from all inference strategies.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if batchFile == "" {
+				fmt.Println("Error: batch file path is required")
+				os.Exit(1)
+			}
+
+			cfg, err := config.LoadConfig(configPath)
+			if err != nil {
+				fmt.Printf("Error loading config: %v\n", err)
+				os.Exit(1)
+			}
+			runEvaluationMode(cfg, batchFile, difficulty)
+		},
+	}
+
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "config/config.example.yaml", "path to config file")
 
@@ -81,8 +101,13 @@ It supports both interactive and batch modes for processing questions.`,
 	batchCmd.Flags().StringVarP(&difficulty, "difficulty", "d", "", "filter queries by difficulty (easy, medium, hard)")
 	batchCmd.MarkFlagRequired("file")
 
+	// Evaluation command flags
+	evaluateCmd.Flags().StringVarP(&batchFile, "file", "f", "", "path to batch query file (required)")
+	evaluateCmd.Flags().StringVarP(&difficulty, "difficulty", "d", "", "filter queries by difficulty (easy, medium, hard)")
+	evaluateCmd.MarkFlagRequired("file")
+
 	// Add commands to root
-	rootCmd.AddCommand(interactiveCmd, batchCmd)
+	rootCmd.AddCommand(interactiveCmd, batchCmd, evaluateCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -259,4 +284,144 @@ func loadQueries(filePath string) ([]BatchQuery, error) {
 	}
 
 	return queries, scanner.Err()
+}
+
+func runEvaluationMode(cfg *config.Config, batchFile, difficulty string) {
+	// Read queries from file
+	queries, err := loadQueries(batchFile)
+	if err != nil {
+		fmt.Printf("Error loading queries: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Filter by difficulty if specified
+	if difficulty != "" {
+		var filtered []BatchQuery
+		for _, q := range queries {
+			if q.Difficulty == difficulty {
+				filtered = append(filtered, q)
+			}
+		}
+		queries = filtered
+	}
+
+	// Create evaluation file
+	evalFile, err := getNextEvaluationFile()
+	if err != nil {
+		fmt.Printf("Error creating evaluation file: %v\n", err)
+		os.Exit(1)
+	}
+	defer evalFile.Close()
+
+	engine, err := inference.NewEngine(cfg)
+	if err != nil {
+		fmt.Printf("Error initializing inference: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Define all strategies
+	strategies := []struct {
+		name     string
+		strategy inference.InferenceStrategy
+	}{
+		{"similarity", inference.SimilarityOnly},
+		{"semantic", inference.SemanticOnly},
+		{"hybrid", inference.Hybrid},
+	}
+
+	// Process each query
+	for _, query := range queries {
+		fmt.Printf("\nProcessing query %s: %s\n", query.ID, query.Question)
+
+		// Run inference with each strategy
+		var candidates []struct {
+			StrategyName string `json:"strategy_name"`
+			Answer      string `json:"answer"`
+		}
+
+		for _, s := range strategies {
+			fmt.Printf("Running %s strategy...\n", s.name)
+			params := inference.GetInferenceParams(cfg, s.strategy)
+			params.Query = inference.Query{
+				Question: query.Question,
+			}
+
+			response, err := engine.Infer(params)
+			if err != nil {
+				fmt.Printf("Error with %s strategy: %v\n", s.name, err)
+				continue
+			}
+
+			candidates = append(candidates, struct {
+				StrategyName string `json:"strategy_name"`
+				Answer      string `json:"answer"`
+			}{
+				StrategyName: s.name,
+				Answer:      response.Answer,
+			})
+		}
+
+		// If we have candidates and an example answer, evaluate them
+		if len(candidates) > 0 && query.ExampleCorrectAnswer != "" {
+			evalParams := inference.EvaluationParams{
+				Question:       query.Question,
+				ExpectedAnswer: query.ExampleCorrectAnswer,
+				Candidates:     candidates,
+			}
+
+			evalResponse, err := engine.Evaluate(evalParams)
+			if err != nil {
+				fmt.Printf("Error evaluating responses: %v\n", err)
+				continue
+			}
+
+			// Write evaluation results
+			result := struct {
+				QueryID      string                   `json:"query_id"`
+				Question     string                   `json:"question"`
+				Evaluations  []inference.Evaluation   `json:"evaluations"`
+				Candidates   []map[string]interface{} `json:"candidates"`
+			}{
+				QueryID:     query.ID,
+				Question:    query.Question,
+				Evaluations: evalResponse.Evaluations,
+				Candidates:  make([]map[string]interface{}, len(candidates)),
+			}
+
+			// Format candidates with their answers
+			for i, c := range candidates {
+				result.Candidates[i] = map[string]interface{}{
+					"strategy": c.StrategyName,
+					"answer":   c.Answer,
+				}
+			}
+
+			// Write result to file
+			bytes, err := json.Marshal(result)
+			if err != nil {
+				fmt.Printf("Error marshaling result: %v\n", err)
+				continue
+			}
+
+			if _, err := evalFile.Write(bytes); err != nil {
+				fmt.Printf("Error writing result: %v\n", err)
+				continue
+			}
+			if _, err := evalFile.WriteString("\n"); err != nil {
+				fmt.Printf("Error writing newline: %v\n", err)
+				continue
+			}
+
+			// Print evaluation summary
+			fmt.Printf("\nEvaluation Results for query %s:\n", query.ID)
+			for _, eval := range evalResponse.Evaluations {
+				fmt.Printf("- %s: Score=%.2f, %s\n",
+					eval.StrategyName,
+					eval.Score,
+					eval.Explanation)
+			}
+		}
+	}
+
+	fmt.Println("\nEvaluation complete. Results written to file.")
 }
