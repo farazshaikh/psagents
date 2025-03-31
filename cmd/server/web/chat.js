@@ -95,16 +95,17 @@ class ChatUI {
                 for (const strategy of this.strategyOrder) {
                     try {
                         const response = await this.sendMessage(message, strategy);
+                        console.log(`${strategy} response:`, response);
                         const strategyLabels = {
                             'similarity': 'Similarity (Vector)',
                             'semantic': 'Semantic (LLM Knowledge Graph)',
                             'hybrid': 'Hybrid'
                         };
                         
-                        this.addAssistantMessage(response.answer, {
+                        this.addAssistantMessage(response.answer || response.message, {
                             strategy: strategyLabels[strategy],
                             confidence: response.confidence,
-                            evidence: response.evidence
+                            evidence: response.supporting_evidence || response.evidence || response.grounding || []
                         });
                     } catch (error) {
                         console.error(`Error with ${strategy} strategy:`, error);
@@ -113,10 +114,11 @@ class ChatUI {
                 }
             } else {
                 const response = await this.sendMessage(message, this.currentStrategy);
-                this.addAssistantMessage(response.answer, {
+                console.log('Response:', response);
+                this.addAssistantMessage(response.answer || response.message, {
                     strategy: this.getStrategyLabel(this.currentStrategy),
                     confidence: response.confidence,
-                    evidence: response.evidence
+                    evidence: response.supporting_evidence || response.evidence || response.grounding || []
                 });
             }
         } catch (error) {
@@ -153,44 +155,96 @@ class ChatUI {
     }
 
     addAssistantMessage(text, metadata = {}) {
+        console.log('Adding assistant message with metadata:', metadata);
         const messageNode = this.assistantTemplate.content.cloneNode(true);
         const messageText = messageNode.querySelector('.message-text');
         messageText.textContent = text || 'No response received';
 
         // Handle metadata
+        const metadataContainer = messageNode.querySelector('.metadata-container');
+        
+        // Handle confidence
         if (metadata.confidence) {
             const confidenceValue = messageNode.querySelector('.confidence-value');
             confidenceValue.textContent = `${Math.round(metadata.confidence * 100)}%`;
+        } else {
+            const confidenceInfo = messageNode.querySelector('.confidence-info');
+            confidenceInfo.style.display = 'none';
         }
 
+        // Handle strategy
         if (metadata.strategy) {
             const strategyValue = messageNode.querySelector('.strategy-value');
             strategyValue.textContent = metadata.strategy;
+        } else {
+            const strategyInfo = messageNode.querySelector('.strategy-info');
+            strategyInfo.style.display = 'none';
         }
 
-        if (metadata.evidence && metadata.evidence.length > 0) {
-            const evidenceLinks = messageNode.querySelector('.evidence-links');
+        // Handle evidence/grounding
+        const groundingNumbers = messageNode.querySelector('.grounding-numbers');
+        if (metadata.evidence && Array.isArray(metadata.evidence) && metadata.evidence.length > 0) {
+            console.log('Processing evidence:', metadata.evidence);
+            
+            // Create a container for the grounding numbers
+            const numbersContainer = document.createElement('div');
+            numbersContainer.className = 'flex items-center gap-1';
+            
             metadata.evidence.forEach((evidence, index) => {
-                const link = document.createElement('a');
-                link.href = '#';
-                link.className = 'evidence-link';
-                link.textContent = `Message ${index + 1}`;
-                link.dataset.message = evidence.text || evidence;
+                // Get evidence text, handling different possible formats
+                let evidenceText = '';
+                if (typeof evidence === 'string') {
+                    evidenceText = evidence;
+                } else if (evidence && typeof evidence === 'object') {
+                    if (evidence.text) {
+                        evidenceText = evidence.text;
+                    } else if (evidence.message) {
+                        evidenceText = evidence.message;
+                    } else if (evidence.relevance) {
+                        // Handle supporting_evidence format
+                        evidenceText = evidence.relevance;
+                    } else {
+                        evidenceText = JSON.stringify(evidence);
+                    }
+                }
                 
-                // Initialize tooltip
-                tippy(link, {
-                    content: evidence.text || evidence,
-                    theme: 'light',
-                    placement: 'bottom',
-                    interactive: true,
-                    allowHTML: true
-                });
-
-                evidenceLinks.appendChild(link);
+                if (evidenceText) {
+                    console.log(`Creating grounding number ${index + 1} with text:`, evidenceText);
+                    
+                    // Create grounding number button
+                    const numberButton = document.createElement('button');
+                    numberButton.className = 'grounding-number';
+                    numberButton.textContent = index + 1;
+                    
+                    // Initialize tooltip
+                    tippy(numberButton, {
+                        content: evidenceText,
+                        theme: 'light',
+                        placement: 'bottom',
+                        interactive: true,
+                        allowHTML: true,
+                        maxWidth: 300,
+                        delay: [0, 200],
+                        animation: 'fade'
+                    });
+                    
+                    numbersContainer.appendChild(numberButton);
+                }
             });
+
+            // Only add the container if we have any evidence
+            if (numbersContainer.children.length > 0) {
+                groundingNumbers.appendChild(numbersContainer);
+            } else {
+                groundingNumbers.style.display = 'none';
+            }
         } else {
-            const evidenceInfo = messageNode.querySelector('.evidence-info');
-            evidenceInfo.style.display = 'none';
+            groundingNumbers.style.display = 'none';
+        }
+
+        // If no metadata is present, hide the container
+        if (!metadata.confidence && !metadata.strategy && (!metadata.evidence || metadata.evidence.length === 0)) {
+            metadataContainer.style.display = 'none';
         }
 
         this.chatContainer.appendChild(messageNode);
@@ -202,6 +256,10 @@ class ChatUI {
         const messageText = messageNode.querySelector('.message-text');
         messageText.textContent = errorText;
         messageText.classList.add('text-red-400');
+        
+        // Hide metadata for error messages
+        const metadataContainer = messageNode.querySelector('.metadata-container');
+        metadataContainer.style.display = 'none';
         
         this.chatContainer.appendChild(messageNode);
         this.scrollToBottom();
@@ -233,7 +291,9 @@ class ChatUI {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+        console.log('API Response:', data); // Debug log
+        return data;
     }
 
     scrollToBottom() {

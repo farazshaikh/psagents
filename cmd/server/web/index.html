@@ -19,20 +19,20 @@
         </header>
 
         <!-- Chat Container -->
-        <div id="chat-container" class="flex flex-col flex-1 overflow-y-auto p-4 space-y-4">
+        <div id="chat-container" class="flex flex-col flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900">
             <template id="user-message-template">
-                <div class="message user-message flex justify-end">
+                <div class="message user-message flex justify-end mb-4">
                     <div class="message-text bg-blue-600 text-white px-4 py-2 rounded-2xl max-w-[80%] break-words shadow-md">
                     </div>
                 </div>
             </template>
 
             <template id="assistant-message-template">
-                <div class="message assistant-message flex justify-start">
+                <div class="message assistant-message flex justify-start mb-4">
                     <div class="flex flex-col max-w-[80%]">
                         <div class="message-text bg-gray-700 text-white px-4 py-2 rounded-2xl break-words shadow-md">
                         </div>
-                        <div class="metadata-container text-sm">
+                        <div class="metadata-container mt-2">
                             <div class="flex items-center gap-4 text-gray-400">
                                 <span class="confidence-info flex items-center gap-1">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,16 +40,15 @@
                                     </svg>
                                     <span class="confidence-value"></span>
                                 </span>
-                                <span class="strategy-info flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                    </svg>
-                                    <span class="strategy-value"></span>
-                                </span>
-                            </div>
-                            <div class="evidence-info mt-2">
-                                <span class="text-gray-400">Grounding:</span>
-                                <div class="evidence-links flex flex-wrap gap-2"></div>
+                                <div class="flex items-center gap-2">
+                                    <span class="strategy-info flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                        </svg>
+                                        <span class="strategy-value"></span>
+                                    </span>
+                                    <div class="grounding-numbers"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -57,8 +56,10 @@
             </template>
 
             <template id="loading-template">
-                <div class="message assistant-message flex justify-start">
-                    <div class="loading-dots">Thinking</div>
+                <div class="message assistant-message flex justify-start mb-4">
+                    <div class="loading-dots bg-gray-700 text-gray-300 px-4 py-2 rounded-2xl">
+                        Thinking
+                    </div>
                 </div>
             </template>
         </div>
