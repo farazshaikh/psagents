@@ -371,7 +371,7 @@ type InferenceParams struct {
 	MaxSimilarityAnchors int
 	MaxRelatedMessages   int
 	MaxRelatedDepth      int
-	RelatedOnly          bool
+	IncludeDirectMatches bool
 	SystemPrompt         string
 	SamplingStrategy     SamplingStrategy
 }
@@ -483,13 +483,16 @@ func (e *Engine) Infer(params InferenceParams) (Response, error) {
 
 	// Populate the input
 	inferencePrompt.Input.Question = params.Query.Question
+
+	if params.IncludeDirectMatches {
 	inferencePrompt.Input.Context.DirectMatch = make([]struct {
 		ID   string `json:"id"`
 		Text string `json:"text"`
 	}, len(similar))
 	for i, match := range similar {
 		inferencePrompt.Input.Context.DirectMatch[i].ID = match.ID
-		inferencePrompt.Input.Context.DirectMatch[i].Text = match.Text
+			inferencePrompt.Input.Context.DirectMatch[i].Text = match.Text
+		}
 	}
 
 	inferencePrompt.Input.Context.RelatedMessages = make([]struct {

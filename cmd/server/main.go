@@ -24,7 +24,7 @@ type ChatCompletionRequest struct {
 	MaxSimilarityAnchors int    `json:"maxSimilarityAnchors"`
 	MaxRelatedMessages   int    `json:"maxRelatedMessages"`
 	MaxRelatedDepth      int    `json:"maxRelatedDepth"`
-	RelatedOnly          bool   `json:"relatedOnly"`
+	IncludeDirectMatches bool   `json:"includeDirectMatches"`
 	SamplingStrategy     string `json:"samplingStrategy"`
 }
 
@@ -88,6 +88,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		MaxSimilarityAnchors: req.MaxSimilarityAnchors,
 		MaxRelatedMessages:   req.MaxRelatedMessages,
 		MaxRelatedDepth:      req.MaxRelatedDepth,
+		IncludeDirectMatches: req.IncludeDirectMatches,
 		SystemPrompt:         s.cfg.LLM.InferenceSystemPrompt,
 	})
 	if err != nil {

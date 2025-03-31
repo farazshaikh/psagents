@@ -40,10 +40,11 @@ func main() {
 	// Initialize base inference params
 	params := inference.InferenceParams{
 		MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
-		MaxRelatedMessages:   cfg.GraphDB.SemanticFrontier,
-		MaxRelatedDepth:      3,
+		MaxRelatedMessages:   cfg.Inference.MaxRelatedMessages,
+		MaxRelatedDepth:      cfg.Inference.MaxRelatedDepth,
 		SystemPrompt:         cfg.LLM.InferenceSystemPrompt,
 		SamplingStrategy:     inference.SamplingStrategy_Greedy,
+		IncludeDirectMatches: true,
 	}
 
 	if *interactive {
