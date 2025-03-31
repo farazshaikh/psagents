@@ -10,7 +10,7 @@ class ChatUI {
         this.strategySelector = document.getElementById('strategy-selector');
         this.strategyButton = document.getElementById('strategy-button');
         this.selectedStrategy = document.getElementById('selected-strategy');
-        this.currentStrategy = 'hybrid'; // Default to hybrid
+        this.currentStrategy = 'hybrid';
         this.strategyOrder = ['similarity', 'semantic', 'hybrid'];
         this.evalResponses = new Map();
         
@@ -28,38 +28,64 @@ class ChatUI {
     }
 
     setupStrategySelector() {
-        // Toggle strategy selector
-        this.strategyButton.addEventListener('click', () => {
-            this.strategySelector.classList.toggle('hidden');
-        });
+        const strategyButton = document.querySelector('.strategy-button');
+        const strategyDropdown = document.querySelector('.strategy-dropdown');
+        const strategyOptions = document.querySelectorAll('.strategy-option');
+        const strategyText = document.querySelector('.strategy-text');
 
-        // Close strategy selector when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!this.strategyButton.contains(e.target) && !this.strategySelector.contains(e.target)) {
-                this.strategySelector.classList.add('hidden');
+        // Set initial state
+        strategyText.textContent = 'Hybrid';
+        this.currentStrategy = 'hybrid';
+        
+        // Show checkmark for hybrid by default
+        strategyOptions.forEach(option => {
+            const check = option.querySelector('.strategy-check');
+            if (option.dataset.strategy === 'hybrid') {
+                check.classList.remove('hidden');
+            } else {
+                check.classList.add('hidden');
             }
         });
 
-        // Handle strategy selection
-        document.querySelectorAll('.strategy-option').forEach(option => {
-            option.addEventListener('click', () => {
+        // Prevent event propagation for the entire strategy selector
+        document.querySelector('.strategy-selector').addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
+        strategyButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            strategyDropdown.classList.toggle('hidden');
+        });
+
+        strategyOptions.forEach(option => {
+            option.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
                 const strategy = option.dataset.strategy;
+                strategyText.textContent = option.querySelector('span').textContent;
                 this.currentStrategy = strategy;
-                this.selectedStrategy.textContent = option.querySelector('.strategy-name').textContent;
                 
                 // Update checkmarks
-                document.querySelectorAll('.strategy-option').forEach(opt => {
-                    const checkmark = opt.querySelector('.strategy-checkmark');
-                    if (checkmark) checkmark.remove();
+                strategyOptions.forEach(opt => {
+                    const check = opt.querySelector('.strategy-check');
+                    if (opt.dataset.strategy === strategy) {
+                        check.classList.remove('hidden');
+                    } else {
+                        check.classList.add('hidden');
+                    }
                 });
                 
-                const checkmark = document.createElement('span');
-                checkmark.className = 'strategy-checkmark';
-                checkmark.textContent = '✓';
-                option.appendChild(checkmark);
-                
-                this.strategySelector.classList.add('hidden');
+                strategyDropdown.classList.add('hidden');
             });
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('.strategy-selector')) {
+                strategyDropdown.classList.add('hidden');
+            }
         });
     }
 

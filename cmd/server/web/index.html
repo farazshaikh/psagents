@@ -78,30 +78,37 @@
                         class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-shrink-0">
                     Send
                 </button>
-                <div class="relative inline-block">
-                    <button id="strategy-button" type="button" class="flex items-center gap-2">
-                        <span id="selected-strategy">Hybrid</span>
-                        <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                <div class="strategy-selector">
+                    <button class="strategy-button">
+                        <span class="strategy-text">Hybrid</span>
+                        <svg class="strategy-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
                     </button>
-                    <div id="strategy-selector" class="strategy-selector hidden">
-                        <div class="strategy-option" data-strategy="eval" 
-                             data-tippy-content="Evaluation mode: Compares responses from all three strategies (Similarity → Semantic → Hybrid) to demonstrate how each strategy processes the same query differently. Useful for understanding strategy behaviors and selecting the most appropriate one for your use case.">
-                            <span class="strategy-name">Eval (Compare All)</span>
-                            <span class="strategy-checkmark">✓</span>
+                    <div class="strategy-dropdown hidden">
+                        <div class="strategy-option" data-strategy="hybrid">
+                            <span>Hybrid</span>
+                            <svg class="strategy-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
                         </div>
-                        <div class="strategy-option" data-strategy="hybrid" 
-                             data-tippy-content="Balances direct relevance with structural context. Retrieves 10 similar anchors, then expands each into 10 related messages. Uses both anchors and frontier messages (up to 110). Ideal when both surface similarity and inferred structure are important.">
-                            <span class="strategy-name">Hybrid</span>
+                        <div class="strategy-option" data-strategy="similarity">
+                            <span>Similarity</span>
+                            <svg class="strategy-check hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
                         </div>
-                        <div class="strategy-option" data-strategy="similarity" 
-                             data-tippy-content="Fast retrieval of semantically similar messages via vector search. Retrieves top 100 similar messages without graph traversal. Best for shallow recall when only the most lexically or topically aligned content is sufficient. Fast, low-latency.">
-                            <span class="strategy-name">Similarity (Vector)</span>
+                        <div class="strategy-option" data-strategy="semantic">
+                            <span>Semantic</span>
+                            <svg class="strategy-check hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
                         </div>
-                        <div class="strategy-option" data-strategy="semantic" 
-                             data-tippy-content="Leverages structural relationships (causality, elaboration) to infer deeper intent/context. Retrieves 10 anchors and only uses their graph-connected frontier nodes (up to 100). Uses graph-connected messages while ignoring superficial similarity.">
-                            <span class="strategy-name">Semantic (LLM Knowledge Graph)</span>
+                        <div class="strategy-option" data-strategy="eval">
+                            <span>Eval (Compare All)</span>
+                            <svg class="strategy-check hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
                         </div>
                     </div>
                 </div>
