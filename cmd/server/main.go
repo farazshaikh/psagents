@@ -24,6 +24,7 @@ type ChatCompletionRequest struct {
 	MaxSimilarityAnchors int    `json:"maxSimilarityAnchors"`
 	MaxRelatedMessages   int    `json:"maxRelatedMessages"`
 	MaxRelatedDepth      int    `json:"maxRelatedDepth"`
+	RelatedOnly          bool   `json:"relatedOnly"`
 	SamplingStrategy     string `json:"samplingStrategy"`
 }
 

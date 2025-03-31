@@ -237,7 +237,7 @@ Here’s a cleaner version of your three strategies, expressed clearly and with 
 
 ---
 
-Each of these can be toggled dynamically based on user query type, confidence threshold, or system budget.
+Each of these can be toggled dynamically based on user query type, confidence threshold, or system budget. In each strategy we try and hit ~10% of the search space.
 
 
 # PS Agents

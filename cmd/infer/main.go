@@ -37,17 +37,26 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize base inference params
+	params := inference.InferenceParams{
+		MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
+		MaxRelatedMessages:   cfg.GraphDB.SemanticFrontier,
+		MaxRelatedDepth:      3,
+		SystemPrompt:         cfg.LLM.InferenceSystemPrompt,
+		SamplingStrategy:     inference.SamplingStrategy_Greedy,
+	}
+
 	if *interactive {
-		runInterActiveMode(cfg)
+		runInterActiveMode(cfg, params)
 	} else if *batchFile != "" {
-		runBatchMode(cfg, *batchFile, *difficulty)
+		runBatchMode(cfg, *batchFile, *difficulty, params)
 	} else {
 		fmt.Println("Please specify either -i for interactive mode or -f for batch mode")
 		os.Exit(1)
 	}
 }
 
-func runInterActiveMode(cfg *config.Config) {
+func runInterActiveMode(cfg *config.Config, params inference.InferenceParams) {
 	engine, err := inference.NewEngine(cfg)
 	if err != nil {
 		fmt.Printf("Error initializing inference: %v\n", err)
@@ -64,18 +73,12 @@ func runInterActiveMode(cfg *config.Config) {
 			break
 		}
 
-		inferenceParams := inference.InferenceParams{
-			Query: inference.Query{
-				Question: question,
-			},
-			SamplingStrategy: inference.SamplingStrategy_Greedy,
-			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
-			MaxRelatedMessages: cfg.Inference.MaxRelatedMessages,
-			MaxRelatedDepth: cfg.Inference.MaxRelatedDepth,
-			SystemPrompt: cfg.LLM.InferenceSystemPrompt,
+		// Update only the question in params
+		params.Query = inference.Query{
+			Question: question,
 		}
 
-		response, err := engine.Infer(inferenceParams)
+		response, err := engine.Infer(params)
 		if err != nil {
 			fmt.Printf("Error processing question: %v\n", err)
 			continue
@@ -145,7 +148,7 @@ func writeEvaluation(file *os.File, result BatchQuery) error {
 	return nil
 }
 
-func runBatchMode(cfg *config.Config, batchFile, difficulty string) {
+func runBatchMode(cfg *config.Config, batchFile, difficulty string, params inference.InferenceParams) {
 	// Read queries from file
 	queries, err := loadQueries(batchFile)
 	if err != nil {
@@ -182,14 +185,12 @@ func runBatchMode(cfg *config.Config, batchFile, difficulty string) {
 	for _, query := range queries {
 		fmt.Printf("Processing query %s: %s\n", query.ID, query.Question)
 
-		response, err := engine.Infer(inference.InferenceParams{
-			Query: inference.Query{ Question: query.Question},
-			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
-			MaxRelatedMessages: cfg.Inference.MaxRelatedMessages,
-			MaxRelatedDepth: cfg.Inference.MaxRelatedDepth,
-			SystemPrompt: cfg.LLM.InferenceSystemPrompt,
-			SamplingStrategy: inference.SamplingStrategy_Greedy,
-		})
+		// Update only the question in params
+		params.Query = inference.Query{
+			Question: query.Question,
+		}
+
+		response, err := engine.Infer(params)
 		if err != nil {
 			fmt.Printf("Error processing query %s: %v\n", query.ID, err)
 			continue
@@ -205,7 +206,6 @@ func runBatchMode(cfg *config.Config, batchFile, difficulty string) {
 		}
 	}
 }
-
 
 func loadQueries(filePath string) ([]BatchQuery, error) {
 	file, err := os.Open(filePath)

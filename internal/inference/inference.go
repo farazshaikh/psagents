@@ -371,6 +371,7 @@ type InferenceParams struct {
 	MaxSimilarityAnchors int
 	MaxRelatedMessages   int
 	MaxRelatedDepth      int
+	RelatedOnly          bool
 	SystemPrompt         string
 	SamplingStrategy     SamplingStrategy
 }
