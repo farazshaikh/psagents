@@ -22,6 +22,8 @@ type BatchQuery struct {
 	PsaAgentConfidence  float64 `json:"psaAgentConfidence,omitempty"`
 }
 
+
+
 func main() {
 	// Parse command line flags
 	interactive := flag.Bool("i", false, "Run in interactive mode")
@@ -38,25 +40,7 @@ func main() {
 	}
 
 	// Initialize base inference params
-	params := inference.InferenceParams{
-		MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
-		MaxRelatedMessages:   cfg.Inference.MaxRelatedMessages,
-		MaxRelatedDepth:      cfg.Inference.MaxRelatedDepth,
-		SystemPrompt:         cfg.LLM.InferenceSystemPrompt,
-		SamplingStrategy:     inference.SamplingStrategy_Greedy,
-		IncludeDirectMatches: true,
-	}
-
-	// Use a similarity only strategy
-	/*
-	params := inference.InferenceParams{
-			SamplingStrategy: inference.SamplingStrategy_Greedy,
-			IncludeDirectMatches: true,
-			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors * cfg.Inference.MaxRelatedMessages,
-			MaxRelatedMessages: 0,
-			MaxRelatedDepth: 0,
-			SystemPrompt: cfg.LLM.InferenceSystemPrompt,
-	}*/
+	params := inference.GetInferenceParams(cfg, inference.SemanticOnly)
 
 	if *interactive {
 		runInterActiveMode(cfg, params)

@@ -376,6 +376,51 @@ type InferenceParams struct {
 	SamplingStrategy     SamplingStrategy
 }
 
+type InferenceStrategy int
+
+const (
+	Hybrid InferenceStrategy = iota
+	SimilarityOnly
+	SemanticOnly
+)
+
+func GetInferenceParams(cfg *config.Config, strategy InferenceStrategy) InferenceParams {
+	var params InferenceParams
+	switch strategy {
+	case Hybrid:
+		// hybrid params
+		params = InferenceParams{
+			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
+			MaxRelatedMessages:   cfg.Inference.MaxRelatedMessages,
+			MaxRelatedDepth:      cfg.Inference.MaxRelatedDepth,
+			SystemPrompt:         cfg.LLM.InferenceSystemPrompt,
+			SamplingStrategy:     SamplingStrategy_Greedy,
+			IncludeDirectMatches: true,
+		}
+	case SimilarityOnly:
+		// similarity only params
+		params = InferenceParams{
+			SamplingStrategy: SamplingStrategy_Greedy,
+			IncludeDirectMatches: true,
+			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors * cfg.Inference.MaxRelatedMessages,
+			MaxRelatedMessages: 0,
+			MaxRelatedDepth: 0,
+		}
+	case SemanticOnly:
+		// semantic only params
+		params = InferenceParams{
+			SamplingStrategy: SamplingStrategy_Greedy,
+			IncludeDirectMatches: false,
+			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
+			MaxRelatedMessages:  cfg.Inference.MaxRelatedMessages,
+			MaxRelatedDepth:  cfg.Inference.MaxRelatedDepth,
+		}
+	}
+	return params
+}
+
+
+
 func sampleRelatedMessages(bins [][]RelatedMessage, maxMessages int, strategy SamplingStrategy) []RelatedMessage {
 	if len(bins) == 0 {
 		return nil
@@ -479,7 +524,7 @@ func (e *Engine) Infer(params InferenceParams) (Response, error) {
 
 	// Sample related messages based on sampling strategy
 	sampledRelatedMessages := sampleRelatedMessages(allRelatedMessages, params.MaxRelatedMessages, params.SamplingStrategy)
-	if len(sampledRelatedMessages) == 0 {
+	if params.MaxRelatedMessages > 0  && len(sampledRelatedMessages) == 0{
 		return Response{}, fmt.Errorf("no related messages found for any similar matches")
 	}
 
@@ -499,14 +544,14 @@ func (e *Engine) Infer(params InferenceParams) (Response, error) {
 	inferencePrompt.Input.Question = params.Query.Question
 
 	if params.IncludeDirectMatches {
-	inferencePrompt.Input.Context.DirectMatch = make([]struct {
-		ID   string `json:"id"`
-		Text string `json:"text"`
-	}, len(similar))
-	for i, match := range similar {
-		inferencePrompt.Input.Context.DirectMatch[i].ID = match.ID
-			inferencePrompt.Input.Context.DirectMatch[i].Text = match.Text
-		}
+		inferencePrompt.Input.Context.DirectMatch = make([]struct {
+			ID   string `json:"id"`
+			Text string `json:"text"`
+		}, len(similar))
+		for i, match := range similar {
+			inferencePrompt.Input.Context.DirectMatch[i].ID = match.ID
+				inferencePrompt.Input.Context.DirectMatch[i].Text = match.Text
+			}
 	}
 
 	inferencePrompt.Input.Context.RelatedMessages = make([]struct {

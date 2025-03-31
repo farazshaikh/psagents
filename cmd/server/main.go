@@ -69,31 +69,13 @@ func enableCORS(handler http.HandlerFunc) http.HandlerFunc {
 func parseInferenceStrategy(cfg *config.Config, strategy string) (inference.InferenceParams, error) {
 	switch strategy {
 	case "similarity":
-		return inference.InferenceParams{
-			SamplingStrategy: inference.SamplingStrategy_Greedy,
-			IncludeDirectMatches: true,
-			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors * cfg.Inference.MaxRelatedMessages,
-			MaxRelatedMessages: 0,
-			MaxRelatedDepth: 0,
-		}, nil
+		return inference.GetInferenceParams(cfg, inference.SimilarityOnly), nil
 	case "semantic":
-		return inference.InferenceParams{
-			SamplingStrategy: inference.SamplingStrategy_Uniform,
-			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
-			MaxRelatedMessages: cfg.Inference.MaxRelatedMessages,
-			MaxRelatedDepth: cfg.Inference.MaxRelatedDepth,
-			IncludeDirectMatches: false,
-		}, nil
+		return inference.GetInferenceParams(cfg, inference.SemanticOnly), nil
 	// default to hybrid
 	//case "hybrid":
 	default:
-		return inference.InferenceParams{
-			SamplingStrategy: inference.SamplingStrategy_Uniform,
-			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors,
-			MaxRelatedMessages: cfg.Inference.MaxRelatedMessages,
-			MaxRelatedDepth: cfg.Inference.MaxRelatedDepth,
-			IncludeDirectMatches: true,
-		}, nil
+		return inference.GetInferenceParams(cfg, inference.Hybrid), nil
 	}
 }
 
