@@ -5,12 +5,14 @@ class ChatUI {
         this.userInput = document.getElementById('user-input');
         this.userTemplate = document.getElementById('user-message-template');
         this.assistantTemplate = document.getElementById('assistant-message-template');
-        this.loadingIndicator = document.getElementById('loading-indicator');
+        this.loadingTemplate = document.getElementById('loading-template');
         this.evidenceCounter = 0;
         this.strategySelector = document.getElementById('strategy-selector');
         this.strategyButton = document.getElementById('strategy-button');
         this.selectedStrategy = document.getElementById('selected-strategy');
-        this.currentStrategy = 'hybrid';
+        this.currentStrategy = 'hybrid'; // Default to hybrid
+        this.strategyOrder = ['similarity', 'semantic', 'hybrid'];
+        this.evalResponses = new Map();
         
         this.setupEventListeners();
         this.setupStrategySelector();
@@ -43,14 +45,16 @@ class ChatUI {
             option.addEventListener('click', () => {
                 const strategy = option.dataset.strategy;
                 this.currentStrategy = strategy;
-                this.selectedStrategy.textContent = option.querySelector('.strategy-name').textContent.replace(' (Default)', '');
+                this.selectedStrategy.textContent = option.querySelector('.strategy-name').textContent;
                 
-                // Remove existing checkmarks
-                document.querySelectorAll('.strategy-checkmark').forEach(check => check.remove());
+                // Update checkmarks
+                document.querySelectorAll('.strategy-option').forEach(opt => {
+                    const checkmark = opt.querySelector('.strategy-checkmark');
+                    if (checkmark) checkmark.remove();
+                });
                 
-                // Add new checkmark
                 const checkmark = document.createElement('span');
-                checkmark.className = 'strategy-checkmark text-blue-400 ml-2';
+                checkmark.className = 'strategy-checkmark';
                 checkmark.textContent = '✓';
                 option.appendChild(checkmark);
                 
@@ -60,84 +64,152 @@ class ChatUI {
     }
 
     showLoading() {
-        this.loadingIndicator.classList.remove('hidden');
-        this.chatContainer.appendChild(this.loadingIndicator);
-        this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
+        const loadingNode = this.loadingTemplate.content.cloneNode(true);
+        this.chatContainer.appendChild(loadingNode);
+        this.scrollToBottom();
     }
 
     hideLoading() {
-        this.loadingIndicator.classList.add('hidden');
-        if (this.loadingIndicator.parentNode === this.chatContainer) {
-            this.chatContainer.removeChild(this.loadingIndicator);
+        const loadingElement = this.chatContainer.querySelector('.loading-dots')?.closest('.message');
+        if (loadingElement) {
+            loadingElement.remove();
         }
     }
 
-    async handleSubmit(e) {
-        e.preventDefault();
+    async handleSubmit(event) {
+        event.preventDefault();
         const message = this.userInput.value.trim();
-        if (!message) return;
-
-        // Add user message
-        this.addMessage(message, 'user');
+        
+        if (message === '') return;
+        
+        // Clear input and add user message
         this.userInput.value = '';
-
+        this.addUserMessage(message);
+        
         // Show loading indicator
         this.showLoading();
-
+        
         try {
-            const response = await fetch('/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    prompt: message,
-                    inferenceStrategy: this.currentStrategy
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (this.currentStrategy === 'eval') {
+                // Make sequential requests for each strategy
+                for (const strategy of this.strategyOrder) {
+                    try {
+                        const response = await this.sendMessage(message, strategy);
+                        const strategyLabels = {
+                            'similarity': 'Similarity (Vector)',
+                            'semantic': 'Semantic (LLM Knowledge Graph)',
+                            'hybrid': 'Hybrid'
+                        };
+                        
+                        this.addAssistantMessage(response.answer, {
+                            strategy: strategyLabels[strategy],
+                            confidence: response.confidence,
+                            evidence: response.evidence
+                        });
+                    } catch (error) {
+                        console.error(`Error with ${strategy} strategy:`, error);
+                        this.addErrorMessage(`Error with ${strategy} strategy: ${this.getErrorMessage(error)}`);
+                    }
+                }
+            } else {
+                const response = await this.sendMessage(message, this.currentStrategy);
+                this.addAssistantMessage(response.answer, {
+                    strategy: this.getStrategyLabel(this.currentStrategy),
+                    confidence: response.confidence,
+                    evidence: response.evidence
+                });
             }
-
-            const data = await response.json();
-            this.addMessage(data, 'assistant');
         } catch (error) {
             console.error('Error:', error);
-            let errorMessage = 'An error occurred while processing your request.';
-            
-            if (!navigator.onLine) {
-                errorMessage = 'You appear to be offline. Please check your internet connection.';
-            } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                errorMessage = 'Cannot reach the server. Please check if the server is running and try again.';
-            } else if (error.message.includes('status: 404')) {
-                errorMessage = 'Server endpoint not found. Please check the server configuration.';
-            } else if (error.message.includes('status: 5')) {
-                errorMessage = 'Server error. Please try again later.';
-            }
-
-            this.addMessage({
-                answer: errorMessage,
-                confidence: 0,
-                supporting_evidence: []
-            }, 'assistant');
-        } finally {
-            this.hideLoading();
+            this.addErrorMessage(this.getErrorMessage(error));
         }
+        
+        // Hide loading indicator
+        this.hideLoading();
     }
 
-    async fetchMessageById(messageId) {
-        const response = await fetch(`${config.apiBaseUrl}${config.endpoints.message}?id=${messageId}`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+    getErrorMessage(error) {
+        if (!navigator.onLine) {
+            return 'You appear to be offline. Please check your internet connection.';
+        }
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            return 'Cannot reach the server. Please check if the server is running and try again.';
+        }
+        if (error.message.includes('404')) {
+            return 'Server endpoint not found. Please check the server configuration.';
+        }
+        if (error.message.includes('500')) {
+            return 'Server error. Please try again later.';
+        }
+        return 'An error occurred while processing your request.';
+    }
+
+    addUserMessage(text) {
+        const messageNode = this.userTemplate.content.cloneNode(true);
+        const messageText = messageNode.querySelector('.message-text');
+        messageText.textContent = text;
+        this.chatContainer.appendChild(messageNode);
+        this.scrollToBottom();
+    }
+
+    addAssistantMessage(text, metadata = {}) {
+        const messageNode = this.assistantTemplate.content.cloneNode(true);
+        const messageText = messageNode.querySelector('.message-text');
+        messageText.textContent = text || 'No response received';
+
+        // Handle metadata
+        if (metadata.confidence) {
+            const confidenceValue = messageNode.querySelector('.confidence-value');
+            confidenceValue.textContent = `${Math.round(metadata.confidence * 100)}%`;
         }
 
-        return await response.json();
+        if (metadata.strategy) {
+            const strategyValue = messageNode.querySelector('.strategy-value');
+            strategyValue.textContent = metadata.strategy;
+        }
+
+        if (metadata.evidence && metadata.evidence.length > 0) {
+            const evidenceLinks = messageNode.querySelector('.evidence-links');
+            metadata.evidence.forEach((evidence, index) => {
+                const link = document.createElement('a');
+                link.href = '#';
+                link.className = 'evidence-link';
+                link.textContent = `Message ${index + 1}`;
+                link.dataset.message = evidence.text || evidence;
+                
+                // Initialize tooltip
+                tippy(link, {
+                    content: evidence.text || evidence,
+                    theme: 'light',
+                    placement: 'bottom',
+                    interactive: true,
+                    allowHTML: true
+                });
+
+                evidenceLinks.appendChild(link);
+            });
+        } else {
+            const evidenceInfo = messageNode.querySelector('.evidence-info');
+            evidenceInfo.style.display = 'none';
+        }
+
+        this.chatContainer.appendChild(messageNode);
+        this.scrollToBottom();
+    }
+
+    addErrorMessage(errorText) {
+        const messageNode = this.assistantTemplate.content.cloneNode(true);
+        const messageText = messageNode.querySelector('.message-text');
+        messageText.textContent = errorText;
+        messageText.classList.add('text-red-400');
+        
+        this.chatContainer.appendChild(messageNode);
+        this.scrollToBottom();
     }
 
     getStrategyLabel(strategy) {
         const labels = {
+            'eval': 'Eval (Compare All)',
             'hybrid': 'Hybrid',
             'similarity': 'Similarity (Vector)',
             'semantic': 'Semantic (LLM Knowledge Graph)'
@@ -145,87 +217,26 @@ class ChatUI {
         return labels[strategy] || strategy;
     }
 
-    addMessage(message, role) {
-        const template = role === 'user' ? this.userTemplate : this.assistantTemplate;
-        const messageElement = template.content.cloneNode(true);
-        const messageText = messageElement.querySelector('.message-text');
-        
-        if (role === 'user') {
-            messageText.textContent = message;
-        } else {
-            // Handle assistant response
-            messageText.textContent = message.answer;
-            
-            // Create metadata container
-            const metadataContainer = document.createElement('div');
-            metadataContainer.classList.add('metadata-container', 'mt-2', 'text-sm', 'text-gray-400', 'flex', 'flex-wrap', 'items-center', 'gap-4');
-            
-            // Add confidence score if present
-            if (message.confidence) {
-                const confidenceElement = document.createElement('div');
-                confidenceElement.classList.add('confidence-info');
-                confidenceElement.textContent = `Confidence: ${(message.confidence * 100).toFixed(1)}%`;
-                metadataContainer.appendChild(confidenceElement);
-            }
+    async sendMessage(message, strategy) {
+        const response = await fetch('/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                prompt: message,
+                inferenceStrategy: strategy
+            })
+        });
 
-            // Add strategy info
-            const strategyElement = document.createElement('div');
-            strategyElement.classList.add('strategy-info');
-            strategyElement.textContent = `Strategy: ${this.getStrategyLabel(this.currentStrategy)}`;
-            metadataContainer.appendChild(strategyElement);
-            
-            // Add evidence links if present
-            if (message.supporting_evidence && message.supporting_evidence.length > 0) {
-                const evidenceContainer = document.createElement('div');
-                evidenceContainer.classList.add('evidence-info', 'flex', 'items-center', 'gap-2');
-                
-                // Add "Grounding:" text
-                evidenceContainer.appendChild(document.createTextNode('Grounding: '));
-                
-                // Add numbered links
-                message.supporting_evidence.forEach((evidence, index) => {
-                    if (index > 0) {
-                        evidenceContainer.appendChild(document.createTextNode(' '));
-                    }
-                    
-                    const link = document.createElement('a');
-                    link.href = '#';
-                    link.textContent = (index + 1).toString();
-                    link.classList.add('text-blue-400', 'hover:text-blue-600', 'evidence-link');
-                    
-                    // Create tooltip instance immediately with loading state
-                    const tooltip = tippy(link, {
-                        theme: 'light',
-                        placement: 'top',
-                        content: evidence.relevance,
-                        interactive: true,
-                        onShow: async (instance) => {
-                            try {
-                                const response = await fetch(`/api/v1/message/id?id=${evidence.message_id}`);
-                                if (!response.ok) throw new Error('Failed to fetch message');
-                                const data = await response.json();
-                                instance.setContent(`${evidence.relevance}\n\nOriginal message: "${data.text}"`);
-                            } catch (error) {
-                                console.error('Error fetching message:', error);
-                                instance.setContent('Error loading message details');
-                            }
-                        }
-                    });
-                    
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                    });
-                    
-                    evidenceContainer.appendChild(link);
-                });
-                
-                metadataContainer.appendChild(evidenceContainer);
-            }
-            
-            messageText.appendChild(metadataContainer);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        this.chatContainer.appendChild(messageElement);
+
+        return await response.json();
+    }
+
+    scrollToBottom() {
         this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
     }
 }
