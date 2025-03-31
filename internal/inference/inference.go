@@ -421,6 +421,36 @@ func sampleRelatedMessages(bins [][]RelatedMessage, maxMessages int, strategy Sa
 	return sampled
 }
 
+func (e *Engine) getRelatedMessages(similar []vector.Message, minConfidence float64, maxRelatedMessages int, maxRelatedDepth int) ([][]RelatedMessage, error) {
+	session := e.graphDB.GetSession()
+	defer session.Close()
+	allRelatedMessages := make([][]RelatedMessage, len(similar))
+
+	for i, directMatch := range similar {
+		// Find related messages using Neo4j traversal
+		relatedResult, err := session.ReadTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+			return findRelatedMessages(tx, directMatch, minConfidence, maxRelatedMessages, maxRelatedDepth)
+		})
+
+		if err != nil {
+			return [][]RelatedMessage{}, fmt.Errorf("failed to traverse graph for match %s: %w", directMatch.ID, err)
+		}
+
+		relatedMessages := relatedResult.([]RelatedMessage)
+		allRelatedMessages[i] = relatedMessages
+	}
+
+	return allRelatedMessages, nil
+}
+
+func (e *Engine) getSimilarityAnchors(embedding []float32, maxMessages int) ([]vector.Message, error) {
+	similar, err := e.vectorDB.Search(embedding, maxMessages)
+	if err != nil {
+		return []vector.Message{}, fmt.Errorf("failed to find closest message: %w", err)
+	}
+	return similar, nil
+}
+
 func (e *Engine) Infer(params InferenceParams) (Response, error) {
 	// Create message for the question
 	questionMsg := message.Message{
@@ -434,7 +464,7 @@ func (e *Engine) Infer(params InferenceParams) (Response, error) {
 	}
 
 	// Find closest message in the database
-	similar, err := e.vectorDB.Search(embedding, params.MaxSimilarityAnchors)
+	similar, err := e.getSimilarityAnchors(embedding, params.MaxSimilarityAnchors)
 	if err != nil {
 		return Response{}, fmt.Errorf("failed to find closest message: %w", err)
 	}
@@ -442,25 +472,9 @@ func (e *Engine) Infer(params InferenceParams) (Response, error) {
 		return Response{}, fmt.Errorf("no matching messages found")
 	}
 
-	// Find related messages for each similar match
-	session := e.graphDB.GetSession()
-	defer session.Close()
-
-	// Initialize slice with correct size
-	allRelatedMessages := make([][]RelatedMessage, len(similar))
-
-	for i, directMatch := range similar {
-		// Find related messages using Neo4j traversal
-		relatedResult, err := session.ReadTransaction(func(tx neo4j.Transaction) (interface{}, error) {
-			return findRelatedMessages(tx, directMatch, 0.0, params.MaxRelatedMessages, params.MaxRelatedDepth)
-		})
-
-		if err != nil {
-			return Response{}, fmt.Errorf("failed to traverse graph for match %s: %w", directMatch.ID, err)
-		}
-
-		relatedMessages := relatedResult.([]RelatedMessage)
-		allRelatedMessages[i] = relatedMessages
+	allRelatedMessages, err := e.getRelatedMessages(similar, 0.0, params.MaxRelatedMessages, params.MaxRelatedDepth)
+	if err != nil {
+		return Response{}, fmt.Errorf("failed to get related messages: %w", err)
 	}
 
 	// Sample related messages based on sampling strategy

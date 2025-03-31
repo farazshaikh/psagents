@@ -47,6 +47,17 @@ func main() {
 		IncludeDirectMatches: true,
 	}
 
+	// Use a similarity only strategy
+	/*
+	params := inference.InferenceParams{
+			SamplingStrategy: inference.SamplingStrategy_Greedy,
+			IncludeDirectMatches: true,
+			MaxSimilarityAnchors: cfg.Inference.MaxSimilarityAnchors * cfg.Inference.MaxRelatedMessages,
+			MaxRelatedMessages: 0,
+			MaxRelatedDepth: 0,
+			SystemPrompt: cfg.LLM.InferenceSystemPrompt,
+	}*/
+
 	if *interactive {
 		runInterActiveMode(cfg, params)
 	} else if *batchFile != "" {
