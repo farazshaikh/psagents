@@ -3,12 +3,12 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/spf13/cobra"
 	"github.com/yourusername/psagents/config"
 	"github.com/yourusername/psagents/internal/inference"
 )
@@ -22,32 +22,70 @@ type BatchQuery struct {
 	PsaAgentConfidence  float64 `json:"psaAgentConfidence,omitempty"`
 }
 
-
+var (
+	configPath string
+	batchFile  string
+	difficulty string
+)
 
 func main() {
-	// Parse command line flags
-	interactive := flag.Bool("i", false, "Run in interactive mode")
-	batchFile := flag.String("f", "", "Path to batch query file")
-	difficulty := flag.String("d", "", "Filter queries by difficulty (easy, medium, hard)")
-	configPath := flag.String("config", "config/config.example.yaml", "path to config file")
-	flag.Parse()
-
-	// Load configuration
-	cfg, err := config.LoadConfig(*configPath)
-	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
-		os.Exit(1)
+	rootCmd := &cobra.Command{
+		Use:   "infer",
+		Short: "PSAgents inference tool",
+		Long: `A command line tool for running inference queries against the PSAgents knowledge graph.
+It supports both interactive and batch modes for processing questions.`,
 	}
 
-	// Initialize base inference params
-	params := inference.GetInferenceParams(cfg, inference.SemanticOnly)
+	// Interactive mode command
+	interactiveCmd := &cobra.Command{
+		Use:   "interactive",
+		Short: "Run in interactive mode",
+		Long:  `Start an interactive session where you can type questions and get immediate answers.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			cfg, err := config.LoadConfig(configPath)
+			if err != nil {
+				fmt.Printf("Error loading config: %v\n", err)
+				os.Exit(1)
+			}
+			params := inference.GetInferenceParams(cfg, inference.SemanticOnly)
+			runInterActiveMode(cfg, params)
+		},
+	}
 
-	if *interactive {
-		runInterActiveMode(cfg, params)
-	} else if *batchFile != "" {
-		runBatchMode(cfg, *batchFile, *difficulty, params)
-	} else {
-		fmt.Println("Please specify either -i for interactive mode or -f for batch mode")
+	// Batch mode command
+	batchCmd := &cobra.Command{
+		Use:   "batch",
+		Short: "Run in batch mode",
+		Long:  `Process multiple queries from a JSONL file.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if batchFile == "" {
+				fmt.Println("Error: batch file path is required")
+				os.Exit(1)
+			}
+
+			cfg, err := config.LoadConfig(configPath)
+			if err != nil {
+				fmt.Printf("Error loading config: %v\n", err)
+				os.Exit(1)
+			}
+			params := inference.GetInferenceParams(cfg, inference.SemanticOnly)
+			runBatchMode(cfg, batchFile, difficulty, params)
+		},
+	}
+
+	// Global flags
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", "config/config.example.yaml", "path to config file")
+
+	// Batch command flags
+	batchCmd.Flags().StringVarP(&batchFile, "file", "f", "", "path to batch query file (required)")
+	batchCmd.Flags().StringVarP(&difficulty, "difficulty", "d", "", "filter queries by difficulty (easy, medium, hard)")
+	batchCmd.MarkFlagRequired("file")
+
+	// Add commands to root
+	rootCmd.AddCommand(interactiveCmd, batchCmd)
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }

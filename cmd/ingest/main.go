@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 
+	"github.com/spf13/cobra"
 	"github.com/yourusername/psagents/config"
 	"github.com/yourusername/psagents/internal/embeddings"
 	"github.com/yourusername/psagents/internal/graphdb"
@@ -21,19 +21,37 @@ type Phase struct {
 	Handler  func(context.Context) error
 }
 
-func main() {
-	// Parse command line flags
-	configPath := flag.String("config", "config/config.example.yaml", "path to config file")
-	flag.Parse()
+var (
+	configPath string
+	phases     []string
+)
 
-	// Load configuration
-	cfg, err := config.LoadConfig(*configPath)
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+func main() {
+	rootCmd := &cobra.Command{
+		Use:   "ingest",
+		Short: "PSAgents data ingestion tool",
+		Long: `A command line tool for ingesting and processing data for the PSAgents system.
+It handles embedding generation, vector database population, and graph construction.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runIngest(cmd.Context())
+		},
 	}
 
-	// Create context
-	ctx := context.Background()
+	// Global flags
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", "config/config.example.yaml", "path to config file")
+	rootCmd.Flags().StringSliceVar(&phases, "phases", nil, "specific phases to run (comma-separated). If not specified, runs all enabled phases")
+
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func runIngest(ctx context.Context) error {
+	// Load configuration
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
 
 	// Initialize components
 	var gen *embeddings.Generator
@@ -41,8 +59,8 @@ func main() {
 	var graphDB *graphdb.GraphDB
 	var llmClient llm.LLM
 
-	// Define phases in order
-	phases := []Phase{
+	// Define all available phases
+	allPhases := []Phase{
 		{
 			Name:    "embedding",
 			Enabled: isPhaseEnabled(cfg.Ingestion.Stages, "embedding"),
@@ -152,12 +170,29 @@ func main() {
 		},
 	}
 
+	// Filter phases if specific ones were requested
+	var phasesToRun []Phase
+	if len(phases) > 0 {
+		phaseMap := make(map[string]bool)
+		for _, p := range phases {
+			phaseMap[p] = true
+		}
+		for _, phase := range allPhases {
+			if phaseMap[phase.Name] {
+				phase.Enabled = true
+				phasesToRun = append(phasesToRun, phase)
+			}
+		}
+	} else {
+		phasesToRun = allPhases
+	}
+
 	// Execute enabled phases in order
-	for _, phase := range phases {
+	for _, phase := range phasesToRun {
 		if phase.Enabled {
 			fmt.Printf("Executing phase: %s\n", phase.Name)
 			if err := phase.Handler(ctx); err != nil {
-				log.Fatalf("Failed to execute phase %s: %v", phase.Name, err)
+				return fmt.Errorf("failed to execute phase %s: %w", phase.Name, err)
 			}
 		} else {
 			fmt.Printf("Skipping disabled phase: %s\n", phase.Name)
@@ -175,6 +210,7 @@ func main() {
 	}
 
 	fmt.Println("Successfully completed all enabled phases")
+	return nil
 }
 
 // isPhaseEnabled checks if a phase is enabled in the config

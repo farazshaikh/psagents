@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/spf13/cobra"
 	"github.com/yourusername/psagents/config"
 	"github.com/yourusername/psagents/internal/graphdb"
 	"github.com/yourusername/psagents/internal/inference"
@@ -22,6 +22,65 @@ type Server struct {
 type ChatCompletionRequest struct {
 	Prompt            string `json:"prompt"`
 	InferenceStrategy string `json:"inferenceStrategy"`
+}
+
+var (
+	configPath string
+	webDir     string
+)
+
+func main() {
+	rootCmd := &cobra.Command{
+		Use:   "server",
+		Short: "PSAgents API server",
+		Long: `A REST API server for the PSAgents system that provides endpoints for:
+- Chat completions with different inference strategies
+- Message retrieval by ID
+- Web interface for interactive chat`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runServer()
+		},
+	}
+
+	// Global flags
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", "config/config.example.yaml", "path to config file")
+	rootCmd.PersistentFlags().StringVar(&webDir, "web-dir", "cmd/server/web", "path to web files directory")
+
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func runServer() error {
+	// Load configuration
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Create server
+	server, err := NewServer(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create server: %w", err)
+	}
+
+	// Set up API routes with CORS
+	http.HandleFunc("/api/v1/chat/completions", enableCORS(server.handleChatCompletions))
+	http.HandleFunc("/api/v1/message/id", enableCORS(server.handleMessageById))
+
+	// Serve static files
+	fs := http.FileServer(http.Dir(webDir))
+	http.Handle("/", fs)
+
+	// Start server
+	addr := fmt.Sprintf(":%d", cfg.Server.Port)
+	log.Printf("Starting server on %s", addr)
+	log.Printf("Web interface available at http://localhost:%d", cfg.Server.Port)
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		return fmt.Errorf("server error: %w", err)
+	}
+
+	return nil
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
@@ -143,38 +202,4 @@ func (s *Server) handleMessageById(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(message)
-}
-
-func main() {
-	configPath := flag.String("config", "config/config.example.yaml", "path to config file")
-	webDir := flag.String("web-dir", "cmd/server/web", "path to web files directory")
-	flag.Parse()
-
-	// Load configuration
-	cfg, err := config.LoadConfig(*configPath)
-	if err != nil {
-		log.Fatalf("Error loading config: %v", err)
-	}
-
-	// Create server
-	server, err := NewServer(cfg)
-	if err != nil {
-		log.Fatalf("Error creating server: %v", err)
-	}
-
-	// Set up API routes with CORS
-	http.HandleFunc("/api/v1/chat/completions", enableCORS(server.handleChatCompletions))
-	http.HandleFunc("/api/v1/message/id", enableCORS(server.handleMessageById))
-
-	// Serve static files
-	fs := http.FileServer(http.Dir(*webDir))
-	http.Handle("/", fs)
-
-	// Start server
-	addr := fmt.Sprintf(":%d", cfg.Server.Port)
-	log.Printf("Starting server on %s", addr)
-	log.Printf("Web interface available at http://localhost:%d", cfg.Server.Port)
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Fatalf("Server error: %v", err)
-	}
 }
