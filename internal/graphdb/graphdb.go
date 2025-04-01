@@ -183,15 +183,13 @@ func (db *GraphDB) GetLLMPrompt(pairs []struct {
 
 	// Create a complete prompt as a JSON object
 	prompt := struct {
-		Instructions string      `json:"instructions"`
 		InputSchema  interface{} `json:"input_schema"`
-		Input        interface{} `json:"input"`
 		OutputSchema interface{} `json:"output_schema"`
+		Input        interface{} `json:"input"`
 	}{
-		Instructions: "For each source message in the batch, analyze its relationships with its corresponding frontier messages only. Extract meaningful relationships between each source message and its frontier messages. Each source message should only be related to messages in its own frontier list.",
 		InputSchema:  inputSchemaObj,
-		Input:        input,
 		OutputSchema: outputSchemaObj,
+		Input:        input,
 	}
 
 	// Convert the entire prompt to JSON
@@ -480,6 +478,16 @@ func (db *GraphDB) SecondPass(ctx context.Context, llm llm.LLM) error {
 			frontierMsgs := frontier.([]message.Message)
 			allFrontierMsgs = append(allFrontierMsgs, frontierMsgs...)
 		}
+		// Remove duplicate frontier messages by using a map
+		seen := make(map[string]bool)
+		uniqueFrontier := make([]message.Message, 0, len(allFrontierMsgs))
+		for _, msg := range allFrontierMsgs {
+			if !seen[msg.ID] {
+				seen[msg.ID] = true
+				uniqueFrontier = append(uniqueFrontier, msg)
+			}
+		}
+		allFrontierMsgs = uniqueFrontier
 
 		if len(allFrontierMsgs) == 0 {
 			fmt.Printf("Skipping message %s: no frontier messages found\n", msg.ID)
@@ -514,6 +522,48 @@ func (db *GraphDB) SecondPass(ctx context.Context, llm llm.LLM) error {
 	return nil
 }
 
+
+// validateRelationshipsAgainstBatch checks if relationships match their batch entries
+// some validation that the LLM is upto some good standard
+func (db *GraphDB) validateRelationshipsAgainstBatch(relationships []Relationship, batch []struct {
+	SourceMessage    message.Message
+	FrontierMessages []message.Message
+}) {
+	for _, rel := range relationships {
+		// Find the batch entry containing this source message
+		var batchEntry *struct {
+			SourceMessage    message.Message
+			FrontierMessages []message.Message
+		}
+		for i := range batch {
+			if batch[i].SourceMessage.ID == rel.SourceID {
+				batchEntry = &batch[i]
+				break
+			}
+		}
+
+		if batchEntry == nil {
+			fmt.Fprintf(db.logFile, "Warning: Relationship contains source message %s not found in current batch\n", rel.SourceID)
+			continue
+		}
+
+		// Check if target is in the frontier messages for this source
+		targetInFrontier := false
+		for _, frontierMsg := range batchEntry.FrontierMessages {
+			if frontierMsg.ID == rel.TargetID {
+				targetInFrontier = true
+				break
+			}
+		}
+
+		if !targetInFrontier {
+			fmt.Fprintf(db.logFile, "Warning: Relationship target %s not in frontier for source %s\n", 
+				rel.TargetID, rel.SourceID)
+		}
+	}
+}
+
+
 // processBatch handles the LLM inference and relationship creation for a batch of messages
 func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.Session, batch []struct {
 	SourceMessage    message.Message
@@ -540,7 +590,7 @@ func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.
 	fmt.Fprintf(db.logFile, "%s\n\n", llmPrompt.Instructions)
 
 	// Get LLM inference
-	llmResponse, err := llm.GetInference(llmPrompt.Instructions, db.cfg.LLM.InferenceSystemPrompt)
+	llmResponse, err := llm.GetInference(llmPrompt.Instructions, db.cfg.LLM.SystemPrompt)
 	if err != nil {
 		fmt.Fprintf(db.logFile, "=== Error ===\n")
 		fmt.Fprintf(db.logFile, "Failed to get LLM response: %v\n", err)
@@ -558,6 +608,9 @@ func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.
 		fmt.Fprintf(db.logFile, "Failed to parse response: %v\n", err)
 		return nil
 	}
+
+	// some validation on parsed relationships
+	db.validateRelationshipsAgainstBatch(relationships, batch)
 
 	fmt.Fprintf(db.logFile, "=== Parsed Relationships ===\n")
 	for _, rel := range relationships {
@@ -609,17 +662,7 @@ func (db *GraphDB) processBatch(ctx context.Context, llm llm.LLM, session neo4j.
 			_, err = tx.Run(
 				`MATCH (m:Message {id: $sourceId})
 				 MATCH (n:Message {id: $targetId})
-				 WITH m, n, $relationType as type
-				 CALL apoc.case([
-					type = "Causal" AND "MERGE (m)-[r:CAUSAL {confidence: $confidence, evidence: $evidence}]->(n)",
-					type = "Follow-up" AND "MERGE (m)-[r:FOLLOW_UP {confidence: $confidence, evidence: $evidence}]->(n)",
-					type = "Contrast" AND "MERGE (m)-[r:CONTRAST {confidence: $confidence, evidence: $evidence}]->(n)",
-					type = "Elaboration" AND "MERGE (m)-[r:ELABORATION {confidence: $confidence, evidence: $evidence}]->(n)",
-					type = "Reframe/Correction" AND "MERGE (m)-[r:REFRAME {confidence: $confidence, evidence: $evidence}]->(n)",
-					type = "Role Instruction" AND "MERGE (m)-[r:ROLE_INSTRUCTION {confidence: $confidence, evidence: $evidence}]->(n)",
-					type = "Scenario Setup" AND "MERGE (m)-[r:SCENARIO_SETUP {confidence: $confidence, evidence: $evidence}]->(n)",
-					type = "Identity Expression" AND "MERGE (m)-[r:IDENTITY_EXPRESSION {confidence: $confidence, evidence: $evidence}]->(n)"
-				], "MERGE (m)-[r:RELATED_TO {type: $relationType, confidence: $confidence, evidence: $evidence}]->(n)")`,
+				 MERGE (m)-[r:RELATED_TO {type: $relationType, confidence: $confidence, evidence: $evidence}]->(n)`,
 				map[string]interface{}{
 					"sourceId":     rel.SourceID,
 					"targetId":     rel.TargetID,
