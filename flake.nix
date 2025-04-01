@@ -124,15 +124,49 @@ EOF
         # Neo4j service scripts
         startNeo4j = pkgs.writeScriptBin "start-neo4j" ''
           #!${pkgs.bash}/bin/bash
-          NEO4J_DIR="$PWD/data/neo4j"
+          
+          # Find repository root (directory containing flake.nix)
+          REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+          if [ $? -ne 0 ]; then
+            echo "Error: Not in a git repository"
+            exit 1
+          fi
+
+          # Check if Neo4j directory exists
+          NEO4J_DIR="$REPO_ROOT/data/neo4j"
+          if [ ! -d "$NEO4J_DIR" ]; then
+            echo "Error: Neo4j directory not found at $NEO4J_DIR"
+            exit 1
+          fi
+
           DATA_DIR="$NEO4J_DIR/data"
           LOGS_DIR="$NEO4J_DIR/logs"
           CONF_DIR="$NEO4J_DIR/conf"
+          IMPORT_DIR="$NEO4J_DIR/import"
+          LIB_DIR="$NEO4J_DIR/lib"
           PID_FILE="$NEO4J_DIR/neo4j.pid"
-          LOG_FILE="$NEO4J_DIR/neo4j.log"
+          LOG_FILE="$LOGS_DIR/neo4j.log"
 
           # Create required directories
-          mkdir -p "$DATA_DIR" "$LOGS_DIR" "$CONF_DIR"
+          mkdir -p "$DATA_DIR" "$LOGS_DIR" "$CONF_DIR" "$IMPORT_DIR" "$LIB_DIR"
+
+          # Only create config if it doesn't exist
+          if [ ! -f "$CONF_DIR/neo4j.conf" ]; then
+            cat > "$CONF_DIR/neo4j.conf" << EOF
+server.directories.data=$DATA_DIR
+server.directories.logs=$LOGS_DIR
+server.directories.import=$IMPORT_DIR
+server.directories.lib=$LIB_DIR
+server.memory.heap.initial_size=512m
+server.memory.heap.max_size=1G
+server.default_listen_address=127.0.0.1
+server.http.enabled=true
+server.http.listen_address=127.0.0.1:7474
+server.bolt.enabled=true
+server.bolt.listen_address=127.0.0.1:7687
+dbms.security.auth_enabled=false
+EOF
+          fi
 
           # Check if Neo4j is already running
           if [ -f "$PID_FILE" ]; then
@@ -145,20 +179,6 @@ EOF
             fi
           fi
 
-          # Create Neo4j config
-          cat > "$CONF_DIR/neo4j.conf" << EOF
-dbms.directories.data=$DATA_DIR
-dbms.directories.logs=$LOGS_DIR
-dbms.memory.heap.initial_size=512m
-dbms.memory.heap.max_size=1G
-dbms.default_listen_address=127.0.0.1
-dbms.connector.bolt.enabled=true
-dbms.connector.bolt.listen_address=127.0.0.1:7687
-dbms.connector.http.enabled=true
-dbms.connector.http.listen_address=127.0.0.1:7474
-dbms.security.auth_enabled=false
-EOF
-
           # Start Neo4j in background
           echo "Starting Neo4j..."
           NEO4J_CONF="$CONF_DIR" nohup ${pkgs.neo4j}/bin/neo4j console > "$LOG_FILE" 2>&1 &
@@ -167,21 +187,37 @@ EOF
 
           # Wait for Neo4j to start
           echo "Waiting for Neo4j to start..."
-          for i in {1..30}; do
+          for i in {1..60}; do
             if curl -s http://localhost:7474 >/dev/null; then
               echo "Neo4j is running (PID: $PID)"
               exit 0
             fi
-            sleep 1
+            echo -n "."
+            sleep 2
           done
 
-          echo "Failed to start Neo4j"
+          echo
+          echo "Failed to start Neo4j - check logs at $LOG_FILE"
           exit 1
         '';
 
         stopNeo4j = pkgs.writeScriptBin "stop-neo4j" ''
           #!${pkgs.bash}/bin/bash
-          NEO4J_DIR="$PWD/data/neo4j"
+          
+          # Find repository root (directory containing flake.nix)
+          REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+          if [ $? -ne 0 ]; then
+            echo "Error: Not in a git repository"
+            exit 1
+          fi
+
+          # Check if Neo4j directory exists
+          NEO4J_DIR="$REPO_ROOT/data/neo4j"
+          if [ ! -d "$NEO4J_DIR" ]; then
+            echo "Error: Neo4j directory not found at $NEO4J_DIR"
+            exit 1
+          fi
+
           PID_FILE="$NEO4J_DIR/neo4j.pid"
 
           if [ -f "$PID_FILE" ]; then
