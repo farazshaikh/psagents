@@ -6,5 +6,4 @@ data/input/messages_dev.jsonl
 data/output/
 data/qdrant
 data/neo4j
-data/evaluations
-
+data/logs

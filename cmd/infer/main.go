@@ -154,7 +154,7 @@ func runInterActiveMode(cfg *config.Config, params inference.InferenceParams) {
 
 func getNextEvaluationFile() (*os.File, error) {
 	// Find the next available evaluation file number
-	logsDir := "data/evaluations"
+	logsDir := "data/logs/evaluations"
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create evaluations directory: %w", err)
 	}
