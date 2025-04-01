@@ -1,12 +1,10 @@
 secrets.ini
+bin/**
+*.log
+.qdrant-initialized
 data/input/messages_dev.jsonl
 data/output/
-*.log
-storage/**
-.qdrant-initialized
 data/qdrant
 data/neo4j
 data/evaluations
-data_*/**
-bin/**
 
