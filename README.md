@@ -171,7 +171,7 @@ graph TD
 | Term | Meaning | Notes |
 |------|--------|-------|
 | **Similarity Anchors** | Top-K direct hits from vector DB (semantic similarity to the query) | These are your *entry points* into the graph. The term "anchor" implies structural expansion will follow. |
-| **Semantic Frontier** | Neighboring messages structurally linked to the anchors (e.g., causal, elaboration, follow-up) | This is your *K×M expanded context*, forming a local semantic neighborhood around the anchors. |
+| **Semantic Frontier** | Neighboring messages sematically linked to the anchors (e.g., causal, elaboration, follow-up) | This is your *K×M expanded context*, forming a local semantic neighborhood around the anchors. |
 
 ---
 
