@@ -22,11 +22,14 @@ function startGame() {
   const video = document.getElementById('videoPlayer');
   const captionText = document.getElementById('captionText');
 
+  // Remove any existing typing indicators
+  const existingIndicator = document.querySelector('.typing-indicator');
+  if (existingIndicator) {
+    existingIndicator.remove();
+  }
+
   // Show initial typing indicator
-  const typingIndicator = document.createElement('div');
-  typingIndicator.className = 'typing-indicator';
-  typingIndicator.innerHTML = '<span></span><span></span><span></span>';
-  captionText.appendChild(typingIndicator);
+  showTypingIndicator();
 
   // Go fullscreen
   document.documentElement.requestFullscreen().catch(e => console.log(e));
@@ -55,54 +58,33 @@ function showCaption(cue, nextCue) {
   if (nextCue) {
     showDebug(`Next cue starts at: ${nextCue.startTime}`);
   }
-  
-  // Create message bubble immediately
+
+  // Remove existing typing indicator if present
+  const existingIndicator = document.querySelector('.typing-indicator');
+  if (existingIndicator) {
+    existingIndicator.remove();
+  }
+
   const captionEntry = document.createElement('div');
   captionEntry.className = 'caption-entry';
   
-  const messageText = document.createElement('div');
-  messageText.textContent = cue.text;
-  captionEntry.appendChild(messageText);
+  const messageContent = document.createElement('div');
+  messageContent.className = 'message-content';
+  messageContent.textContent = cue.text;
   
-  const timestamp = document.createElement('div');
-  timestamp.className = 'timestamp';
-  const time = new Date();
-  timestamp.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  captionEntry.appendChild(timestamp);
-  
+  captionEntry.appendChild(messageContent);
   captionText.appendChild(captionEntry);
   
-  // Mark previous captions as past
-  const previousCaptions = captionText.querySelectorAll('.caption-entry.active');
-  previousCaptions.forEach(caption => {
-    caption.classList.remove('active');
-    caption.classList.add('past');
-  });
+  // Force reflow
+  captionEntry.offsetHeight;
+  captionEntry.classList.add('active');
   
-  // Activate new caption with animation
-  requestAnimationFrame(() => {
-    captionEntry.classList.add('active');
-  });
-  
-  // Scroll to bottom
+  // Auto-scroll
   captionText.scrollTop = captionText.scrollHeight;
-
-  // If there's a next cue, show typing indicator for it
+  
+  // Always show a typing indicator after a caption
   if (nextCue) {
-    // Remove any existing typing indicator first
-    const existingIndicator = document.querySelector('.typing-indicator');
-    if (existingIndicator) {
-      existingIndicator.remove();
-    }
-
-    // Create typing indicator for next message
-    const typingIndicator = document.createElement('div');
-    typingIndicator.className = 'typing-indicator';
-    typingIndicator.innerHTML = '<span></span><span></span><span></span>';
-    captionText.appendChild(typingIndicator);
-    
-    // Scroll to show typing indicator
-    captionText.scrollTop = captionText.scrollHeight;
+    showTypingIndicator();
   }
 }
 
@@ -122,9 +104,36 @@ function createStartCaption() {
   return startCaption;
 }
 
+function showTypingIndicator(timeout = null) {
+  const typingIndicator = document.createElement('div');
+  typingIndicator.className = 'typing-indicator';
+  typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+  captionText.appendChild(typingIndicator);
+  
+  // Auto-scroll to show typing indicator
+  captionText.scrollTop = captionText.scrollHeight;
+
+  // If timeout is provided, remove the indicator after timeout
+  if (timeout) {
+    setTimeout(() => {
+      if (typingIndicator && typingIndicator.parentNode) {
+        typingIndicator.remove();
+      }
+    }, timeout);
+  }
+  
+  return typingIndicator;
+}
+
 function showQuestionInChat(questionText) {
   showDebug('Attempting to show question in chat panel');
   showDebug(`Question text received: "${questionText}"`);
+  
+  // Remove existing typing indicator if present
+  const existingIndicator = document.querySelector('.typing-indicator');
+  if (existingIndicator) {
+    existingIndicator.remove();
+  }
   
   const captionEntry = document.createElement('div');
   captionEntry.className = 'caption-entry';
@@ -138,33 +147,29 @@ function showQuestionInChat(questionText) {
   messageContent.appendChild(messageText);
   
   captionEntry.appendChild(messageContent);
-  
-  const timestamp = document.createElement('div');
-  timestamp.className = 'timestamp';
-  const time = new Date();
-  timestamp.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  captionEntry.appendChild(timestamp);
-  
   captionText.appendChild(captionEntry);
   
-  // Mark previous captions as past
-  const previousCaptions = captionText.querySelectorAll('.caption-entry.active');
-  previousCaptions.forEach(caption => {
-    caption.classList.remove('active');
-    caption.classList.add('past');
-  });
+  // Force reflow and add active class
+  captionEntry.offsetHeight;
+  captionEntry.classList.add('active');
+  messageText.classList.add('reveal');
   
-  requestAnimationFrame(() => {
-    captionEntry.classList.add('active');
-    messageText.classList.add('reveal');
-  });
-  
+  // Auto-scroll
   captionText.scrollTop = captionText.scrollHeight;
+  
+  // Always show a typing indicator after the question
+  showTypingIndicator();
 }
 
 function showOptionsInChat(optionsToShow) {
   showDebug('Showing options in chat');
   showDebug(`Number of options: ${optionsToShow.length}`);
+  
+  // Remove existing typing indicator if present
+  const existingIndicator = document.querySelector('.typing-indicator');
+  if (existingIndicator) {
+    existingIndicator.remove();
+  }
   
   const captionEntry = document.createElement('div');
   captionEntry.className = 'caption-entry';
@@ -181,31 +186,21 @@ function showOptionsInChat(optionsToShow) {
     showDebug(`Created option ${index + 1}: ${option}`);
     
     // Add reveal class after a short delay
-    setTimeout(() => button.classList.add('reveal'), index * 100);
+    setTimeout(() => button.classList.add('reveal'), index * 200);
   });
   
   captionEntry.appendChild(messageContent);
-  
-  const timestamp = document.createElement('div');
-  timestamp.className = 'timestamp';
-  const time = new Date();
-  timestamp.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  captionEntry.appendChild(timestamp);
-  
   captionText.appendChild(captionEntry);
   
-  // Mark previous captions as past
-  const previousCaptions = captionText.querySelectorAll('.caption-entry.active');
-  previousCaptions.forEach(caption => {
-    caption.classList.remove('active');
-    caption.classList.add('past');
-  });
+  // Force reflow and add active class
+  captionEntry.offsetHeight;
+  captionEntry.classList.add('active');
   
-  requestAnimationFrame(() => {
-    captionEntry.classList.add('active');
-  });
-  
+  // Auto-scroll
   captionText.scrollTop = captionText.scrollHeight;
+  
+  // Show a typing indicator that will clean itself up after 3 seconds
+  showTypingIndicator(3000);
 }
 
 window.onload = function() {
