@@ -1,3 +1,50 @@
+/**
+ * Game Show Interactive Chat Interface Styles
+ * Following Instagram's Design System
+ *
+ * This stylesheet implements Instagram's design patterns and typography
+ * for a consistent and modern chat interface.
+ *
+ * Typography:
+ * - Font Family: Instagram's system font stack (-apple-system, BlinkMacSystemFont, etc.)
+ * - Base Font Size: 14px (Instagram's standard size)
+ * - Line Height: 18px (Instagram's exact line height)
+ * - Letter Spacing: 0.2px for improved readability
+ * - Font Smoothing: Enabled for crisp text rendering
+ *
+ * Message Styling:
+ * - Chat Bubbles: Translucent dark background (rgba(0, 0, 0, 0.4))
+ * - Border Radius: 20px for modern rounded corners
+ * - Frosted Glass Effect: backdrop-filter: blur(12px)
+ * - Subtle Borders: 1px with low opacity white (rgba(255, 255, 255, 0.1))
+ *
+ * Interactive Elements:
+ * - Participate Button: Instagram blue with translucency (rgba(0, 149, 246, 0.15))
+ * - Options: Matching participate button style for consistency
+ * - Hover States: Subtle scale and translation animations
+ * - Active States: Scale down effect for tactile feedback
+ *
+ * Status Indicators:
+ * - Online Status: Green dot with glow effect
+ * - Typing Indicator: Three animated dots
+ * - Avatar Circles: 32px diameter with consistent styling
+ *
+ * Layout:
+ * - Chat Panel: Dynamic width (min(600px, 50%)) for optimal reading
+ * - Mobile Optimization: Full width on small screens
+ * - Vertical Spacing: Consistent 8px/16px rhythm
+ *
+ * Animations:
+ * - Message Entry: Fade and slide up
+ * - Options Reveal: Staggered appearance
+ * - Hover Transitions: 0.2s ease for smooth interaction
+ *
+ * Accessibility:
+ * - High Contrast Text: 95% white on dark backgrounds
+ * - Clear Visual Hierarchy: Through size and opacity
+ * - Touch Targets: Minimum 44px on mobile
+ */
+
 /* Base colors and variables */
 :root {
   --bg-gradient: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.95) 100%);
@@ -9,6 +56,8 @@
   --text-primary: rgba(255, 255, 255, 0.95);
   --text-secondary: rgba(255, 255, 255, 0.7);
   --border-color: rgba(255, 255, 255, 0.1);
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 /* Base transparency variables */
@@ -28,6 +77,9 @@ body {
   color: var(--text-primary);
   height: 100vh;
   overflow: hidden;
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .main-container {
@@ -102,13 +154,14 @@ body {
   position: fixed;
   left: 0;
   bottom: 0;
-  width: 33.333%;
+  width: min(600px, 50%);
   max-height: 70vh;
   background: transparent;
   display: flex;
   flex-direction: column;
   z-index: 100;
   padding-bottom: 20px;
+  padding-left: 16px;
 }
 
 #captions {
@@ -117,8 +170,22 @@ body {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   max-height: calc(70vh - 60px);
+  mask-image: linear-gradient(
+    to top,
+    black 0%,
+    black 70%,
+    rgba(0, 0, 0, 0.3) 85%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to top,
+    black 0%,
+    black 70%,
+    rgba(0, 0, 0, 0.3) 85%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
 }
 
 .caption-entry {
@@ -129,17 +196,35 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: calc(18px + 16px); /* line-height + padding */
 }
 
+/* Remove the display: none and adjust opacity for older messages */
 .caption-entry.show {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* When removing, animate upward */
-.caption-entry.remove {
-  opacity: 0;
-  transform: translateY(-20px);
+.caption-entry.show:not(:nth-last-child(-n+3)) {
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.caption-entry.show:not(:nth-last-child(-n+5)) {
+  opacity: 0.3;
+}
+
+.caption-entry.show:not(:nth-last-child(-n+7)) {
+  opacity: 0.15;
+}
+
+.caption-entry.show:not(:nth-last-child(-n+9)) {
+  opacity: 0.1;
+}
+
+/* Ensure question and options stay fully visible */
+.caption-entry.question.show {
+  opacity: 1 !important;
 }
 
 .caption-entry::before {
@@ -158,7 +243,7 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.3),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
@@ -178,7 +263,7 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(34, 197, 94, 0.2),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
@@ -194,9 +279,10 @@ body {
   border-radius: 12px;
   color: var(--text-primary);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 18px;
   width: fit-content;
   word-wrap: break-word;
+  letter-spacing: 0.2px;
 }
 
 .caption-entry.question .message-content {
@@ -216,10 +302,11 @@ body {
 
 .caption-entry.question .message-content .question-text {
   color: var(--text-primary);
-  font-size: 15px;
-  line-height: 1.4;
+  font-size: 14px;
+  line-height: 18px;
   margin: 0 0 12px 0;
   padding: 0 4px;
+  letter-spacing: 0.2px;
 }
 
 .caption-entry.question .message-content .options-container {
@@ -237,7 +324,7 @@ body {
   padding: 12px 16px;
   color: var(--text-primary);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -245,9 +332,10 @@ body {
   transition: all 0.2s ease;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(0, 149, 246, 0.2),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  letter-spacing: 0.2px;
 }
 
 .caption-entry.question .message-content .game-option:hover {
@@ -335,7 +423,7 @@ body {
   border: 1px solid rgba(0, 149, 246, 0.5);
   border-radius: 20px;
   padding: 8px 16px 8px 12px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -344,9 +432,10 @@ body {
   transition: all 0.2s ease;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(0, 149, 246, 0.2),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  line-height: 18px;
 }
 
 .participate-button .green-dot {
@@ -373,15 +462,36 @@ body {
     width: 100%;
     max-height: 50vh;
     bottom: 0;
+    padding-left: 0;
     background: transparent;
   }
-  
+
+  #captions {
+    max-height: calc(50vh - 60px);
+    gap: 10px;
+    mask-image: linear-gradient(
+      to top,
+      black 0%,
+      black 60%,
+      rgba(0, 0, 0, 0.3) 80%,
+      rgba(0, 0, 0, 0.1) 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to top,
+      black 0%,
+      black 60%,
+      rgba(0, 0, 0, 0.3) 80%,
+      rgba(0, 0, 0, 0.1) 100%
+    );
+  }
+
   .caption-entry {
     max-width: 85%;
   }
 
   .message-content {
-    background: rgba(0, 0, 0, 0.5);
+    font-size: 14px;
+    line-height: 18px;
   }
 
   .game-option {
@@ -397,11 +507,13 @@ body {
   }
 
   .zaia-status .name {
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 18px;
   }
 
   .zaia-status .online {
-    font-size: 12px;
+    font-size: 14px;
+    line-height: 18px;
   }
 
   .participate-wrapper {
@@ -411,7 +523,8 @@ body {
 
   .participate-button {
     font-size: 14px;
-    padding: 6px 20px 6px 24px;
+    line-height: 18px;
+    padding: 8px 20px 8px 24px;
   }
 
   .green-dot {
@@ -421,9 +534,9 @@ body {
   }
 
   .caption-entry::before {
-    width: 24px;
-    height: 24px;
-    font-size: 13px;
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
   }
 
   .caption-entry.clickable::before {
@@ -437,9 +550,18 @@ body {
   }
 
   .caption-entry.question .message-content .game-option {
-    padding: 10px 14px;
-    font-size: 13px;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 18px;
     border-radius: 16px;
+  }
+
+  .caption-entry.question .message-content .game-option .option-letter {
+    font-size: 14px;
+  }
+
+  .caption-entry.question .message-content .game-option .option-text {
+    font-size: 14px;
   }
 }
 
@@ -467,6 +589,7 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  line-height: 18px;
 }
 
 .zaia-status .name::after {
@@ -477,11 +600,12 @@ body {
 
 .zaia-status .online {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 4px;
+  line-height: 18px;
 }
 
 .zaia-status .online::before {
@@ -503,13 +627,35 @@ body {
   width: fit-content;
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: all 0.3s ease;
   margin-left: 32px;
+  position: relative;
 }
 
 .typing-indicator.active {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Hide typing indicator for older messages */
+.caption-entry.show:not(:nth-last-child(-n+3)) ~ .typing-indicator,
+.caption-entry.show:not(:nth-last-child(-n+5)) ~ .typing-indicator {
+  display: none;
+}
+
+/* Fade typing indicator with scroll */
+.typing-indicator.active:not(:nth-last-child(-n+3)) {
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.typing-indicator.active:not(:nth-last-child(-n+5)) {
+  opacity: 0.3;
+}
+
+.typing-indicator.active:not(:nth-last-child(-n+7)) {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .typing-indicator span {
@@ -526,11 +672,11 @@ body {
 .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes typing {
-  0%, 60%, 100% { 
+  0%, 60%, 100% {
     transform: translateY(0);
     opacity: 0.3;
   }
-  30% { 
+  30% {
     transform: translateY(-4px);
     opacity: 1;
   }
@@ -572,18 +718,20 @@ body {
 
 /* Scrollbar styling */
 #captions::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 #captions::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
 }
 
 #captions::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  transition: background 0.2s ease;
 }
 
 #captions::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.3);
 }

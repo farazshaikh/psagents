@@ -78,7 +78,7 @@ class DebugLogger {
     entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
     this.console.appendChild(entry);
     this.console.scrollTop = this.console.scrollHeight;
-    
+
     // Also log to browser console
     console.log(message);
   }
@@ -94,7 +94,7 @@ class DebugLogger {
     const logText = Array.from(this.console.children)
       .map(entry => entry.textContent)
       .join('\n');
-    
+
     navigator.clipboard.writeText(logText)
       .then(() => {
         const copyButton = document.getElementById('debugCopy');
@@ -121,4 +121,4 @@ window.debugLogger = new DebugLogger();
 // Export a simple debug function
 window.showDebug = function(message) {
   window.debugLogger.log(message);
-}; 
+};

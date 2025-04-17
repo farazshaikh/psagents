@@ -34,22 +34,22 @@
 function createStartCaption() {
   const startCaption = document.createElement('div');
   startCaption.className = 'caption-entry clickable';
-  
+
   const messageContent = document.createElement('div');
   messageContent.className = 'message-content';
-  
+
   const button = document.createElement('button');
   button.className = 'participate-button';
   button.innerHTML = '<span class="green-dot"></span>Participate';
   button.onclick = startGame;
-  
+
   messageContent.appendChild(button);
   startCaption.appendChild(messageContent);
-  
+
   requestAnimationFrame(() => {
     startCaption.classList.add('show');
   });
-  
+
   return startCaption;
 }
 
@@ -140,7 +140,7 @@ function startGame() {
     // Try to unmute and play
     video.currentTime = 0;
     video.muted = false;
-    
+
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
@@ -183,15 +183,15 @@ function showCaption(cue, nextCue) {
   // Create message container
   const messageContainer = document.createElement('div');
   messageContainer.className = 'caption-entry';
-  
+
   // Create message content
   const messageContent = document.createElement('div');
   messageContent.className = 'message-content';
   messageContent.textContent = cue.text;
-  
+
   // Add message to container
   messageContainer.appendChild(messageContent);
-  
+
   // Add to chat with animation
   requestAnimationFrame(() => {
     captionsContainer.appendChild(messageContainer);
@@ -215,7 +215,7 @@ function showTypingIndicator(timeout = null) {
   const typingIndicator = document.createElement('div');
   typingIndicator.className = 'typing-indicator';
   typingIndicator.innerHTML = '<span></span><span></span><span></span>';
-  
+
   requestAnimationFrame(() => {
     captionsContainer.appendChild(typingIndicator);
     requestAnimationFrame(() => {
@@ -239,7 +239,7 @@ function showTypingIndicator(timeout = null) {
 function showQuestionInChat(questionText, options) {
   showDebug('Attempting to show question and options in chat panel');
   showDebug(`Question text received: "${questionText}"`);
-  
+
   const captionsContainer = document.getElementById('captions');
   if (!captionsContainer) {
     showDebug('Captions container not found');
@@ -255,21 +255,21 @@ function showQuestionInChat(questionText, options) {
   // Create question container
   const questionContainer = document.createElement('div');
   questionContainer.className = 'caption-entry question';
-  
+
   // Create question content
   const questionContent = document.createElement('div');
   questionContent.className = 'message-content';
-  
+
   // Add question text
   const questionTextDiv = document.createElement('div');
   questionTextDiv.className = 'question-text';
   questionTextDiv.textContent = questionText;
   questionContent.appendChild(questionTextDiv);
-  
+
   // Add options container
   const optionsContent = document.createElement('div');
   optionsContent.className = 'options-container';
-  
+
   options.forEach((option, index) => {
     showDebug(`Creating option ${index + 1}: ${option}`);
     const button = document.createElement('button');
@@ -277,10 +277,10 @@ function showQuestionInChat(questionText, options) {
     button.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + index)}.</span><span class="option-text">${option}</span>`;
     optionsContent.appendChild(button);
   });
-  
+
   questionContent.appendChild(optionsContent);
   questionContainer.appendChild(questionContent);
-  
+
   // Add to chat with animation
   requestAnimationFrame(() => {
     captionsContainer.appendChild(questionContainer);
@@ -299,7 +299,7 @@ function showQuestionInChat(questionText, options) {
 function showOptionsInChat(optionsToShow) {
   showDebug('Showing options in chat');
   showDebug(`Number of options: ${optionsToShow.length}`);
-  
+
   const captionsContainer = document.getElementById('captions');
   if (!captionsContainer) {
     showDebug('Captions container not found');
@@ -315,23 +315,23 @@ function showOptionsInChat(optionsToShow) {
   // Create options container
   const optionsContainer = document.createElement('div');
   optionsContainer.className = 'caption-entry options';
-  
+
   const optionsContent = document.createElement('div');
   optionsContent.className = 'message-content options-container';
-  
+
   optionsToShow.forEach((option, index) => {
     showDebug(`Creating option ${index + 1}: ${option}`);
     const button = document.createElement('button');
     button.className = 'game-option';
     button.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + index)}.</span><span class="option-text">${option}</span>`;
     optionsContent.appendChild(button);
-    
+
     // Add reveal class after a short delay
     setTimeout(() => button.classList.add('reveal'), index * 200);
   });
-  
+
   optionsContainer.appendChild(optionsContent);
-  
+
   // Add to chat with animation
   requestAnimationFrame(() => {
     captionsContainer.appendChild(optionsContainer);
@@ -360,20 +360,20 @@ window.onload = function() {
   // Set up caption handling
   const track = video.textTracks[0];
   track.mode = 'showing'; // First set to showing to ensure it loads
-  
+
   const checkTrack = setInterval(() => {
     if (track.cues && track.cues.length > 0) {
       const lastCue = track.cues[track.cues.length - 1];
       lastCaptionTime = lastCue.startTime;
       clearInterval(checkTrack);
-      
+
       track.mode = 'hidden';
       track.addEventListener('cuechange', function() {
         const cue = this.activeCues[0];
         if (cue) {
           const currentIndex = Array.from(track.cues).findIndex(c => c === cue);
           const nextCue = currentIndex < track.cues.length - 1 ? track.cues[currentIndex + 1] : null;
-          
+
           if (Math.abs(cue.startTime - lastCaptionTime) < 0.1) {
             showDebug(`Last cue detected at time ${cue.startTime}`);
             if (!hasShownFinalQuestion) {
@@ -414,15 +414,15 @@ window.onload = function() {
   function handleTimeUpdate() {
     showDebug(`Video time: ${video.currentTime}`);
     const track = video.textTracks[0];
-    
+
     if (track && track.activeCues && track.activeCues.length > 0) {
       showDebug(`Active cues: ${track.activeCues.length}`);
       const currentCue = track.activeCues[0];
       showDebug(`Current cue text: ${currentCue.text}`);
     }
   }
-  
+
   video.addEventListener('timeupdate', handleTimeUpdate);
 
   showDebug('Debug console initialized');
-} 
+}
