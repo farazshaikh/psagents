@@ -112,6 +112,65 @@ function createStartCaption() {
   return startCaption;
 }
 
+function showQuestionInChat() {
+  showDebug('Attempting to show question in chat panel');
+  
+  const mainQuestionText = document.getElementById('questionText').textContent;
+  showDebug(`Main question panel text: "${mainQuestionText}"`);
+  
+  const captionEntry = document.createElement('div');
+  captionEntry.className = 'caption-entry';
+  
+  const messageText = document.createElement('div');
+  messageText.className = 'message-content'; // Add message-content class like regular captions
+  messageText.textContent = mainQuestionText;
+  captionEntry.appendChild(messageText);
+  
+  const timestamp = document.createElement('div');
+  timestamp.className = 'timestamp';
+  const time = new Date();
+  timestamp.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  captionEntry.appendChild(timestamp);
+  
+  showDebug('Created question caption element');
+  
+  // Mark previous captions as past
+  const previousCaptions = captionText.querySelectorAll('.caption-entry.active');
+  previousCaptions.forEach(caption => {
+    caption.classList.remove('active');
+    caption.classList.add('past');
+  });
+  
+  captionText.appendChild(captionEntry);
+  showDebug('Added question caption to chat panel');
+  
+  requestAnimationFrame(() => {
+    captionEntry.classList.add('active');
+    showDebug('Activated question caption');
+  });
+  
+  captionText.scrollTop = captionText.scrollHeight;
+}
+
+function showOptionsInChat(options) {
+  const optionsCaption = document.createElement('div');
+  optionsCaption.className = 'caption-entry';
+  
+  options.forEach((text, index) => {
+    const button = document.createElement('button');
+    button.className = 'game-option';
+    button.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + index)}.</span><span class="option-text">${text}</span>`;
+    optionsCaption.appendChild(button);
+  });
+  
+  captionText.appendChild(optionsCaption);
+  requestAnimationFrame(() => {
+    optionsCaption.classList.add('active');
+  });
+  
+  captionText.scrollTop = captionText.scrollHeight;
+}
+
 window.onload = function() {
   const video = document.getElementById('videoPlayer');
   const questionText = document.getElementById('questionText');
@@ -159,10 +218,12 @@ window.onload = function() {
   // Wait for track to load and get last caption time
   const checkTrack = setInterval(() => {
     if (track.cues && track.cues.length > 0) {
+      showDebug('Track cues loaded');
       const lastCue = track.cues[track.cues.length - 1];
       lastCaptionTime = lastCue.startTime;
-      // Set the question text with ZAIA prefix
-      questionText.textContent = `ZAIA: ${lastCue.text} ....`;
+      const finalQuestion = `ZAIA: ${lastCue.text} ....`;
+      showDebug(`Setting final question: "${finalQuestion}"`);
+      questionText.textContent = finalQuestion;
       clearInterval(checkTrack);
       
       // Now that we have the last time, set up the cue change listener
@@ -170,16 +231,23 @@ window.onload = function() {
       track.addEventListener('cuechange', function() {
         const cue = this.activeCues[0];
         if (cue) {
-          // Find the index of current cue
+          showDebug('Cue change detected');
           const currentIndex = Array.from(track.cues).findIndex(c => c === cue);
           const nextCue = currentIndex < track.cues.length - 1 ? track.cues[currentIndex + 1] : null;
           
           // Skip displaying the last caption
           if (Math.abs(cue.startTime - lastCaptionTime) < 0.1) {
+            showDebug('Last caption reached, preparing to show question');
             setTimeout(() => {
+              showDebug('Showing question in chat panel');
+              showQuestionInChat();
+              setTimeout(() => {
+                showDebug('Showing options in chat panel');
+                showOptionsInChat(options);
+              }, 500);
+              
               questionText.classList.add('reveal');
-              const options = document.querySelectorAll('.game-option');
-              options.forEach((option, index) => {
+              gameOptions.forEach((option, index) => {
                 setTimeout(() => {
                   option.classList.add('reveal');
                 }, index * 200);
@@ -221,18 +289,23 @@ window.onload = function() {
   // Add timeupdate listener to check for last caption
   video.addEventListener('timeupdate', () => {
     if (lastCaptionTime > 0 && video.currentTime >= lastCaptionTime) {
-      // Remove the listener to prevent multiple triggers
+      showDebug('Video reached last caption time');
       video.removeEventListener('timeupdate', arguments.callee);
-      
-      // Reveal question and options with delay
       setTimeout(() => {
+        showDebug('Showing final question in chat panel');
+        showQuestionInChat();
+        setTimeout(() => {
+          showDebug('Showing final options in chat panel');
+          showOptionsInChat(options);
+        }, 500);
+        
         questionText.classList.add('reveal');
         gameOptions.forEach((option, index) => {
           setTimeout(() => {
             option.classList.add('reveal');
           }, index * 200);
         });
-      }, 2000); // Wait 2 seconds after last caption
+      }, 2000);
     }
   });
 
