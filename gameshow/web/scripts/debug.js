@@ -3,10 +3,26 @@ class DebugLogger {
   constructor() {
     // Wait for DOM to be ready
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.createDebugConsole());
+      document.addEventListener('DOMContentLoaded', () => this.initializeDebugConsole());
     } else {
-      this.createDebugConsole();
+      this.initializeDebugConsole();
     }
+  }
+
+  initializeDebugConsole() {
+    // Check if debug console already exists
+    const existingConsole = document.getElementById('debugConsole');
+    if (existingConsole) {
+      // Use existing console
+      this.wrapper = existingConsole.parentElement;
+      this.console = existingConsole;
+      this.toggleButton = document.getElementById('debugToggle');
+      this.log('Debug logger connected to existing console');
+      return;
+    }
+
+    // Create new console if none exists
+    this.createDebugConsole();
   }
 
   createDebugConsole() {

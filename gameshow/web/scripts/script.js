@@ -1,3 +1,36 @@
+/**
+ * Game Show Video Player with Interactive Captions
+ *
+ * Flow:
+ * 1. Video and Caption Loading
+ *    - Load video element and VTT captions
+ *    - Parse captions and store them for timed display
+ *    - Track the timestamp of the last caption for question timing
+ *
+ * 2. Initial UI Setup
+ *    - Display the "Participate" button as a chat message
+ *    - Button appears in the chat panel like a system message
+ *
+ * 3. Game Start
+ *    - User clicks "Participate" to begin
+ *    - Video playback starts from the beginning
+ *
+ * 4. Caption Display
+ *    - Captions are displayed as chat messages
+ *    - Each caption appears with timing from VTT
+ *    - Messages styled as Instagram Live chat bubbles
+ *
+ * 5. Question Display
+ *    - At the last caption timestamp:
+ *      - Instead of showing the caption, display it as a question
+ *      - Show 4 multiple choice options as interactive buttons
+ *      - Options appear in sequence with animation
+ *
+ * This script manages the video player, caption timing,
+ * chat message display, and interactive question handling
+ * in an Instagram Live-style interface.
+ */
+
 function goFullscreen() {
   document.documentElement.requestFullscreen().catch(e => console.log(e));
 }
@@ -20,7 +53,19 @@ function toggleMute() {
 function startGame() {
   showDebug('Starting game...');
   const video = document.getElementById('videoPlayer');
-  const captionText = document.getElementById('captionText');
+  const captionsContainer = document.getElementById('captions');
+
+  // Log initial video state
+  showDebug('Initial video state:\n' +
+    `    - Source: ${video.currentSrc}\n` +
+    `    - Ready state: ${video.readyState}\n` +
+    `    - Network state: ${video.networkState}\n` +
+    `    - Autoplay: ${video.autoplay}\n` +
+    `    - Muted: ${video.muted}\n` +
+    `    - Controls: ${video.controls}\n` +
+    `    - Width x Height: ${video.videoWidth} x ${video.videoHeight}\n` +
+    `    - User Agent: ${navigator.userAgent}\n`
+  );
 
   // Remove any existing typing indicators
   const existingIndicator = document.querySelector('.typing-indicator');
@@ -28,28 +73,66 @@ function startGame() {
     existingIndicator.remove();
   }
 
+  // Remove participate message
+  const participateMessage = document.querySelector('.caption-entry.clickable');
+  if (participateMessage) {
+    participateMessage.remove();
+  }
+
   // Show initial typing indicator
   showTypingIndicator();
 
-  // Go fullscreen
-  document.documentElement.requestFullscreen().catch(e => console.log(e));
-  
-  // Set up captions
-  const track = video.textTracks[0];
-  track.mode = 'showing'; // First set to showing to ensure it loads
+  // Make sure video is loaded
+  if (video.readyState < 2) { // HAVE_CURRENT_DATA
+    showDebug('Video not ready, waiting for load...');
+    video.addEventListener('loadeddata', () => {
+      showDebug('Video loaded, starting playback...');
+      startVideoPlayback();
+    });
+    // Also set a timeout in case loading takes too long
+    setTimeout(() => {
+      if (video.readyState < 2) {
+        showDebug('Video load timeout, attempting playback anyway...');
+        startVideoPlayback();
+      }
+    }, 2000);
+  } else {
+    showDebug('Video ready, starting playback immediately...');
+    startVideoPlayback();
+  }
 
-  // Start video and unmute after a short delay
-  setTimeout(() => {
+  function startVideoPlayback() {
+    // Set up captions
+    const track = video.textTracks[0];
+    if (track) {
+      track.mode = 'showing';
+      showDebug('Caption track found and enabled');
+    } else {
+      showDebug('No caption track found!');
+    }
+
+    // Try to unmute and play
+    video.currentTime = 0;
     video.muted = false;
-    video.play().catch(e => console.log(e));
-    track.mode = 'hidden'; // Then hide it after it's loaded
-  }, 1000);
-
-  // Hide start button's container
-  document.querySelector('.fullscreen-panel').style.display = 'none';
-
-  // Add debug log for options
-  showDebug(`Options available: ${JSON.stringify(options)}`);
+    
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        showDebug('Video playback started successfully');
+        if (track) track.mode = 'hidden';
+      }).catch(error => {
+        showDebug(`Error playing video: ${error}`);
+        // Try one more time with muted playback
+        video.muted = true;
+        video.play().then(() => {
+          showDebug('Video playing muted, attempting to unmute...');
+          video.muted = false;
+        }).catch(e => {
+          showDebug(`Failed to play even muted: ${e}`);
+        });
+      });
+    }
+  }
 }
 
 function showCaption(cue, nextCue) {
@@ -59,61 +142,86 @@ function showCaption(cue, nextCue) {
     showDebug(`Next cue starts at: ${nextCue.startTime}`);
   }
 
+  const captionsContainer = document.getElementById('captions');
+  if (!captionsContainer) {
+    showDebug('Captions container not found');
+    return;
+  }
+
   // Remove existing typing indicator if present
   const existingIndicator = document.querySelector('.typing-indicator');
   if (existingIndicator) {
     existingIndicator.remove();
   }
 
-  const captionEntry = document.createElement('div');
-  captionEntry.className = 'caption-entry';
+  // Create message container
+  const messageContainer = document.createElement('div');
+  messageContainer.className = 'caption-entry';
   
+  // Create message content
   const messageContent = document.createElement('div');
   messageContent.className = 'message-content';
   messageContent.textContent = cue.text;
   
-  captionEntry.appendChild(messageContent);
-  captionText.appendChild(captionEntry);
+  // Add message to container
+  messageContainer.appendChild(messageContent);
   
-  // Force reflow
-  captionEntry.offsetHeight;
-  captionEntry.classList.add('active');
-  
-  // Auto-scroll
-  captionText.scrollTop = captionText.scrollHeight;
-  
-  // Always show a typing indicator after a caption
+  // Add to chat with animation
+  requestAnimationFrame(() => {
+    captionsContainer.appendChild(messageContainer);
+    requestAnimationFrame(() => {
+      messageContainer.style.opacity = '1';
+      messageContainer.style.transform = 'translateY(0)';
+      scrollToLatest();
+    });
+  });
+
+  // Show typing indicator for next message
   if (nextCue) {
-    showTypingIndicator();
+    setTimeout(showTypingIndicator, 1000);
   }
 }
 
 function createStartCaption() {
   const startCaption = document.createElement('div');
-  startCaption.className = 'caption-entry';
+  startCaption.className = 'caption-entry clickable';
+  
+  const messageContent = document.createElement('div');
+  messageContent.className = 'message-content';
   
   const button = document.createElement('button');
+  button.className = 'participate-button';
   button.textContent = 'Participate';
   button.onclick = startGame;
-  startCaption.appendChild(button);
+  
+  messageContent.appendChild(button);
+  startCaption.appendChild(messageContent);
   
   requestAnimationFrame(() => {
-    startCaption.classList.add('active');
+    startCaption.style.opacity = '1';
+    startCaption.style.transform = 'translateY(0)';
   });
   
   return startCaption;
 }
 
 function showTypingIndicator(timeout = null) {
+  const captionsContainer = document.getElementById('captions');
+  if (!captionsContainer) return;
+
   const typingIndicator = document.createElement('div');
   typingIndicator.className = 'typing-indicator';
   typingIndicator.innerHTML = '<span></span><span></span><span></span>';
-  captionText.appendChild(typingIndicator);
   
-  // Auto-scroll to show typing indicator
-  captionText.scrollTop = captionText.scrollHeight;
+  requestAnimationFrame(() => {
+    captionsContainer.appendChild(typingIndicator);
+    requestAnimationFrame(() => {
+      typingIndicator.style.opacity = '1';
+      typingIndicator.style.transform = 'translateY(0)';
+      scrollToLatest();
+    });
+  });
 
-  // If timeout is provided, remove the indicator after timeout
   if (timeout) {
     setTimeout(() => {
       if (typingIndicator && typingIndicator.parentNode) {
@@ -121,7 +229,7 @@ function showTypingIndicator(timeout = null) {
       }
     }, timeout);
   }
-  
+
   return typingIndicator;
 }
 
@@ -129,99 +237,99 @@ function showQuestionInChat(questionText) {
   showDebug('Attempting to show question in chat panel');
   showDebug(`Question text received: "${questionText}"`);
   
+  const captionsContainer = document.getElementById('captions');
+  if (!captionsContainer) {
+    showDebug('Captions container not found');
+    return;
+  }
+
   // Remove existing typing indicator if present
   const existingIndicator = document.querySelector('.typing-indicator');
   if (existingIndicator) {
     existingIndicator.remove();
   }
+
+  // Create question container
+  const questionContainer = document.createElement('div');
+  questionContainer.className = 'caption-entry question';
   
-  const captionEntry = document.createElement('div');
-  captionEntry.className = 'caption-entry';
+  // Create question content
+  const questionContent = document.createElement('div');
+  questionContent.className = 'message-content';
+  questionContent.textContent = questionText;
   
-  const messageContent = document.createElement('div');
-  messageContent.className = 'message-content';
+  // Add question to container
+  questionContainer.appendChild(questionContent);
   
-  const messageText = document.createElement('div');
-  messageText.className = 'question-text';
-  messageText.textContent = questionText;
-  messageContent.appendChild(messageText);
-  
-  captionEntry.appendChild(messageContent);
-  captionText.appendChild(captionEntry);
-  
-  // Force reflow and add active class
-  captionEntry.offsetHeight;
-  captionEntry.classList.add('active');
-  messageText.classList.add('reveal');
-  
-  // Auto-scroll
-  captionText.scrollTop = captionText.scrollHeight;
-  
-  // Always show a typing indicator after the question
-  showTypingIndicator();
+  // Add to chat with animation
+  requestAnimationFrame(() => {
+    captionsContainer.appendChild(questionContainer);
+    requestAnimationFrame(() => {
+      questionContainer.style.opacity = '1';
+      questionContainer.style.transform = 'translateY(0)';
+      scrollToLatest();
+    });
+  });
+
+  // Show typing indicator before options
+  setTimeout(showTypingIndicator, 1000);
 }
 
 function showOptionsInChat(optionsToShow) {
   showDebug('Showing options in chat');
   showDebug(`Number of options: ${optionsToShow.length}`);
   
+  const captionsContainer = document.getElementById('captions');
+  if (!captionsContainer) {
+    showDebug('Captions container not found');
+    return;
+  }
+
   // Remove existing typing indicator if present
   const existingIndicator = document.querySelector('.typing-indicator');
   if (existingIndicator) {
     existingIndicator.remove();
   }
+
+  // Create options container
+  const optionsContainer = document.createElement('div');
+  optionsContainer.className = 'caption-entry options';
   
-  const captionEntry = document.createElement('div');
-  captionEntry.className = 'caption-entry';
-  
-  const messageContent = document.createElement('div');
-  messageContent.className = 'message-content options-container';
+  const optionsContent = document.createElement('div');
+  optionsContent.className = 'message-content options-container';
   
   optionsToShow.forEach((option, index) => {
-    showDebug(`Option ${index + 1}: ${option}`);
+    showDebug(`Creating option ${index + 1}: ${option}`);
     const button = document.createElement('button');
     button.className = 'game-option';
     button.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + index)}.</span><span class="option-text">${option}</span>`;
-    messageContent.appendChild(button);
-    showDebug(`Created option ${index + 1}: ${option}`);
+    optionsContent.appendChild(button);
     
     // Add reveal class after a short delay
     setTimeout(() => button.classList.add('reveal'), index * 200);
   });
   
-  captionEntry.appendChild(messageContent);
-  captionText.appendChild(captionEntry);
+  optionsContainer.appendChild(optionsContent);
   
-  // Force reflow and add active class
-  captionEntry.offsetHeight;
-  captionEntry.classList.add('active');
-  
-  // Auto-scroll
-  captionText.scrollTop = captionText.scrollHeight;
-  
-  // Show a typing indicator that will clean itself up after 3 seconds
-  showTypingIndicator(3000);
+  // Add to chat with animation
+  requestAnimationFrame(() => {
+    captionsContainer.appendChild(optionsContainer);
+    requestAnimationFrame(() => {
+      optionsContainer.style.opacity = '1';
+      optionsContainer.style.transform = 'translateY(0)';
+      scrollToLatest();
+    });
+  });
 }
 
 window.onload = function() {
   const video = document.getElementById('videoPlayer');
-  const captionText = document.getElementById('captionText');
   const captionsContainer = document.getElementById('captions');
   let hasShownFinalQuestion = false;
-
-  // Add start caption as first message
-  captionText.appendChild(createStartCaption());
-
   let lastCaptionTime = 0;
 
-  // Handle window resize
-  function handleResize() {
-    const vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-  }
-
-  window.addEventListener('resize', handleResize);
-  handleResize();
+  // Add start caption as first message
+  captionsContainer.appendChild(createStartCaption());
 
   // Create options array
   const options = [
@@ -289,10 +397,6 @@ window.onload = function() {
 
   video.volume = 1.0;
 
-  if (video.textTracks && video.textTracks.length > 0) {
-    video.textTracks[0].mode = 'hidden';
-  }
-  
   function handleTimeUpdate() {
     showDebug(`Video time: ${video.currentTime}`);
     const track = video.textTracks[0];
@@ -301,22 +405,6 @@ window.onload = function() {
       showDebug(`Active cues: ${track.activeCues.length}`);
       const currentCue = track.activeCues[0];
       showDebug(`Current cue text: ${currentCue.text}`);
-    }
-    
-    if (lastCaptionTime > 0 && video.currentTime >= lastCaptionTime && !hasShownFinalQuestion) {
-      showDebug(`Video reached last caption time: ${lastCaptionTime}`);
-      showDebug('Preparing to show question');
-      showDebug(`Current video time: ${video.currentTime}`);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      hasShownFinalQuestion = true;
-      setTimeout(() => {
-        showDebug('Showing final question from timeupdate');
-        showQuestionInChat(track.activeCues[0].text);
-        setTimeout(() => {
-          showDebug('Showing options from timeupdate');
-          showOptionsInChat(options);
-        }, 500);
-      }, 2000);
     }
   }
   
