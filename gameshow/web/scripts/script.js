@@ -18,6 +18,7 @@ function toggleMute() {
 }
 
 function startGame() {
+  showDebug('Starting game...');
   const video = document.getElementById('videoPlayer');
   const captionText = document.getElementById('captionText');
 
@@ -43,9 +44,18 @@ function startGame() {
 
   // Hide start button's container
   document.querySelector('.fullscreen-panel').style.display = 'none';
+
+  // Add debug log for options
+  showDebug(`Options available: ${JSON.stringify(options)}`);
 }
 
 function showCaption(cue, nextCue) {
+  showDebug(`Showing caption at time ${cue.startTime}`);
+  showDebug(`Caption text: ${cue.text}`);
+  if (nextCue) {
+    showDebug(`Next cue starts at: ${nextCue.startTime}`);
+  }
+  
   // Create message bubble immediately
   const captionEntry = document.createElement('div');
   captionEntry.className = 'caption-entry';
@@ -112,38 +122,87 @@ function createStartCaption() {
   return startCaption;
 }
 
-function showQuestionInChat(text) {
+function showQuestionInChat(questionText) {
   showDebug('Attempting to show question in chat panel');
+  showDebug(`Question text received: "${questionText}"`);
   
   const captionEntry = document.createElement('div');
   captionEntry.className = 'caption-entry';
   
+  const messageContent = document.createElement('div');
+  messageContent.className = 'message-content';
+  
   const messageText = document.createElement('div');
-  messageText.textContent = `ZAIA: ${text} ....`;
-  captionEntry.appendChild(messageText);
+  messageText.className = 'question-text';
+  messageText.textContent = questionText;
+  messageContent.appendChild(messageText);
+  
+  captionEntry.appendChild(messageContent);
+  
+  const timestamp = document.createElement('div');
+  timestamp.className = 'timestamp';
+  const time = new Date();
+  timestamp.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  captionEntry.appendChild(timestamp);
   
   captionText.appendChild(captionEntry);
+  
+  // Mark previous captions as past
+  const previousCaptions = captionText.querySelectorAll('.caption-entry.active');
+  previousCaptions.forEach(caption => {
+    caption.classList.remove('active');
+    caption.classList.add('past');
+  });
+  
   requestAnimationFrame(() => {
     captionEntry.classList.add('active');
+    messageText.classList.add('reveal');
   });
   
   captionText.scrollTop = captionText.scrollHeight;
 }
 
-function showOptionsInChat(options) {
-  const optionsCaption = document.createElement('div');
-  optionsCaption.className = 'caption-entry';
+function showOptionsInChat(optionsToShow) {
+  showDebug('Showing options in chat');
+  showDebug(`Number of options: ${optionsToShow.length}`);
   
-  options.forEach((text, index) => {
+  const captionEntry = document.createElement('div');
+  captionEntry.className = 'caption-entry';
+  
+  const messageContent = document.createElement('div');
+  messageContent.className = 'message-content options-container';
+  
+  optionsToShow.forEach((option, index) => {
+    showDebug(`Option ${index + 1}: ${option}`);
     const button = document.createElement('button');
     button.className = 'game-option';
-    button.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + index)}.</span><span class="option-text">${text}</span>`;
-    optionsCaption.appendChild(button);
+    button.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + index)}.</span><span class="option-text">${option}</span>`;
+    messageContent.appendChild(button);
+    showDebug(`Created option ${index + 1}: ${option}`);
+    
+    // Add reveal class after a short delay
+    setTimeout(() => button.classList.add('reveal'), index * 100);
   });
   
-  captionText.appendChild(optionsCaption);
+  captionEntry.appendChild(messageContent);
+  
+  const timestamp = document.createElement('div');
+  timestamp.className = 'timestamp';
+  const time = new Date();
+  timestamp.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  captionEntry.appendChild(timestamp);
+  
+  captionText.appendChild(captionEntry);
+  
+  // Mark previous captions as past
+  const previousCaptions = captionText.querySelectorAll('.caption-entry.active');
+  previousCaptions.forEach(caption => {
+    caption.classList.remove('active');
+    caption.classList.add('past');
+  });
+  
   requestAnimationFrame(() => {
-    optionsCaption.classList.add('active');
+    captionEntry.classList.add('active');
   });
   
   captionText.scrollTop = captionText.scrollHeight;
@@ -153,6 +212,7 @@ window.onload = function() {
   const video = document.getElementById('videoPlayer');
   const captionText = document.getElementById('captionText');
   const captionsContainer = document.getElementById('captions');
+  let hasShownFinalQuestion = false;
 
   // Add start caption as first message
   captionText.appendChild(createStartCaption());
@@ -194,12 +254,23 @@ window.onload = function() {
           const nextCue = currentIndex < track.cues.length - 1 ? track.cues[currentIndex + 1] : null;
           
           if (Math.abs(cue.startTime - lastCaptionTime) < 0.1) {
-            setTimeout(() => {
-              showQuestionInChat(cue.text);
+            showDebug(`Last cue detected at time ${cue.startTime}`);
+            if (!hasShownFinalQuestion) {
+              hasShownFinalQuestion = true;
               setTimeout(() => {
-                showOptionsInChat(options);
+                // Remove typing indicator before showing last question
+                const existingIndicator = document.querySelector('.typing-indicator');
+                if (existingIndicator) {
+                  existingIndicator.remove();
+                  showDebug('Removed typing indicator before last question');
+                }
+                showQuestionInChat(cue.text);
+                setTimeout(() => {
+                  showDebug('Attempting to show options after question');
+                  showOptionsInChat(options);
+                }, 500);
               }, 500);
-            }, 500);
+            }
             return;
           }
 
@@ -227,17 +298,34 @@ window.onload = function() {
     video.textTracks[0].mode = 'hidden';
   }
   
-  video.addEventListener('timeupdate', () => {
-    if (lastCaptionTime > 0 && video.currentTime >= lastCaptionTime) {
-      video.removeEventListener('timeupdate', arguments.callee);
+  function handleTimeUpdate() {
+    showDebug(`Video time: ${video.currentTime}`);
+    const track = video.textTracks[0];
+    
+    if (track && track.activeCues && track.activeCues.length > 0) {
+      showDebug(`Active cues: ${track.activeCues.length}`);
+      const currentCue = track.activeCues[0];
+      showDebug(`Current cue text: ${currentCue.text}`);
+    }
+    
+    if (lastCaptionTime > 0 && video.currentTime >= lastCaptionTime && !hasShownFinalQuestion) {
+      showDebug(`Video reached last caption time: ${lastCaptionTime}`);
+      showDebug('Preparing to show question');
+      showDebug(`Current video time: ${video.currentTime}`);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      hasShownFinalQuestion = true;
       setTimeout(() => {
-        showQuestionInChat(lastCue.text);
+        showDebug('Showing final question from timeupdate');
+        showQuestionInChat(track.activeCues[0].text);
         setTimeout(() => {
+          showDebug('Showing options from timeupdate');
           showOptionsInChat(options);
         }, 500);
       }, 2000);
     }
-  });
+  }
+  
+  video.addEventListener('timeupdate', handleTimeUpdate);
 
   showDebug('Debug console initialized');
 } 
