@@ -96,6 +96,22 @@ function showCaption(cue, nextCue) {
   }
 }
 
+function createStartCaption() {
+  const startCaption = document.createElement('div');
+  startCaption.className = 'caption-entry';
+  
+  const button = document.createElement('button');
+  button.textContent = 'Participate';
+  button.onclick = startGame;
+  startCaption.appendChild(button);
+  
+  requestAnimationFrame(() => {
+    startCaption.classList.add('active');
+  });
+  
+  return startCaption;
+}
+
 window.onload = function() {
   const video = document.getElementById('videoPlayer');
   const questionText = document.getElementById('questionText');
@@ -103,6 +119,9 @@ window.onload = function() {
   const muteButton = document.getElementById('muteButton');
   const captionText = document.getElementById('captionText');
   const captionsContainer = document.getElementById('captions');
+
+  // Add start caption as first message
+  captionText.appendChild(createStartCaption());
 
   let currentCaptionIndex = -1;
   let lastCaptionTime = 0;

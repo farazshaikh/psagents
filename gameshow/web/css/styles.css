@@ -106,10 +106,7 @@
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, var(--opacity-very-low));
   align-self: flex-start;
-}
-
-.caption-entry::before {
-  display: none;
+  cursor: pointer;
 }
 
 .caption-entry.active {
@@ -120,6 +117,11 @@
 .caption-entry.past {
   opacity: 0.7;
   background: rgba(20, 20, 20, var(--base-opacity));
+  cursor: default;
+}
+
+.caption-entry::before {
+  display: none;
 }
 
 .caption-entry .timestamp {
