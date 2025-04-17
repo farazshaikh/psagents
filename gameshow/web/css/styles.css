@@ -209,6 +209,7 @@
 body {
   margin: 0;
   padding: 0;
+  background: #000;
 }
 
 .main-container {
@@ -229,6 +230,7 @@ body {
   top: 0;
   left: 0;
   z-index: 0;
+  background: #000;
 }
 
 /* Overlay layout */
