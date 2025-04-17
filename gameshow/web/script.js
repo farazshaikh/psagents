@@ -216,4 +216,9 @@ window.onload = function() {
       }, 2000); // Wait 2 seconds after last caption
     }
   });
+
+  // Add test logs when page loads
+  showDebug('Debug console initialized');
+  showDebug('Testing debug logs...');
+  showDebug('If you see this, the debug console is working!');
 } 
