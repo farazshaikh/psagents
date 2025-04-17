@@ -31,6 +31,36 @@
  * in an Instagram Live-style interface.
  */
 
+function createStartCaption() {
+  const startCaption = document.createElement('div');
+  startCaption.className = 'caption-entry clickable';
+  
+  const messageContent = document.createElement('div');
+  messageContent.className = 'message-content';
+  
+  const button = document.createElement('button');
+  button.className = 'participate-button';
+  button.innerHTML = '<span class="green-dot"></span>Participate';
+  button.onclick = startGame;
+  
+  messageContent.appendChild(button);
+  startCaption.appendChild(messageContent);
+  
+  requestAnimationFrame(() => {
+    startCaption.classList.add('show');
+  });
+  
+  return startCaption;
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  const captionsContainer = document.getElementById('captions');
+  if (captionsContainer) {
+    captionsContainer.appendChild(createStartCaption());
+  }
+});
+
 function goFullscreen() {
   document.documentElement.requestFullscreen().catch(e => console.log(e));
 }
@@ -73,14 +103,10 @@ function startGame() {
     existingIndicator.remove();
   }
 
-  // Remove participate message
-  const participateMessage = document.querySelector('.caption-entry.clickable');
-  if (participateMessage) {
-    participateMessage.remove();
-  }
-
   // Show initial typing indicator
-  showTypingIndicator();
+  setTimeout(() => {
+    showTypingIndicator();
+  }, 500);
 
   // Make sure video is loaded
   if (video.readyState < 2) { // HAVE_CURRENT_DATA
@@ -182,29 +208,6 @@ function showCaption(cue, nextCue) {
   }
 }
 
-function createStartCaption() {
-  const startCaption = document.createElement('div');
-  startCaption.className = 'caption-entry clickable';
-  
-  const messageContent = document.createElement('div');
-  messageContent.className = 'message-content';
-  
-  const button = document.createElement('button');
-  button.className = 'participate-button';
-  button.textContent = 'Participate';
-  button.onclick = startGame;
-  
-  messageContent.appendChild(button);
-  startCaption.appendChild(messageContent);
-  
-  requestAnimationFrame(() => {
-    startCaption.style.opacity = '1';
-    startCaption.style.transform = 'translateY(0)';
-  });
-  
-  return startCaption;
-}
-
 function showTypingIndicator(timeout = null) {
   const captionsContainer = document.getElementById('captions');
   if (!captionsContainer) return;
@@ -233,8 +236,8 @@ function showTypingIndicator(timeout = null) {
   return typingIndicator;
 }
 
-function showQuestionInChat(questionText) {
-  showDebug('Attempting to show question in chat panel');
+function showQuestionInChat(questionText, options) {
+  showDebug('Attempting to show question and options in chat panel');
   showDebug(`Question text received: "${questionText}"`);
   
   const captionsContainer = document.getElementById('captions');
@@ -256,23 +259,41 @@ function showQuestionInChat(questionText) {
   // Create question content
   const questionContent = document.createElement('div');
   questionContent.className = 'message-content';
-  questionContent.textContent = questionText;
   
-  // Add question to container
+  // Add question text
+  const questionTextDiv = document.createElement('div');
+  questionTextDiv.className = 'question-text';
+  questionTextDiv.textContent = questionText;
+  questionContent.appendChild(questionTextDiv);
+  
+  // Add options container
+  const optionsContent = document.createElement('div');
+  optionsContent.className = 'options-container';
+  
+  options.forEach((option, index) => {
+    showDebug(`Creating option ${index + 1}: ${option}`);
+    const button = document.createElement('button');
+    button.className = 'game-option';
+    button.innerHTML = `<span class="option-letter">${String.fromCharCode(65 + index)}.</span><span class="option-text">${option}</span>`;
+    optionsContent.appendChild(button);
+  });
+  
+  questionContent.appendChild(optionsContent);
   questionContainer.appendChild(questionContent);
   
   // Add to chat with animation
   requestAnimationFrame(() => {
     captionsContainer.appendChild(questionContainer);
     requestAnimationFrame(() => {
-      questionContainer.style.opacity = '1';
-      questionContainer.style.transform = 'translateY(0)';
+      questionContainer.classList.add('show');
+      // Reveal options with staggered animation
+      const options = questionContainer.querySelectorAll('.game-option');
+      options.forEach((option, index) => {
+        setTimeout(() => option.classList.add('reveal'), index * 200);
+      });
       scrollToLatest();
     });
   });
-
-  // Show typing indicator before options
-  setTimeout(showTypingIndicator, 1000);
 }
 
 function showOptionsInChat(optionsToShow) {
@@ -328,9 +349,6 @@ window.onload = function() {
   let hasShownFinalQuestion = false;
   let lastCaptionTime = 0;
 
-  // Add start caption as first message
-  captionsContainer.appendChild(createStartCaption());
-
   // Create options array
   const options = [
     "decode, like it's standing face-to-face with a cursed scroll",
@@ -367,11 +385,7 @@ window.onload = function() {
                   existingIndicator.remove();
                   showDebug('Removed typing indicator before last question');
                 }
-                showQuestionInChat(cue.text);
-                setTimeout(() => {
-                  showDebug('Attempting to show options after question');
-                  showOptionsInChat(options);
-                }, 500);
+                showQuestionInChat(cue.text, options);
               }, 500);
             }
             return;
