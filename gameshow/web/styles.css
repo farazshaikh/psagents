@@ -1,0 +1,315 @@
+/* Base transparency variables */
+:root {
+  --base-opacity: 0.65;  /* Base opacity for main panel */
+  --opacity-high: calc(var(--base-opacity) + 0.1);  /* 0.75 - For elements needing more opacity */
+  --opacity-medium: calc(var(--base-opacity) - 0.35);  /* 0.3 - For secondary elements */
+  --opacity-low: calc(var(--base-opacity) - 0.45);  /* 0.2 - For subtle effects */
+  --opacity-very-low: calc(var(--base-opacity) - 0.55);  /* 0.1 - For very subtle effects */
+}
+
+.game-option {
+  width: 90%;
+  margin: 10px;
+  padding: 15px;
+  font-size: clamp(14px, 2vw, 18px);
+  border: 2px solid rgba(74, 144, 226, var(--opacity-low));
+  border-radius: 10px;
+  background: rgba(74, 144, 226, var(--opacity-very-low));
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  position: relative;
+  opacity: 0;
+  transform: translateY(20px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.game-option.reveal {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.game-option:hover {
+  background: rgba(74, 144, 226, var(--opacity-medium));
+  transform: scale(1.02);
+}
+
+.option-letter {
+  position: absolute;
+  left: 15px;
+  font-weight: bold;
+  color: #4a90e2;
+}
+
+.option-text {
+  margin-left: 30px;
+  display: inline-block;
+}
+
+.question-text {
+  font-size: clamp(18px, 3vw, 24px);
+  color: #333;
+  margin-bottom: 20px;
+  text-align: center;
+  padding: 0 20px;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.question-text.reveal {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* Chat-like captions styling */
+#captions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(255, 255, 255, var(--opacity-very-low));
+  background-color: rgba(0, 0, 0, var(--opacity-medium));
+  overflow-y: auto;
+  padding: 15px;
+  max-height: 30vh;
+}
+
+#captionText {
+  font-size: clamp(14px, 2vw, 18px);
+  color: white;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.caption-entry {
+  max-width: 85%;
+  padding: 12px 16px;
+  margin: 0;
+  border-radius: 18px 18px 18px 4px;
+  background: rgba(20, 20, 20, var(--opacity-high));
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, var(--opacity-low));
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+  position: relative;
+  margin-left: 15px;
+  font-size: 15px;
+  line-height: 1.4;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, var(--opacity-very-low));
+  align-self: flex-start;
+}
+
+.caption-entry::before {
+  display: none;
+}
+
+.caption-entry.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.caption-entry.past {
+  opacity: 0.7;
+  background: rgba(20, 20, 20, var(--base-opacity));
+}
+
+.caption-entry .timestamp {
+  font-size: 11px;
+  color: rgba(255, 255, 255, var(--opacity-medium));
+  margin-top: 4px;
+  display: block;
+}
+
+/* Typing indicator */
+.typing-indicator {
+  background: rgba(20, 20, 20, var(--opacity-high));
+  padding: 10px 14px;
+  border-radius: 18px 18px 18px 4px;
+  margin: 0;
+  margin-left: 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  animation: fadeInUp 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, var(--opacity-very-low));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, var(--opacity-low));
+  align-self: flex-start;
+}
+
+.typing-indicator::before {
+  display: none;
+}
+
+.typing-indicator span {
+  height: 8px;
+  width: 8px;
+  background: #ffffff;
+  display: block;
+  border-radius: 50%;
+  margin: 0 2px;
+  animation: typing 1s infinite;
+  box-shadow: 0 0 2px rgba(255, 255, 255, 1);
+}
+
+@keyframes typing {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 768px) {
+  .overlay-container {
+    flex-direction: column !important;
+  }
+  .video-space {
+    flex: none !important;
+    height: 40vh !important;
+  }
+  .controls-panel {
+    flex: none !important;
+    height: 60vh !important;
+    width: 100% !important;
+  }
+  #videoPlayer {
+    object-position: center !important;
+  }
+}
+
+/* Base layout */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Video player */
+#videoPlayer {
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+/* Overlay layout */
+.overlay-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.video-space {
+  flex: 2;
+}
+
+.controls-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(0, 0, 0, var(--base-opacity));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(255, 255, 255, var(--opacity-very-low));
+}
+
+.main-controls {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.fullscreen-panel {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, var(--opacity-very-low));
+  background-color: rgba(0, 0, 0, var(--opacity-medium));
+}
+
+.start-button {
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, var(--opacity-low));
+  border: 1px solid rgba(255, 255, 255, var(--opacity-medium));
+  color: white;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Status bar styling */
+.status-bar {
+  padding: 12px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, var(--opacity-very-low));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, var(--opacity-medium));
+}
+
+.status-bar .name {
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.status-bar .status {
+  color: rgba(255, 255, 255, var(--opacity-medium));
+  font-size: 13px;
+  margin-left: auto;
+}
+
+.status-bar .status::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #4CAF50;
+  border-radius: 50%;
+  margin-right: 6px;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, var(--opacity-low));
+} 
