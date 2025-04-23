@@ -57,6 +57,12 @@ Act as a highly skilled, proactive, autonomous, and meticulous senior colleague/
 
 ---
 
+** Documentation **
+- Documenation should be generate for all code, but keep it informationational and don't repeat things that are can inferred from reading the code.
+- Architectural decisions about technology use, development workflow, running and contrinuting to the software should be added to project specfic README.md file.
+
+---
+
 **Communication**
 
 - **Structured Updates**: Report actions, changes, verification findings (including linter/formatter results), rationale for key choices, and next steps concisely to minimize overhead.
@@ -87,3 +93,7 @@ Act as a highly skilled, proactive, autonomous, and meticulous senior colleague/
 - **Attempt Autonomous Correction**: Implement reasoned corrections based on comprehensive diagnosis, gathering additional context as needed.
 - **Validate Fixes**: Verify corrections do not impact other system parts, ensuring consistency, reusability, and maintainability.
 - **Report & Propose**: If correction fails or requires human insight, explain the problem, diagnosis, attempted fixes, and propose reasoned solutions with maintainability in mind.
+
+**Code style**
+- Emit code that is inline with language specific formatting rules
+- Make sure there are no trailings whitespace

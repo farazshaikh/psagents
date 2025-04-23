@@ -1,4 +1,9 @@
-# [CompanyName] Web Platform
+# TrueM Web Platform
+
+PROPRIETARY AND CONFIDENTIAL SOFTWARE
+Copyright © 2024 TrueM. All rights reserved.
+
+This software is proprietary and confidential. The source code is not to be copied, distributed, or used without explicit written permission from TrueM. See the LICENSE file in the project root for the complete terms and conditions.
 
 A minimalist React-based web platform featuring a landing page and interactive game show experience.
 
@@ -131,16 +136,104 @@ ComponentName/
    - Integration tests for features
    - End-to-end tests for critical flows
 
-## Getting Started
+## Development Setup
 
-1. Clone the repository
+### Prerequisites
+- Node.js (v16 or higher)
+- npm (v8 or higher)
+- Git
+
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone [github tmt agentstm]
+   cd gameshow/web/reactweb
+   ```
+
 2. Install dependencies:
    ```bash
    npm install
    ```
-3. Start development server:
+
+### Running the Application
+
+1. Start the development server:
    ```bash
    npm start
+   ```
+   This will run the app in development mode at [http://localhost:3000](http://localhost:3000)
+
+2. For production build:
+   ```bash
+   npm run build
+   ```
+   This creates an optimized build in the `build` folder
+
+### Testing
+
+1. Run unit tests:
+   ```bash
+   npm test
+   ```
+   This launches the test runner in interactive watch mode
+
+2. Run end-to-end tests (when implemented):
+   ```bash
+   npm run test:e2e
+   ```
+
+3. Check test coverage:
+   ```bash
+   npm test -- --coverage
+   ```
+
+### Code Quality
+
+1. Lint the code:
+   ```bash
+   npm run lint
+   ```
+
+2. Format the code:
+   ```bash
+   npm run format
+   ```
+
+### Development Workflow
+
+1. Make sure all tests pass before making changes:
+   ```bash
+   npm test
+   ```
+
+2. Start the development server:
+   ```bash
+   npm start
+   ```
+
+3. Make your changes and verify them in the browser
+
+4. Run linting and tests before committing:
+   ```bash
+   npm run lint
+   npm test
+   ```
+
+### Troubleshooting
+
+Common issues and solutions:
+
+1. Port 3000 already in use:
+   ```bash
+   lsof -i :3000
+   kill -9 [PID]
+   ```
+
+2. Clear npm cache if facing dependency issues:
+   ```bash
+   npm cache clean --force
+   rm -rf node_modules
+   npm install
    ```
 
 ## Development Server
@@ -160,4 +253,4 @@ The project includes a simple Python-based development server:
 
 ## License
 
-[License Type] - See LICENSE file for details
+[License Type] - See LICENSE file in the top level folder or the repositorfor details
