@@ -1,0 +1,122 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  gap: 0.5rem;
+}
+
+/* Sizes */
+.btn-small {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.btn-medium {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.btn-large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+/* Variants - Contained */
+.btn-contained.btn-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  color: white;
+}
+
+.btn-contained.btn-secondary {
+  background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+  color: white;
+}
+
+.btn-contained.btn-error {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: white;
+}
+
+/* Variants - Outlined */
+.btn-outlined {
+  background: transparent;
+  border: 2px solid;
+}
+
+.btn-outlined.btn-primary {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.btn-outlined.btn-secondary {
+  border-color: #6b7280;
+  color: #6b7280;
+}
+
+.btn-outlined.btn-error {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Variants - Text */
+.btn-text {
+  background: transparent;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.btn-text.btn-primary {
+  color: #3b82f6;
+}
+
+.btn-text.btn-secondary {
+  color: #6b7280;
+}
+
+.btn-text.btn-error {
+  color: #ef4444;
+}
+
+/* Hover States */
+.btn-contained:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.btn-outlined:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.btn-text:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Full Width */
+.btn-full-width {
+  width: 100%;
+}
+
+/* Disabled State */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Icon Styles */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-icon-start {
+  margin-right: 0.25rem;
+}
+
+.btn-icon-end {
+  margin-left: 0.25rem;
+} 

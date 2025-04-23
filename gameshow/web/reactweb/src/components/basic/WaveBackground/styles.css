@@ -1,0 +1,69 @@
+.wave-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: var(--z-negative);
+  background: linear-gradient(to bottom, 
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+.wave-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: blur(1px);
+  opacity: 0.8;
+  background: transparent;
+}
+
+.wave-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  line-height: 0;
+  transform: rotate(180deg);
+  pointer-events: none;
+}
+
+.wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  transform-origin: bottom;
+}
+
+.wave1 {
+  animation: wave-animation 25s linear infinite;
+}
+
+.wave2 {
+  animation: wave-animation 20s linear infinite;
+  animation-delay: -5s;
+}
+
+.wave3 {
+  animation: wave-animation 15s linear infinite;
+  animation-delay: -2s;
+}
+
+@keyframes wave-animation {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-25%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+} 

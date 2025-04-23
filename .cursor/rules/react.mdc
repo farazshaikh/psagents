@@ -27,6 +27,8 @@ alwaysApply: false
    - Request for TypeScript usage
    - Maintain styling consitency for color themes, fonts, font sizing - similar to the Instagram app and its it live feature.
    - Create components that can be built and test in isolation. Prioritize composability, reuse and simplicity.
+   - Avoid all use of static images etc for styling keep the who UI text based, for small animation use JS animations if possible.
+   - Make use of common unicode character for UX elements as needed, for example instead of a image of a green dot use the corresponding unicode character.
 
 
 6. After generating, adapt the component to fit our project structure:
