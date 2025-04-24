@@ -14,6 +14,13 @@ export interface SineWaveComposition {
   amplitude: number;  // Multiplier for the contribution to final wave
 }
 
+export interface RenderConfig {
+  numLines: number;
+  gradientPhaseSpeed: number;
+  lineWidth: number;      // Width of each line in pixels
+  lineSpacing: number;    // Space between lines in pixels
+}
+
 export interface WaveConfig {
   waves: WaveParams[];
   globalSpeed: number;
@@ -28,10 +35,7 @@ export interface WaveConfig {
     // Even faster wave with smallest amplitude for fine detail
     tertiary: SineWaveComposition;
   };
-  renderConfig: {
-    numLines: number;     // Number of lines for gradient effect
-    gradientPhaseSpeed: number; // Speed of gradient phase animation
-  };
+  renderConfig: RenderConfig;
 }
 
 export const defaultConfig: WaveConfig = {
@@ -82,15 +86,15 @@ export const defaultConfig: WaveConfig = {
       width: 40
     }
   ],
-  globalSpeed: 1,
-  numWaves: 5,
+  globalSpeed: 1.0,
+  numWaves: 3,
   // Wave composition settings - each value is a multiplier
   sineWaves: {
     // Main wave (1x frequency, 1x speed, full amplitude)
     primary: {
-      frequency: 1,    // Base frequency multiplier
-      speed: 1,        // Base speed multiplier
-      amplitude: 1     // Full contribution to final wave
+      frequency: 1.0,    // Base frequency multiplier
+      speed: 1.0,        // Base speed multiplier
+      amplitude: 1.0     // Full contribution to final wave
     },
     // Medium variation (1.5x frequency, 0.7x speed, 0.4x amplitude)
     secondary: {
@@ -100,13 +104,15 @@ export const defaultConfig: WaveConfig = {
     },
     // Fine detail (3x frequency, 0.5x speed, 0.2x amplitude)
     tertiary: {
-      frequency: 3,    // 3x higher frequency than primary
+      frequency: 3.0,    // 3x higher frequency than primary
       speed: 0.5,      // 50% slower than primary
       amplitude: 0.2   // 20% of primary's amplitude
     }
   },
   renderConfig: {
     numLines: 20,          // Number of lines used to create wave thickness
-    gradientPhaseSpeed: 0.5 // Speed of color gradient animation
+    gradientPhaseSpeed: 0.5, // Speed of color gradient animation
+    lineWidth: 1.5,      // Default line width of 1.5 pixels
+    lineSpacing: 2.5     // Default spacing of 2.5 pixels between lines
   }
 };

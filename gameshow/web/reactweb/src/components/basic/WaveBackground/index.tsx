@@ -180,8 +180,17 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     colorGradient.addColorStop(1, wave.endColor);
 
     for (let i = 0; i < renderConfig.numLines; i++) {
-      const t = i / (renderConfig.numLines - 1);
-      const y = wave.width * (2 * t - 1);
+      // Calculate the total space taken by all lines and gaps
+      const totalSpace = wave.width * 2; // Total height available
+      const totalLineSpace = renderConfig.numLines * renderConfig.lineWidth;
+      const totalGapSpace = (renderConfig.numLines - 1) * renderConfig.lineSpacing;
+      const totalHeight = totalLineSpace + totalGapSpace;
+      
+      // Calculate the starting position to center all lines
+      const startY = -totalHeight / 2;
+      
+      // Calculate exact y position for this line including width and spacing
+      const y = startY + (i * (renderConfig.lineWidth + renderConfig.lineSpacing)) + (renderConfig.lineWidth / 2);
       
       ctx.beginPath();
       ctx.moveTo(points[0][0], points[0][1] + y);
@@ -193,9 +202,11 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
       }
       
       ctx.strokeStyle = colorGradient;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = renderConfig.lineWidth;
       
-      const normalizedT = Math.abs(2 * t - 1);
+      // Calculate opacity based on normalized position
+      const normalizedPosition = (y - startY) / totalHeight;
+      const normalizedT = Math.abs(2 * normalizedPosition - 1);
       const opacity = 0.2 * (1 - normalizedT * normalizedT);
       ctx.globalAlpha = opacity;
       ctx.stroke();
@@ -462,6 +473,34 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
                   onChange={(e) => updateRenderConfig({ numLines: parseInt(e.target.value) })}
                 />
                 <span>{renderConfig.numLines}</span>
+              </label>
+            </div>
+            <div className="control-group">
+              <label>
+                Line Width:
+                <input
+                  type="range"
+                  min="0.5"
+                  max="5.0"
+                  step="0.5"
+                  value={renderConfig.lineWidth}
+                  onChange={(e) => updateRenderConfig({ lineWidth: parseFloat(e.target.value) })}
+                />
+                <span>{renderConfig.lineWidth.toFixed(1)}px</span>
+              </label>
+            </div>
+            <div className="control-group">
+              <label>
+                Line Spacing:
+                <input
+                  type="range"
+                  min="0"
+                  max="5.0"
+                  step="0.1"
+                  value={renderConfig.lineSpacing}
+                  onChange={(e) => updateRenderConfig({ lineSpacing: parseFloat(e.target.value) })}
+                />
+                <span>{renderConfig.lineSpacing.toFixed(1)}px</span>
               </label>
             </div>
             <div className="control-group">
