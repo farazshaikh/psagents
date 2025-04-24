@@ -258,9 +258,42 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
                 <input
                   type="range"
                   min="1"
-                  max="5"
+                  max="10"
                   value={numWaves}
-                  onChange={(e) => setNumWaves(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const newNumWaves = parseInt(e.target.value);
+                    if (newNumWaves > waves.length) {
+                      // Add new waves based on the last wave's configuration
+                      const lastWave = waves[waves.length - 1];
+                      const newWaves = [...waves];
+                      for (let i = waves.length; i < newNumWaves; i++) {
+                        const baseYIncrement = 0.05;
+                        const amplitudeDecrement = 5;
+                        const frequencyIncrement = 0.0005;
+                        const speedDecrement = 0.01;
+                        
+                        // Generate new colors by shifting hue
+                        const hueStep = 30; // degrees
+                        const startHue = (i * hueStep) % 360;
+                        const endHue = ((i * hueStep) + 60) % 360;
+                        
+                        newWaves.push({
+                          ...lastWave,
+                          baseY: Math.min(0.95, lastWave.baseY + baseYIncrement),
+                          amplitude: Math.max(15, lastWave.amplitude - amplitudeDecrement),
+                          frequency: lastWave.frequency + frequencyIncrement,
+                          speed: Math.max(0.03, lastWave.speed - speedDecrement),
+                          startColor: `hsl(${startHue}, 100%, 50%)`,
+                          endColor: `hsl(${endHue}, 100%, 50%)`,
+                        });
+                      }
+                      setWaves(newWaves);
+                    } else if (newNumWaves < waves.length) {
+                      // Remove waves from the end
+                      setWaves(waves.slice(0, newNumWaves));
+                    }
+                    setNumWaves(newNumWaves);
+                  }}
                 />
                 <span>{numWaves}</span>
               </label>
