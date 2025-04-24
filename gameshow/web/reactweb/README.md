@@ -136,6 +136,36 @@ ComponentName/
    - Integration tests for features
    - End-to-end tests for critical flows
 
+5. **Feature Flags**
+   - Development features can be enabled via environment variables or npm scripts
+   - Available flags:
+     - `REACT_APP_DEBUG_CONSOLE`: Enables the debug console (pull-up panel at bottom of screen)
+     - `REACT_APP_WAVE_CONTROLLER`: Enables wave animation controls
+
+   Usage methods:
+   1. Using npm scripts:
+      ```bash
+      # Enable single feature
+      npm run start:flags -- debugconsole
+      npm run start:flags -- wavecontrol
+
+      # Enable multiple features
+      npm run start:flags -- debugconsole,wavecontrol
+      ```
+
+   2. Using environment variables directly:
+      ```bash
+      REACT_APP_DEBUG_CONSOLE=true REACT_APP_WAVE_CONTROLLER=true npm start
+      ```
+
+   3. Via .env.local file:
+      ```
+      REACT_APP_DEBUG_CONSOLE=true
+      REACT_APP_WAVE_CONTROLLER=true
+      ```
+
+   Note: Environment variables take precedence over component props for feature flags.
+
 ## Development Setup
 
 ### Prerequisites

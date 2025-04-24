@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useFeatureFlags } from '../../../utils/featureFlags';
-import './styles.css';
+import React, { useState, useEffect, useCallback } from 'react';
+import styles from './styles.module.css';
 
 interface DebugEntry {
   message: string;
@@ -11,71 +10,58 @@ interface DebugConsoleProps {
   initialVisible?: boolean;
 }
 
-// Create a global window property for the debug function
 declare global {
   interface Window {
-    showDebug: ((message: string) => void) | undefined;
+    debug?: (message: string) => void;
   }
 }
 
-export const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) => {
-  const { debugConsole } = useFeatureFlags();
+const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) => {
   const [logs, setLogs] = useState<DebugEntry[]>([]);
-  const [isExpanded, setIsExpanded] = useState(initialVisible);
+  const [isVisible, setIsVisible] = useState(initialVisible);
   const [copyText, setCopyText] = useState('Copy Logs');
-  
+
+  const debug = useCallback((message: string) => {
+    if (process.env.NODE_ENV === 'development' || process.env.REACT_APP_ENABLE_DEBUG === 'true') {
+      console.log(message);
+      setLogs(prevLogs => [...prevLogs, { message, timestamp: Date.now() }]);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!debugConsole) return;
-    
-    // Initialize the global debug function
-    const debugFunction = (message: string) => {
-      console.log(message); // Also log to browser console
-      setLogs(prevLogs => [...prevLogs, {
-        message,
-        timestamp: Date.now()
-      }]);
-    };
-
-    window.showDebug = debugFunction;
-
+    window.debug = debug;
     return () => {
-      // Clean up by setting the property to undefined
-      window.showDebug = undefined;
+      delete window.debug;
     };
-  }, [debugConsole]);
-
-  // If debug console is disabled, render nothing
-  if (!debugConsole) return null;
+  }, [debug]);
 
   const handleCopyLogs = () => {
-    const logText = logs.map(log => log.message).join('\n');
+    const logText = logs.map(log => `[${new Date(log.timestamp).toISOString()}] ${log.message}`).join('\n');
     navigator.clipboard.writeText(logText).then(() => {
       setCopyText('Copied!');
       setTimeout(() => setCopyText('Copy Logs'), 2000);
     });
   };
 
-  const toggleConsole = () => setIsExpanded(!isExpanded);
-
   return (
-    <div className={`debug-wrapper ${isExpanded ? 'expanded' : ''}`}>
-      <div className="debug-handle">
-        <div className="debug-handle-left">
-          <span className="debug-handle-text" onClick={toggleConsole}>
-            Debug Console {isExpanded ? '▼' : '▲'}
-          </span>
-          <span className="copy-logs" onClick={handleCopyLogs}>
+    <div className={`${styles.debugWrapper} ${isVisible ? styles.expanded : styles.collapsed}`}>
+      <div className={styles.debugHandle} onClick={() => setIsVisible(!isVisible)}>
+        <div className={styles.debugHandleLeft}>
+          <span className={styles.debugHandleText}>Debug Console</span>
+          <span className={styles.copyLogs} onClick={(e) => { e.stopPropagation(); handleCopyLogs(); }}>
             {copyText}
           </span>
         </div>
       </div>
-      <div className="debug-console">
+      <div className={styles.debugConsole}>
         {logs.map((log, index) => (
-          <div key={`${log.timestamp}-${index}`} className="debug-entry">
-            {log.message}
+          <div key={index} className={styles.debugEntry}>
+            [{new Date(log.timestamp).toISOString()}] {log.message}
           </div>
         ))}
       </div>
     </div>
   );
-}; 
+};
+
+export default DebugConsole; 
