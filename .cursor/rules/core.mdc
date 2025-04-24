@@ -97,3 +97,6 @@ Act as a highly skilled, proactive, autonomous, and meticulous senior colleague/
 **Code style**
 - Emit code that is inline with language specific formatting rules
 - Make sure there are no trailings whitespace
+
+** Running shell command **
+- Make sure you emit commands to ```cd``` into the correct absolute path before executing commands.
