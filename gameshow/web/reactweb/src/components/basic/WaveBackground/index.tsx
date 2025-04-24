@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useFeatureFlags } from '../../../utils/featureFlags';
 import './styles.css';
 
 interface WaveBackgroundProps {
@@ -64,12 +65,14 @@ const defaultWaves: WaveParams[] = [
 ];
 
 const WaveBackground: React.FC<WaveBackgroundProps> = ({ panel = false }) => {
+  const { waveController } = useFeatureFlags();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const timeRef = useRef<number>(0);
   const [waves, setWaves] = useState<WaveParams[]>(defaultWaves);
   const [globalSpeed, setGlobalSpeed] = useState(1);
   const [numWaves, setNumWaves] = useState(5);
+  const showControls = waveController || panel;
 
   const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, timeOffset: number) => {
     const points: [number, number][] = [];
@@ -203,7 +206,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({ panel = false }) => {
   return (
     <div className="wave-container">
       <canvas ref={canvasRef} className="wave-canvas" />
-      {panel && (
+      {showControls && (
         <div className="wave-control-panel">
           <div className="control-section">
             <h3>Global Controls</h3>

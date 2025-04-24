@@ -21,6 +21,10 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:flags": "node scripts/start-with-flags.js",
+    "start:debug": "REACT_APP_DEBUG_CONSOLE=true react-scripts start",
+    "start:wave": "REACT_APP_WAVE_CONTROLLER=true react-scripts start",
+    "start:dev": "REACT_APP_DEBUG_CONSOLE=true REACT_APP_WAVE_CONTROLLER=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
