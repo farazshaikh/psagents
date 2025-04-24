@@ -30,6 +30,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
           variant="contained"
           color="primary"
           size="large"
+          effect="frosted"
           onClick={onCtaClick}
           className="hero-cta"
         >

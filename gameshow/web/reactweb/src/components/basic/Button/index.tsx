@@ -5,6 +5,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: 'contained' | 'outlined' | 'text';
   color?: 'primary' | 'secondary' | 'error';
   size?: 'small' | 'medium' | 'large';
+  effect?: 'solid' | 'frosted' | 'gradient';
   fullWidth?: boolean;
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
@@ -14,6 +15,7 @@ const Button: React.FC<ButtonProps> = ({
   variant = 'contained',
   color = 'primary',
   size = 'medium',
+  effect = 'solid',
   fullWidth = false,
   startIcon,
   endIcon,
@@ -26,6 +28,7 @@ const Button: React.FC<ButtonProps> = ({
     `btn-${variant}`,
     `btn-${color}`,
     `btn-${size}`,
+    `btn-effect-${effect}`,
     fullWidth ? 'btn-full-width' : '',
     className
   ].filter(Boolean).join(' ');
