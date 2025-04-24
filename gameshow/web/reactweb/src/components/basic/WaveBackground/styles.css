@@ -29,6 +29,7 @@ html, body {
   display: block;
   margin: 0;
   padding: 0;
+  pointer-events: none;
 }
 
 .wave-container {
@@ -41,8 +42,6 @@ html, body {
   padding: 0;
   overflow: hidden;
   z-index: 0;
-  pointer-events: none;
-  background: #000;
 }
 
 .wave {
@@ -95,6 +94,7 @@ html, body {
   backdrop-filter: blur(10px);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   z-index: 1000;
+  pointer-events: auto;
 }
 
 .wave-control-panel h3 {
