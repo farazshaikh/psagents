@@ -9,6 +9,35 @@ interface WaveBackgroundProps {
   initialCollapsed?: boolean;
 }
 
+interface PerformanceMetrics {
+  lastFrameTime: number;
+  frameCount: number;
+  frameTimeSum: number;
+  lastFpsUpdate: number;
+  renderCount: number;
+  waveCalculationTime: number;
+  stateUpdateCount: number;
+}
+
+// Performance optimization constants
+const TARGET_FPS = 60;
+const FRAME_TIME = 1000 / TARGET_FPS;
+const DEBUG_PERFORMANCE = true;
+
+const logMetrics = (metrics: PerformanceMetrics) => {
+  if (!window.debug) return;
+  
+  const avgFrameTime = metrics.frameTimeSum / Math.max(1, metrics.frameCount);
+  const fps = metrics.frameCount > 0 ? 1000 / avgFrameTime : 0;
+  
+  window.debug('Wave Background Performance:');
+  window.debug(`FPS: ${fps.toFixed(2)}`);
+  window.debug(`Frame Time: ${avgFrameTime.toFixed(2)}ms`);
+  window.debug(`Wave Calc Time: ${metrics.waveCalculationTime.toFixed(2)}ms`);
+  window.debug(`State Updates: ${metrics.stateUpdateCount}`);
+  window.debug(`Render Count: ${metrics.renderCount}`);
+};
+
 const WaveBackground: React.FC<WaveBackgroundProps> = ({ 
   panel = false, 
   config = defaultConfig,
@@ -19,6 +48,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
   const animationFrameRef = useRef<number | undefined>(undefined);
   const timeRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastFrameTimeRef = useRef<number>(0);
   const [waves, setWaves] = useState<WaveParams[]>(config.waves);
   const [globalSpeed, setGlobalSpeed] = useState(config.globalSpeed);
   const [numWaves, setNumWaves] = useState(config.numWaves);
@@ -26,6 +56,35 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
   const [renderConfig, setRenderConfig] = useState(config.renderConfig);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const showControls = waveController || panel;
+
+  // Add performance metrics ref
+  const metricsRef = useRef<PerformanceMetrics>({
+    lastFrameTime: performance.now(),
+    frameCount: 0,
+    frameTimeSum: 0,
+    lastFpsUpdate: 0,
+    renderCount: 0,
+    waveCalculationTime: 0,
+    stateUpdateCount: 0
+  });
+
+  // Log performance metrics every second
+  useEffect(() => {
+    if (!DEBUG_PERFORMANCE) return;
+    
+    const logInterval = setInterval(() => {
+      logMetrics(metricsRef.current);
+      
+      // Reset counters
+      metricsRef.current.frameCount = 0;
+      metricsRef.current.frameTimeSum = 0;
+      metricsRef.current.stateUpdateCount = 0;
+      metricsRef.current.waveCalculationTime = 0;
+      metricsRef.current.renderCount = 0;
+    }, 1000);
+
+    return () => clearInterval(logInterval);
+  }, []);
 
   // Listen for debug console state changes
   useEffect(() => {
@@ -62,6 +121,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
   }, [config]);
 
   const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, timeOffset: number) => {
+    const startTime = performance.now();
     const points: [number, number][] = [];
     const canvas = ctx.canvas;
     
@@ -84,6 +144,10 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
       const y = canvas.height * wave.baseY + 
                wave.amplitude * (primaryWave + secondaryWave + tertiaryWave);
       points.push([x, y]);
+    }
+
+    if (DEBUG_PERFORMANCE) {
+      metricsRef.current.waveCalculationTime += performance.now() - startTime;
     }
 
     ctx.save();
@@ -138,13 +202,33 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     }
 
     ctx.restore();
+
+    if (DEBUG_PERFORMANCE) {
+      metricsRef.current.renderCount++;
+    }
   }, [globalSpeed, sineWaves, renderConfig]);
 
   const animate = useCallback(() => {
+    const now = performance.now();
+    const elapsed = now - lastFrameTimeRef.current;
+
+    // Skip frame if too soon
+    if (elapsed < FRAME_TIME) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+      return;
+    }
+
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d', { alpha: false });
     
     if (!canvas || !ctx) return;
+
+    if (DEBUG_PERFORMANCE) {
+      metricsRef.current.frameTimeSum += elapsed;
+      metricsRef.current.frameCount++;
+    }
+
+    lastFrameTimeRef.current = now;
 
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
