@@ -8,10 +8,30 @@ export interface WaveParams {
   width: number;
 }
 
+export interface SineWaveComposition {
+  frequency: number;  // Multiplier for the base frequency
+  speed: number;     // Multiplier for the base speed
+  amplitude: number;  // Multiplier for the contribution to final wave
+}
+
 export interface WaveConfig {
   waves: WaveParams[];
   globalSpeed: number;
   numWaves: number;
+  // Each final wave is composed of three overlapping sine waves
+  // that are added together to create more organic movement
+  sineWaves: {
+    // Main wave that defines the primary motion
+    primary: SineWaveComposition;
+    // Faster wave with less amplitude for medium-scale variation
+    secondary: SineWaveComposition;
+    // Even faster wave with smallest amplitude for fine detail
+    tertiary: SineWaveComposition;
+  };
+  renderConfig: {
+    numLines: number;     // Number of lines for gradient effect
+    gradientPhaseSpeed: number; // Speed of gradient phase animation
+  };
 }
 
 export const defaultConfig: WaveConfig = {
@@ -63,5 +83,30 @@ export const defaultConfig: WaveConfig = {
     }
   ],
   globalSpeed: 1,
-  numWaves: 5
-}; 
+  numWaves: 5,
+  // Wave composition settings - each value is a multiplier
+  sineWaves: {
+    // Main wave (1x frequency, 1x speed, full amplitude)
+    primary: {
+      frequency: 1,    // Base frequency multiplier
+      speed: 1,        // Base speed multiplier
+      amplitude: 1     // Full contribution to final wave
+    },
+    // Medium variation (1.5x frequency, 0.7x speed, 0.4x amplitude)
+    secondary: {
+      frequency: 1.5,  // 50% higher frequency than primary
+      speed: 0.7,      // 30% slower than primary
+      amplitude: 0.4   // 40% of primary's amplitude
+    },
+    // Fine detail (3x frequency, 0.5x speed, 0.2x amplitude)
+    tertiary: {
+      frequency: 3,    // 3x higher frequency than primary
+      speed: 0.5,      // 50% slower than primary
+      amplitude: 0.2   // 20% of primary's amplitude
+    }
+  },
+  renderConfig: {
+    numLines: 20,          // Number of lines used to create wave thickness
+    gradientPhaseSpeed: 0.5 // Speed of color gradient animation
+  }
+};

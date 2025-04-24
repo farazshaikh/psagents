@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useFeatureFlags } from '../../../utils/featureFlags';
-import { WaveParams, WaveConfig, defaultConfig } from './config';
+import { WaveParams, WaveConfig, defaultConfig, SineWaveComposition } from './config';
 import './styles.css';
 
 interface WaveBackgroundProps {
@@ -22,6 +22,8 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
   const [waves, setWaves] = useState<WaveParams[]>(config.waves);
   const [globalSpeed, setGlobalSpeed] = useState(config.globalSpeed);
   const [numWaves, setNumWaves] = useState(config.numWaves);
+  const [sineWaves, setSineWaves] = useState(config.sineWaves);
+  const [renderConfig, setRenderConfig] = useState(config.renderConfig);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const showControls = waveController || panel;
 
@@ -55,6 +57,8 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     setWaves(config.waves);
     setGlobalSpeed(config.globalSpeed);
     setNumWaves(config.numWaves);
+    setSineWaves(config.sineWaves);
+    setRenderConfig(config.renderConfig);
   }, [config]);
 
   const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, timeOffset: number) => {
@@ -62,9 +66,21 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     const canvas = ctx.canvas;
     
     for (let x = 0; x <= canvas.width; x += 2) {
-      const primaryWave = Math.sin(x * wave.frequency + timeRef.current * wave.speed * globalSpeed);
-      const secondaryWave = Math.sin(x * wave.frequency * 1.5 + (timeRef.current + timeOffset) * wave.speed * globalSpeed * 0.7) * 0.4;
-      const tertiaryWave = Math.sin(x * wave.frequency * 3 + timeRef.current * wave.speed * globalSpeed * 0.5) * 0.2;
+      const primaryWave = Math.sin(
+        x * wave.frequency * sineWaves.primary.frequency + 
+        timeRef.current * wave.speed * globalSpeed * sineWaves.primary.speed
+      ) * sineWaves.primary.amplitude;
+
+      const secondaryWave = Math.sin(
+        x * wave.frequency * sineWaves.secondary.frequency + 
+        (timeRef.current + timeOffset) * wave.speed * globalSpeed * sineWaves.secondary.speed
+      ) * sineWaves.secondary.amplitude;
+
+      const tertiaryWave = Math.sin(
+        x * wave.frequency * sineWaves.tertiary.frequency + 
+        timeRef.current * wave.speed * globalSpeed * sineWaves.tertiary.speed
+      ) * sineWaves.tertiary.amplitude;
+
       const y = canvas.height * wave.baseY + 
                wave.amplitude * (primaryWave + secondaryWave + tertiaryWave);
       points.push([x, y]);
@@ -90,7 +106,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     ctx.clip();
 
     const colorGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    const gradientPhase = Math.sin(timeRef.current * wave.speed * 0.5);
+    const gradientPhase = Math.sin(timeRef.current * wave.speed * renderConfig.gradientPhaseSpeed);
     const midPoint = 0.5 + 0.2 * gradientPhase;
     
     colorGradient.addColorStop(0, wave.startColor);
@@ -99,9 +115,8 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     colorGradient.addColorStop(0.8, wave.endColor);
     colorGradient.addColorStop(1, wave.endColor);
 
-    const numLines = 20;
-    for (let i = 0; i < numLines; i++) {
-      const t = i / (numLines - 1);
+    for (let i = 0; i < renderConfig.numLines; i++) {
+      const t = i / (renderConfig.numLines - 1);
       const y = wave.width * (2 * t - 1);
       
       ctx.beginPath();
@@ -123,7 +138,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     }
 
     ctx.restore();
-  }, [globalSpeed]);
+  }, [globalSpeed, sineWaves, renderConfig]);
 
   const animate = useCallback(() => {
     const canvas = canvasRef.current;
@@ -180,28 +195,41 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     });
   }, []);
 
+  const updateSineWave = useCallback((type: 'primary' | 'secondary' | 'tertiary', updates: Partial<SineWaveComposition>) => {
+    setSineWaves(prev => ({
+      ...prev,
+      [type]: { ...prev[type], ...updates }
+    }));
+  }, []);
+
+  const updateRenderConfig = useCallback((updates: Partial<typeof renderConfig>) => {
+    setRenderConfig(prev => ({ ...prev, ...updates }));
+  }, []);
+
   const handleReset = useCallback(() => {
     setWaves(defaultConfig.waves);
     setGlobalSpeed(defaultConfig.globalSpeed);
     setNumWaves(defaultConfig.numWaves);
+    setSineWaves(defaultConfig.sineWaves);
+    setRenderConfig(defaultConfig.renderConfig);
   }, []);
 
   const handleDumpSettings = useCallback(() => {
     const config: WaveConfig = {
       waves: waves.slice(0, numWaves),
       globalSpeed,
-      numWaves
+      numWaves,
+      sineWaves,
+      renderConfig
     };
     
-    // Copy to clipboard
     navigator.clipboard.writeText(JSON.stringify(config, null, 2));
 
-    // Log to debug console if available
     if (window.debug) {
       window.debug('Current Wave Configuration:');
       window.debug(JSON.stringify(config, null, 2));
     }
-  }, [waves, globalSpeed, numWaves]);
+  }, [waves, globalSpeed, numWaves, sineWaves, renderConfig]);
 
   return (
     <div className="wave-container" ref={containerRef}>
@@ -252,8 +280,91 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
               </label>
             </div>
           </div>
+
           <div className="control-section">
-            <h3>Wave Controls</h3>
+            <h3>Wave Composition</h3>
+            {(['primary', 'secondary', 'tertiary'] as const).map(type => (
+              <div key={type} className="wave-controls">
+                <h4>{type.charAt(0).toUpperCase() + type.slice(1)} Wave</h4>
+                <div className="control-group">
+                  <label>
+                    Frequency Multiplier:
+                    <input
+                      type="range"
+                      min="0.1"
+                      max={type === 'primary' ? 2 : 5}
+                      step="0.1"
+                      value={sineWaves[type].frequency}
+                      onChange={(e) => updateSineWave(type, { frequency: parseFloat(e.target.value) })}
+                    />
+                    <span>{sineWaves[type].frequency.toFixed(1)}x</span>
+                  </label>
+                </div>
+                <div className="control-group">
+                  <label>
+                    Speed Multiplier:
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="2"
+                      step="0.1"
+                      value={sineWaves[type].speed}
+                      onChange={(e) => updateSineWave(type, { speed: parseFloat(e.target.value) })}
+                    />
+                    <span>{sineWaves[type].speed.toFixed(1)}x</span>
+                  </label>
+                </div>
+                <div className="control-group">
+                  <label>
+                    Amplitude:
+                    <input
+                      type="range"
+                      min="0"
+                      max={type === 'primary' ? 1 : 0.5}
+                      step="0.05"
+                      value={sineWaves[type].amplitude}
+                      onChange={(e) => updateSineWave(type, { amplitude: parseFloat(e.target.value) })}
+                    />
+                    <span>{(sineWaves[type].amplitude * 100).toFixed(0)}%</span>
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="control-section">
+            <h3>Render Settings</h3>
+            <div className="control-group">
+              <label>
+                Line Count:
+                <input
+                  type="range"
+                  min="10"
+                  max="40"
+                  value={renderConfig.numLines}
+                  onChange={(e) => updateRenderConfig({ numLines: parseInt(e.target.value) })}
+                />
+                <span>{renderConfig.numLines}</span>
+              </label>
+            </div>
+            <div className="control-group">
+              <label>
+                Gradient Speed:
+                <input
+                  type="range"
+                  min="0.1"
+                  max="2"
+                  step="0.1"
+                  value={renderConfig.gradientPhaseSpeed}
+                  onChange={(e) => updateRenderConfig({ gradientPhaseSpeed: parseFloat(e.target.value) })}
+                />
+                <span>{renderConfig.gradientPhaseSpeed.toFixed(1)}x</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="control-section">
+            <h3>Individual Waves</h3>
             {waves.slice(0, numWaves).map((wave, index) => (
               <div key={`wave-${index}`} className="wave-controls">
                 <h4>Wave {index + 1}</h4>
@@ -319,6 +430,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
               </div>
             ))}
           </div>
+
           <div className="button-group">
             <button 
               className="reset-button" 
