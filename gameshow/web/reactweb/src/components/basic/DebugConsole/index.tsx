@@ -103,16 +103,27 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
     });
   };
 
-  const handleToggleVisibility = () => {
-    setIsVisible(!isVisible);
-    if (!isVisible) {
-      setUnreadCount(0);
-    }
-  };
+  const toggleVisibility = useCallback(() => {
+    setIsVisible(prev => {
+      const newState = !prev;
+      // Emit custom event for state change
+      window.dispatchEvent(new CustomEvent('debugConsoleStateChange', {
+        detail: { expanded: newState }
+      }));
+      return newState;
+    });
+  }, []);
+
+  // Emit initial state on mount
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('debugConsoleStateChange', {
+      detail: { expanded: isVisible }
+    }));
+  }, []);
 
   return (
     <div className={`${styles.debugWrapper} ${isVisible ? styles.expanded : styles.collapsed}`}>
-      <div className={styles.debugHandle} onClick={handleToggleVisibility}>
+      <div className={styles.debugHandle} onClick={toggleVisibility}>
         <div className={styles.debugHandleLeft}>
           <span className={styles.debugHandleText}>
             Debug Console

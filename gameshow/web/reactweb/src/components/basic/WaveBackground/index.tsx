@@ -6,17 +6,49 @@ import './styles.css';
 interface WaveBackgroundProps {
   panel?: boolean;
   config?: WaveConfig;
+  initialCollapsed?: boolean;
 }
 
-const WaveBackground: React.FC<WaveBackgroundProps> = ({ panel = false, config = defaultConfig }) => {
+const WaveBackground: React.FC<WaveBackgroundProps> = ({ 
+  panel = false, 
+  config = defaultConfig,
+  initialCollapsed = true 
+}) => {
   const { waveController } = useFeatureFlags();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const timeRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [waves, setWaves] = useState<WaveParams[]>(config.waves);
   const [globalSpeed, setGlobalSpeed] = useState(config.globalSpeed);
   const [numWaves, setNumWaves] = useState(config.numWaves);
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const showControls = waveController || panel;
+
+  // Listen for debug console state changes
+  useEffect(() => {
+    const handleDebugConsoleChange = (event: CustomEvent) => {
+      if (containerRef.current) {
+        if (event.detail.expanded) {
+          containerRef.current.classList.add('debug-expanded');
+        } else {
+          containerRef.current.classList.remove('debug-expanded');
+        }
+      }
+    };
+
+    // Check initial debug console state
+    const debugConsole = document.querySelector('[class*="debugWrapper"]');
+    if (debugConsole?.classList.contains('expanded') && containerRef.current) {
+      containerRef.current.classList.add('debug-expanded');
+    }
+
+    window.addEventListener('debugConsoleStateChange' as any, handleDebugConsoleChange);
+    
+    return () => {
+      window.removeEventListener('debugConsoleStateChange' as any, handleDebugConsoleChange);
+    };
+  }, []);
 
   // Update state when config prop changes
   useEffect(() => {
@@ -172,10 +204,24 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({ panel = false, config =
   }, [waves, globalSpeed, numWaves]);
 
   return (
-    <div className="wave-container">
+    <div className="wave-container" ref={containerRef}>
       <canvas ref={canvasRef} className="wave-canvas" />
       {showControls && (
-        <div className="wave-control-panel">
+        <div className={`wave-control-panel ${isCollapsed ? 'collapsed' : ''}`}>
+          <div className="wave-control-handle" onClick={() => setIsCollapsed(!isCollapsed)}>
+            <h3>Wave Controls</h3>
+            <svg 
+              className={`wave-control-arrow ${!isCollapsed ? 'up' : ''}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
           <div className="control-section">
             <h3>Global Controls</h3>
             <div className="control-group">

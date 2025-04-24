@@ -34,14 +34,19 @@ html, body {
 
 .wave-container {
   position: fixed;
-  left: 0;
   top: 0;
-  width: 100vw;
-  height: 100vh;
+  left: 0;
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
-  z-index: 0;
+  background: #000;
+  --debug-console-height: 0px;
+}
+
+.wave-container.debug-expanded {
+  --debug-console-height: 300px;
 }
 
 .wave {
@@ -81,165 +86,156 @@ html, body {
 
 .wave-control-panel {
   position: fixed;
-  top: 20px;
+  bottom: 48px;
   right: 20px;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(66, 133, 244, 0.3);
-  border-radius: 12px;
-  padding: 20px;
-  color: #fff;
-  width: 300px;
-  max-height: 90vh;
+  width: 400px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  font-family: 'Arial', sans-serif;
+  transition: transform 0.3s ease, bottom 0.3s ease;
+  max-height: calc(100vh - 96px);
   overflow-y: auto;
-  backdrop-filter: blur(10px);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  z-index: 1000;
-  pointer-events: auto;
+  z-index: 998;
 }
 
-.wave-control-panel h3 {
-  margin: 0 0 15px;
-  color: #4285f4;
-  font-size: 1.2em;
-  font-weight: 500;
+.wave-control-panel.collapsed {
+  transform: translateY(calc(100% - 40px));
 }
 
-.wave-control-panel h4 {
-  margin: 10px 0;
-  color: #fff;
-  font-size: 1em;
-  font-weight: 400;
-  border-bottom: 1px solid rgba(66, 133, 244, 0.2);
-  padding-bottom: 5px;
+.debug-expanded .wave-control-panel {
+  bottom: 348px;
+  max-height: calc(100vh - 396px);
+}
+
+.debug-expanded .wave-control-panel.collapsed {
+  transform: translateY(calc(100% - 40px));
+  bottom: 348px;
+}
+
+.wave-control-handle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(50, 50, 50, 0.9);
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px 8px 0 0;
+}
+
+.wave-control-handle:hover {
+  background: rgba(60, 60, 60, 0.9);
+}
+
+.wave-control-handle h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.wave-control-arrow {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+}
+
+.wave-control-arrow.up {
+  transform: rotate(180deg);
 }
 
 .control-section {
-  margin-bottom: 20px;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.control-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .control-group {
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .control-group label {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.9em;
-  color: #ccc;
+  gap: 8px;
+  font-size: 12px;
 }
 
 .control-group input[type="range"] {
   flex: 1;
-  height: 4px;
-  background: rgba(66, 133, 244, 0.2);
-  border-radius: 2px;
-  -webkit-appearance: none;
-}
-
-.control-group input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  background: #4285f4;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.control-group input[type="range"]::-webkit-slider-thumb:hover {
-  background: #5c9fff;
 }
 
 .control-group span {
-  min-width: 45px;
+  min-width: 40px;
   text-align: right;
-  font-family: monospace;
-  font-size: 0.9em;
-  color: #4285f4;
-}
-
-.control-group.colors {
-  display: flex;
-  gap: 10px;
-}
-
-.control-group.colors label {
-  flex: 1;
-}
-
-.control-group input[type="color"] {
-  width: 100%;
-  height: 30px;
-  border: none;
-  border-radius: 4px;
-  background: none;
-  cursor: pointer;
 }
 
 .wave-controls {
+  margin-top: 16px;
+  padding: 12px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 15px;
+  border-radius: 4px;
 }
 
-.reset-button {
-  width: 100%;
-  padding: 10px;
-  background: #4285f4;
-  color: white;
+.wave-controls h4 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.colors {
+  display: flex;
+  gap: 12px;
+}
+
+.colors label {
+  flex: 1;
+}
+
+.button-group {
+  padding: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.reset-button,
+.dump-button {
+  flex: 1;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
+  color: white;
   cursor: pointer;
-  font-size: 0.9em;
+  font-size: 12px;
   transition: background 0.2s;
 }
 
-.reset-button:hover {
-  background: #5c9fff;
-}
-
-.dump-button {
-  background: #34a853;
-}
-
+.reset-button:hover,
 .dump-button:hover {
-  background: #40c463;
+  background: rgba(255, 255, 255, 0.2);
 }
 
-/* Scrollbar styles */
+/* Scrollbar Styles */
 .wave-control-panel::-webkit-scrollbar {
   width: 8px;
 }
 
 .wave-control-panel::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .wave-control-panel::-webkit-scrollbar-thumb {
-  background: rgba(66, 133, 244, 0.5);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
 }
 
 .wave-control-panel::-webkit-scrollbar-thumb:hover {
-  background: rgba(66, 133, 244, 0.7);
-}
-
-.button-group {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.button-group button {
-  flex: 1;
-  padding: 10px;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9em;
-  transition: background 0.2s;
+  background: rgba(255, 255, 255, 0.3);
 } 
