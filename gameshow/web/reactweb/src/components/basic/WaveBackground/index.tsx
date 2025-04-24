@@ -44,15 +44,6 @@ const lerp = (start: number, end: number, t: number) => {
   return start * (1 - t) + end * t;
 };
 
-// Animation states
-enum AnimationState {
-  InitialStatic,      // Initial state of no movement
-  ToAnimated,         // Transition to animated state
-  Animated,           // Fully animated state
-  ToStatic,          // Transition back to static state
-  Static             // Fully static state
-}
-
 // Animation timing constants
 const STATIC_DURATION = 7500;        // Duration to stay in static state
 const ANIMATED_DURATION = 7500;      // Duration to stay in animated state
@@ -77,17 +68,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
   const [sineWaves, setSineWaves] = useState(startConfig.sineWaves);
   const [renderConfig, setRenderConfig] = useState(startConfig.renderConfig);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
-  const [animationState, setAnimationState] = useState<AnimationState>(AnimationState.InitialStatic);
   const showControls = waveController || panel;
-  const lastValuesRef = useRef<{
-    globalSpeed: number;
-    waves: WaveParams[];
-    sineWaves: typeof startConfig.sineWaves;
-  }>({
-    globalSpeed: startConfig.globalSpeed,
-    waves: startConfig.waves,
-    sineWaves: startConfig.sineWaves
-  });
 
   // Add interpolation effect
   useEffect(() => {
@@ -225,11 +206,32 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
 
   // Update state when config prop changes
   useEffect(() => {
-    setWaves(config.waves);
-    setGlobalSpeed(config.globalSpeed);
-    setNumWaves(config.numWaves);
-    setSineWaves(config.sineWaves);
-    setRenderConfig(config.renderConfig);
+    const configWavesStr = JSON.stringify(config.waves);
+    const currentWavesStr = JSON.stringify(waves);
+    
+    if (configWavesStr !== currentWavesStr) {
+      setWaves(JSON.parse(configWavesStr));
+    }
+    
+    setGlobalSpeed(prevSpeed => {
+      return prevSpeed !== config.globalSpeed ? config.globalSpeed : prevSpeed;
+    });
+    
+    setNumWaves(prevNum => {
+      return prevNum !== config.numWaves ? config.numWaves : prevNum;
+    });
+    
+    setSineWaves(prevSineWaves => {
+      const newSineWavesStr = JSON.stringify(config.sineWaves);
+      const prevSineWavesStr = JSON.stringify(prevSineWaves);
+      return newSineWavesStr !== prevSineWavesStr ? config.sineWaves : prevSineWaves;
+    });
+    
+    setRenderConfig(prevRenderConfig => {
+      const newRenderConfigStr = JSON.stringify(config.renderConfig);
+      const prevRenderConfigStr = JSON.stringify(prevRenderConfig);
+      return newRenderConfigStr !== prevRenderConfigStr ? config.renderConfig : prevRenderConfig;
+    });
   }, [config]);
 
   const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, timeOffset: number) => {
@@ -292,8 +294,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     colorGradient.addColorStop(1, wave.endColor);
 
     for (let i = 0; i < renderConfig.numLines; i++) {
-      // Calculate the total space taken by all lines and gaps
-      const totalSpace = wave.width * 2; // Total height available
+      // Calculate the total line space and spacing
       const totalLineSpace = renderConfig.numLines * renderConfig.lineWidth;
       const totalGapSpace = (renderConfig.numLines - 1) * renderConfig.lineSpacing;
       const totalHeight = totalLineSpace + totalGapSpace;
