@@ -39,7 +39,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
       <div className="hero-visual">
         {/* Add hero image or animation here */}
       </div>
-      <WaveBackground />
+      <WaveBackground panel={true}/>
     </section>
   );
 };
