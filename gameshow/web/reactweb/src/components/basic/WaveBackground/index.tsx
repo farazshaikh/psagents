@@ -16,6 +16,12 @@ interface WaveParams {
   width: number;
 }
 
+interface WaveConfig {
+  waves: WaveParams[];
+  globalSpeed: number;
+  numWaves: number;
+}
+
 const defaultWaves: WaveParams[] = [
   {
     baseY: 0.65,
@@ -203,6 +209,23 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({ panel = false }) => {
     setNumWaves(5);
   }, []);
 
+  const handleDumpSettings = useCallback(() => {
+    const config: WaveConfig = {
+      waves: waves.slice(0, numWaves),
+      globalSpeed,
+      numWaves
+    };
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+
+    // Log to debug console if available
+    if (window.debug) {
+      window.debug('Current Wave Configuration:');
+      window.debug(JSON.stringify(config, null, 2));
+    }
+  }, [waves, globalSpeed, numWaves]);
+
   return (
     <div className="wave-container">
       <canvas ref={canvasRef} className="wave-canvas" />
@@ -305,12 +328,20 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({ panel = false }) => {
               </div>
             ))}
           </div>
-          <button 
-            className="reset-button" 
-            onClick={handleReset}
-          >
-            Reset to Default
-          </button>
+          <div className="button-group">
+            <button 
+              className="reset-button" 
+              onClick={handleReset}
+            >
+              Reset to Default
+            </button>
+            <button 
+              className="dump-button" 
+              onClick={handleDumpSettings}
+            >
+              Dump Settings
+            </button>
+          </div>
         </div>
       )}
     </div>

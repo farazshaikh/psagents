@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Landing } from './components/features/Landing';
 import { useFeatureFlags } from './utils/featureFlags';
 import './App.css';
@@ -10,6 +10,61 @@ const DebugConsole = process.env.NODE_ENV === 'development'
 
 function App() {
   const { debugConsole } = useFeatureFlags();
+  const performanceMetricsRef = useRef<string[]>([]);
+  const hasLoggedMetrics = useRef(false);
+
+  // Collect performance metrics early
+  useEffect(() => {
+    if (!debugConsole) return;
+
+    const collectMetrics = () => {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      const paint = performance.getEntriesByType('paint');
+      const firstPaint = paint.find(entry => entry.name === 'first-paint');
+      const firstContentfulPaint = paint.find(entry => entry.name === 'first-contentful-paint');
+
+      const metrics = [
+        'Performance Metrics:',
+        `DNS lookup: ${Math.round(navigation.domainLookupEnd - navigation.domainLookupStart)}ms`,
+        `Connection time: ${Math.round(navigation.connectEnd - navigation.connectStart)}ms`,
+        `Response time: ${Math.round(navigation.responseEnd - navigation.requestStart)}ms`,
+        `DOM Interactive: ${Math.round(navigation.domInteractive - navigation.startTime)}ms`,
+        `DOM Complete: ${Math.round(navigation.domComplete - navigation.startTime)}ms`,
+        `Load Event: ${Math.round(navigation.loadEventEnd - navigation.startTime)}ms`,
+        `First Paint: ${Math.round(firstPaint?.startTime || 0)}ms`,
+        `First Contentful Paint: ${Math.round(firstContentfulPaint?.startTime || 0)}ms`
+      ];
+
+      performanceMetricsRef.current = metrics;
+    };
+
+    // Collect metrics after a short delay to ensure all timings are available
+    setTimeout(collectMetrics, 0);
+  }, [debugConsole]);
+
+  // Log metrics when debug function becomes available
+  useEffect(() => {
+    const logMetricsInterval = setInterval(() => {
+      const debug = window.debug;
+      if (typeof debug === 'function' && performanceMetricsRef.current.length > 0 && !hasLoggedMetrics.current) {
+        performanceMetricsRef.current.forEach(metric => debug(metric));
+        hasLoggedMetrics.current = true;
+
+        // Set up performance observer for long tasks
+        const observer = new PerformanceObserver((list) => {
+          list.getEntries().forEach((entry) => {
+            debug(`Long Task detected: ${Math.round(entry.duration)}ms`);
+          });
+        });
+        
+        observer.observe({ entryTypes: ['longtask'] });
+        clearInterval(logMetricsInterval);
+        return () => observer.disconnect();
+      }
+    }, 100); // Check every 100ms
+
+    return () => clearInterval(logMetricsInterval);
+  }, []);
   
   return (
     <div className="app">

@@ -4,6 +4,8 @@ import styles from './styles.module.css';
 interface DebugEntry {
   message: string;
   timestamp: number;
+  type: 'log' | 'error';
+  stack?: string;
 }
 
 interface DebugConsoleProps {
@@ -13,6 +15,7 @@ interface DebugConsoleProps {
 declare global {
   interface Window {
     debug?: (message: string) => void;
+    debugError?: (error: Error | string, errorInfo?: string) => void;
   }
 }
 
@@ -20,34 +23,103 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
   const [logs, setLogs] = useState<DebugEntry[]>([]);
   const [isVisible, setIsVisible] = useState(initialVisible);
   const [copyText, setCopyText] = useState('Copy Logs');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const debug = useCallback((message: string) => {
     if (process.env.NODE_ENV === 'development' || process.env.REACT_APP_ENABLE_DEBUG === 'true') {
       console.log(message);
-      setLogs(prevLogs => [...prevLogs, { message, timestamp: Date.now() }]);
+      setLogs(prevLogs => [...prevLogs, { message, timestamp: Date.now(), type: 'log' }]);
+      if (!isVisible) {
+        setUnreadCount(count => count + 1);
+      }
     }
-  }, []);
+  }, [isVisible]);
+
+  const debugError = useCallback((error: Error | string, errorInfo?: string) => {
+    const errorMessage = error instanceof Error ? error.message : error;
+    const stackTrace = error instanceof Error ? error.stack : errorInfo;
+    
+    console.error(errorMessage);
+    setLogs(prevLogs => [...prevLogs, {
+      message: errorMessage,
+      timestamp: Date.now(),
+      type: 'error',
+      stack: stackTrace
+    }]);
+    
+    if (!isVisible) {
+      setUnreadCount(count => count + 1);
+    }
+  }, [isVisible]);
 
   useEffect(() => {
+    // Set up global handlers
     window.debug = debug;
-    return () => {
-      delete window.debug;
+    window.debugError = debugError;
+
+    // Capture uncaught errors
+    const errorHandler = (event: ErrorEvent) => {
+      debugError(event.error || event.message);
     };
-  }, [debug]);
+
+    // Capture unhandled promise rejections
+    const rejectionHandler = (event: PromiseRejectionEvent) => {
+      debugError(event.reason || 'Unhandled Promise Rejection');
+    };
+
+    // Capture React errors
+    const originalConsoleError = console.error;
+    console.error = (...args) => {
+      originalConsoleError.apply(console, args);
+      debugError(args.join(' '));
+    };
+
+    window.addEventListener('error', errorHandler);
+    window.addEventListener('unhandledrejection', rejectionHandler);
+
+    return () => {
+      window.removeEventListener('error', errorHandler);
+      window.removeEventListener('unhandledrejection', rejectionHandler);
+      console.error = originalConsoleError;
+      delete window.debug;
+      delete window.debugError;
+    };
+  }, [debug, debugError]);
 
   const handleCopyLogs = () => {
-    const logText = logs.map(log => `[${new Date(log.timestamp).toISOString()}] ${log.message}`).join('\n');
+    const logText = logs.map(log => {
+      const timestamp = new Date(log.timestamp).toISOString();
+      const prefix = log.type === 'error' ? '[ERROR]' : '[LOG]';
+      let text = `${prefix} [${timestamp}] ${log.message}`;
+      if (log.stack) {
+        text += '\n' + log.stack;
+      }
+      return text;
+    }).join('\n');
+
     navigator.clipboard.writeText(logText).then(() => {
       setCopyText('Copied!');
       setTimeout(() => setCopyText('Copy Logs'), 2000);
     });
   };
 
+  const handleToggleVisibility = () => {
+    setIsVisible(!isVisible);
+    if (!isVisible) {
+      setUnreadCount(0);
+    }
+  };
+
   return (
     <div className={`${styles.debugWrapper} ${isVisible ? styles.expanded : styles.collapsed}`}>
-      <div className={styles.debugHandle} onClick={() => setIsVisible(!isVisible)}>
+      <div className={styles.debugHandle} onClick={handleToggleVisibility}>
         <div className={styles.debugHandleLeft}>
-          <span className={styles.debugHandleText}>Debug Console</span>
+          <span className={styles.debugHandleText}>
+            Debug Console
+            {unreadCount > 0 && (
+              <span className={styles.unreadBadge}>{unreadCount}</span>
+            )}
+          </span>
           <span className={styles.copyLogs} onClick={(e) => { e.stopPropagation(); handleCopyLogs(); }}>
             {copyText}
           </span>
@@ -55,8 +127,11 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
       </div>
       <div className={styles.debugConsole}>
         {logs.map((log, index) => (
-          <div key={index} className={styles.debugEntry}>
+          <div key={index} className={`${styles.debugEntry} ${log.type === 'error' ? styles.errorEntry : ''}`}>
             [{new Date(log.timestamp).toISOString()}] {log.message}
+            {log.stack && (
+              <div className={styles.stackTrace}>{log.stack}</div>
+            )}
           </div>
         ))}
       </div>
