@@ -67,11 +67,27 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
       debugError(event.reason || 'Unhandled Promise Rejection');
     };
 
-    // Capture React errors
+    // Store original console.error
     const originalConsoleError = console.error;
+    
+    // Override console.error but prevent recursion
     console.error = (...args) => {
+      // Call original first
       originalConsoleError.apply(console, args);
-      debugError(args.join(' '));
+      
+      // Skip if the error is coming from our own debug system
+      const errorString = args.join(' ');
+      if (!errorString.includes('DebugConsole')) {
+        setLogs(prevLogs => [...prevLogs, {
+          message: errorString,
+          timestamp: Date.now(),
+          type: 'error'
+        }]);
+        
+        if (!isVisible) {
+          setUnreadCount(count => count + 1);
+        }
+      }
     };
 
     window.addEventListener('error', errorHandler);
@@ -84,7 +100,7 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
       delete window.debug;
       delete window.debugError;
     };
-  }, [debug, debugError]);
+  }, [debug, debugError, isVisible]);
 
   const handleCopyLogs = () => {
     const logText = logs.map(log => {
@@ -119,7 +135,7 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
     window.dispatchEvent(new CustomEvent('debugConsoleStateChange', {
       detail: { expanded: isVisible }
     }));
-  }, []);
+  }, [isVisible]);
 
   return (
     <div className={`${styles.debugWrapper} ${isVisible ? styles.expanded : styles.collapsed}`}>

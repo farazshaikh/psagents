@@ -16,8 +16,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // Get feature flags from environment variables
 export const getFeatureFlags = (): FeatureFlags => ({
-  debugConsole: isProduction ? false : parseBoolean(process.env.REACT_APP_DEBUG_CONSOLE),
-  waveController: isProduction ? false : parseBoolean(process.env.REACT_APP_WAVE_CONTROLLER),
+  debugConsole: isProduction ? false : parseBoolean(process.env.REACT_APP_FEATURES_DEBUG_CONSOLE),
+  waveController: isProduction ? false : parseBoolean(process.env.REACT_APP_FEATURES_WAVE_CONTROLLER),
 });
 
 // Helper hook to access feature flags

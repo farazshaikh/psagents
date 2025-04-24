@@ -1,42 +1,59 @@
 const { spawn } = require('child_process');
 const { platform } = require('os');
-const path = require('path');
+const { join, resolve } = require('path');
+const { readFileSync, existsSync, writeFileSync } = require('fs');
+const { exit } = require('process');
+const { validateSettings, DEFAULT_SETTINGS } = require('./settings');
 
-// Get the flags from command line arguments (after the -- if using npm run)
-const args = process.argv.slice(2);
-console.log('Received arguments:', args);
+// Change to the reactweb directory where package.json is located
+const projectRoot = resolve(__dirname, '..');
+process.chdir(projectRoot);
+console.log('Working directory:', process.cwd());
 
-// Split by comma and trim whitespace
-const flags = args[0]?.split(',').map(flag => flag.trim()).filter(Boolean) || [];
-console.log('Parsed flags:', flags);
+// Read and validate settings
+const settingsPath = join(__dirname, 'settings.json');
+let currentSettings = DEFAULT_SETTINGS;
 
-// Map of flag names to their environment variable names
-const flagToEnvVar = {
-  'debugconsole': 'REACT_APP_DEBUG_CONSOLE',
-  'wavecontrol': 'REACT_APP_WAVE_CONTROLLER'
-};
-
-// Set up environment variables based on flags
-const env = { ...process.env };
-for (const flag of flags) {
-  const envVar = flagToEnvVar[flag.toLowerCase()];
-  if (envVar) {
-    env[envVar] = 'true';
-    console.log(`Setting ${envVar}=true`);
+try {
+  if (!existsSync(settingsPath)) {
+    console.log('Creating default settings file...');
+    writeFileSync(settingsPath, JSON.stringify(DEFAULT_SETTINGS, null, 2));
   } else {
-    console.log(`Unknown flag: ${flag}`);
+    const settingsContent = readFileSync(settingsPath, 'utf8');
+    const parsedSettings = JSON.parse(settingsContent);
+    
+    if (validateSettings(parsedSettings)) {
+      currentSettings = parsedSettings;
+      console.log('Settings loaded successfully');
+    }
   }
+} catch (error) {
+  console.error('Settings error:', error.message);
+  console.error('Expected format:', JSON.stringify(DEFAULT_SETTINGS, null, 2));
+  exit(1);
 }
 
-// Log all REACT_APP environment variables
-console.log('\nActive environment variables:');
-Object.entries(env)
-  .filter(([key]) => key.startsWith('REACT_APP_'))
-  .forEach(([key, value]) => console.log(`${key}=${value}`));
+// Set up environment variables
+const env = { ...process.env };
 
-// Determine the command based on platform
+// Convert settings to environment variables
+Object.entries(currentSettings).forEach(([key, value]) => {
+  if (key === 'features' && typeof value === 'object') {
+    Object.entries(value).forEach(([subKey, subValue]) => {
+      const envName = `REACT_APP_${key.toUpperCase()}_${subKey.toUpperCase()}`;
+      env[envName] = subValue.toString();
+      console.log(`${envName}=${subValue}`);
+    });
+  } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    const envName = `REACT_APP_${key.toUpperCase()}`;
+    env[envName] = value.toString();
+    console.log(`${envName}=${value}`);
+  }
+});
+
+// Start React app
 const isWindows = platform() === 'win32';
-const reactScriptsPath = path.resolve(
+const reactScriptsPath = resolve(
   __dirname,
   '..',
   'node_modules',
@@ -44,9 +61,8 @@ const reactScriptsPath = path.resolve(
   isWindows ? 'react-scripts.cmd' : 'react-scripts'
 );
 
-console.log(`Using react-scripts at: ${reactScriptsPath}`);
+console.log(`\nStarting React app with react-scripts`);
 
-// Start the React app with the environment variables
 const reactProcess = spawn(reactScriptsPath, ['start'], {
   env,
   stdio: 'inherit',
@@ -55,12 +71,12 @@ const reactProcess = spawn(reactScriptsPath, ['start'], {
 
 reactProcess.on('error', (err) => {
   console.error('Failed to start React app:', err);
-  process.exit(1);
+  exit(1);
 });
 
 reactProcess.on('exit', (code) => {
   if (code !== 0) {
     console.log(`Process exited with code ${code}`);
-    process.exit(code);
+    exit(code || 1);
   }
 }); 

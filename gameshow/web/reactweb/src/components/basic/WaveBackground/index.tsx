@@ -45,10 +45,6 @@ const lerp = (start: number, end: number, t: number) => {
 };
 
 // Animation timing constants
-const STATIC_DURATION = 7500;        // Duration to stay in static state
-const ANIMATED_DURATION = 7500;      // Duration to stay in animated state
-const TRANSITION_DURATION = 10000;   // Duration for transitions (10 seconds for very smooth transitions)
-const BLEND_DURATION = 2500;         // Duration to blend between states
 
 const WaveBackground: React.FC<WaveBackgroundProps> = ({ 
   panel = false, 
@@ -148,7 +144,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [config]);
+  }, [config, waves]);
 
   // Add performance metrics ref
   const metricsRef = useRef<PerformanceMetrics>({
@@ -232,7 +228,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
       const prevRenderConfigStr = JSON.stringify(prevRenderConfig);
       return newRenderConfigStr !== prevRenderConfigStr ? config.renderConfig : prevRenderConfig;
     });
-  }, [config]);
+  }, [config, waves]);
 
   const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, timeOffset: number) => {
     const startTime = performance.now();
