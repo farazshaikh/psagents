@@ -398,9 +398,9 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
                 Animation Speed:
                 <input
                   type="range"
-                  min="0.1"
-                  max="2"
-                  step="0.1"
+                  min="0"
+                  max="100"
+                  step="1"
                   value={globalSpeed}
                   onChange={(e) => setGlobalSpeed(parseFloat(e.target.value))}
                 />

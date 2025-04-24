@@ -41,53 +41,71 @@ export interface WaveConfig {
 export const defaultConfig: WaveConfig = {
   waves: [
     {
-      baseY: 0.65,
+      baseY: 0.60,
       amplitude: 45,
       frequency: 0.003,
       speed: 0.12,
-      startColor: '#00ff00',
-      endColor: '#00ffaa',
+      startColor: '#666600', // Dark yellow
+      endColor: '#FFFF00',  // Bright yellow
       width: 40
     },
     {
-      baseY: 0.7,
-      amplitude: 40,
-      frequency: 0.0035,
-      speed: 0.1,
-      startColor: '#00ffaa',
-      endColor: '#00ffff',
+      baseY: 0.65,
+      amplitude: 42,
+      frequency: 0.0033,
+      speed: 0.11,
+      startColor: '#006666', // Dark cyan
+      endColor: '#00FFFF',  // Bright cyan
+      width: 40
+    },
+    {
+      baseY: 0.70,
+      amplitude: 39,
+      frequency: 0.0036,
+      speed: 0.10,
+      startColor: '#006600', // Dark green
+      endColor: '#00FF00',  // Bright green
       width: 40
     },
     {
       baseY: 0.75,
-      amplitude: 35,
-      frequency: 0.004,
+      amplitude: 36,
+      frequency: 0.0039,
       speed: 0.09,
-      startColor: '#00ffff',
-      endColor: '#0099ff',
+      startColor: '#660066', // Dark magenta
+      endColor: '#FF00FF',  // Bright magenta
       width: 40
     },
     {
-      baseY: 0.8,
-      amplitude: 30,
-      frequency: 0.0045,
+      baseY: 0.80,
+      amplitude: 33,
+      frequency: 0.0042,
       speed: 0.08,
-      startColor: '#0099ff',
-      endColor: '#6600ff',
+      startColor: '#660000', // Dark red
+      endColor: '#FF0000',  // Bright red
       width: 40
     },
     {
       baseY: 0.85,
-      amplitude: 25,
-      frequency: 0.005,
+      amplitude: 30,
+      frequency: 0.0045,
       speed: 0.07,
-      startColor: '#6600ff',
-      endColor: '#ff00ff',
+      startColor: '#000066', // Dark blue
+      endColor: '#0000FF',  // Bright blue
+      width: 40
+    },
+    {
+      baseY: 0.90,
+      amplitude: 27,
+      frequency: 0.0048,
+      speed: 0.06,
+      startColor: '#666666', // Dark white/gray
+      endColor: '#FFFFFF',  // Bright white
       width: 40
     }
   ],
-  globalSpeed: 1.0,
-  numWaves: 3,
+  globalSpeed: 5.0,
+  numWaves: 7,
   // Wave composition settings - each value is a multiplier
   sineWaves: {
     // Main wave (1x frequency, 1x speed, full amplitude)
@@ -113,6 +131,6 @@ export const defaultConfig: WaveConfig = {
     numLines: 20,          // Number of lines used to create wave thickness
     gradientPhaseSpeed: 0.5, // Speed of color gradient animation
     lineWidth: 1.5,      // Default line width of 1.5 pixels
-    lineSpacing: 2.5     // Default spacing of 2.5 pixels between lines
+    lineSpacing: 3     // Default spacing of 2.5 pixels between lines
   }
 };
