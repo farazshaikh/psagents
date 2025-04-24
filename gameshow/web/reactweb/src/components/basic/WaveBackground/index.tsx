@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useFeatureFlags } from '../../../utils/featureFlags';
 import { WaveParams, WaveConfig, defaultConfig, SineWaveComposition } from './config';
+import { startConfig } from './startConfig';
 import './styles.css';
 
 interface WaveBackgroundProps {
@@ -38,6 +39,26 @@ const logMetrics = (metrics: PerformanceMetrics) => {
   window.debug(`Render Count: ${metrics.renderCount}`);
 };
 
+// Add interpolation helper
+const lerp = (start: number, end: number, t: number) => {
+  return start * (1 - t) + end * t;
+};
+
+// Animation states
+enum AnimationState {
+  InitialStatic,      // Initial state of no movement
+  ToAnimated,         // Transition to animated state
+  Animated,           // Fully animated state
+  ToStatic,          // Transition back to static state
+  Static             // Fully static state
+}
+
+// Animation timing constants
+const STATIC_DURATION = 7500;        // Duration to stay in static state
+const ANIMATED_DURATION = 7500;      // Duration to stay in animated state
+const TRANSITION_DURATION = 10000;   // Duration for transitions (10 seconds for very smooth transitions)
+const BLEND_DURATION = 2500;         // Duration to blend between states
+
 const WaveBackground: React.FC<WaveBackgroundProps> = ({ 
   panel = false, 
   config = defaultConfig,
@@ -47,15 +68,106 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const timeRef = useRef<number>(0);
+  const startTimeRef = useRef<number>(Date.now());
   const containerRef = useRef<HTMLDivElement>(null);
   const lastFrameTimeRef = useRef<number>(0);
-  const [waves, setWaves] = useState<WaveParams[]>(config.waves);
-  const [globalSpeed, setGlobalSpeed] = useState(config.globalSpeed);
-  const [numWaves, setNumWaves] = useState(config.numWaves);
-  const [sineWaves, setSineWaves] = useState(config.sineWaves);
-  const [renderConfig, setRenderConfig] = useState(config.renderConfig);
+  const [waves, setWaves] = useState<WaveParams[]>(startConfig.waves);
+  const [globalSpeed, setGlobalSpeed] = useState(startConfig.globalSpeed);
+  const [numWaves, setNumWaves] = useState(startConfig.numWaves);
+  const [sineWaves, setSineWaves] = useState(startConfig.sineWaves);
+  const [renderConfig, setRenderConfig] = useState(startConfig.renderConfig);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+  const [animationState, setAnimationState] = useState<AnimationState>(AnimationState.InitialStatic);
   const showControls = waveController || panel;
+  const lastValuesRef = useRef<{
+    globalSpeed: number;
+    waves: WaveParams[];
+    sineWaves: typeof startConfig.sineWaves;
+  }>({
+    globalSpeed: startConfig.globalSpeed,
+    waves: startConfig.waves,
+    sineWaves: startConfig.sineWaves
+  });
+
+  // Add interpolation effect
+  useEffect(() => {
+    // Ultra smooth easing function
+    const smoothEase = (x: number): number => {
+      // Combine smoothstep with extra smoothing at the edges
+      const t = x * x * x * (x * (x * 6 - 15) + 10); // smoothstep
+      return t * t * (3 - 2 * t); // extra smoothing
+    };
+
+    // Animation timing constants
+    const CYCLE_DURATION = 15000;    // Total duration of one full cycle
+    const TRANSITION_TIME = 0.4;     // Portion of cycle spent transitioning (40%)
+
+    const interpolateConfig = () => {
+      const now = Date.now();
+      const elapsed = now - startTimeRef.current;
+      const cycleTime = (elapsed % CYCLE_DURATION) / CYCLE_DURATION;
+
+      // Calculate the animation phase (0 to 1)
+      let t: number;
+      if (cycleTime < TRANSITION_TIME) {
+        // Transitioning up
+        t = smoothEase(cycleTime / TRANSITION_TIME);
+      } else if (cycleTime < 1 - TRANSITION_TIME) {
+        // Hold at peak
+        t = 1;
+      } else {
+        // Transitioning down
+        t = smoothEase(1 - (cycleTime - (1 - TRANSITION_TIME)) / TRANSITION_TIME);
+      }
+
+      if (window.debug && elapsed % 500 < 16) {
+        window.debug(`Animation Progress: cycleTime=${Math.round(cycleTime * 100)}% t=${Math.round(t * 100)}% frameTime=${now - lastFrameTimeRef.current}ms`);
+        window.debug(`Animation Values: globalSpeed=${Math.round(lerp(startConfig.globalSpeed, config.globalSpeed, t) * 100) / 100} amplitude=${Math.round(lerp(startConfig.waves[0].amplitude, config.waves[0].amplitude, t) * 100) / 100}`);
+      }
+
+      // Interpolate wave parameters
+      setWaves(waves.map((wave, index) => {
+        const startWave = startConfig.waves[index];
+        const finalWave = config.waves[index];
+        return {
+          ...wave,
+          amplitude: lerp(startWave.amplitude, finalWave.amplitude, t),
+          frequency: lerp(startWave.frequency, finalWave.frequency, t),
+          speed: lerp(startWave.speed, finalWave.speed, t)
+        };
+      }));
+
+      setGlobalSpeed(lerp(startConfig.globalSpeed, config.globalSpeed, t));
+
+      setSineWaves({
+        primary: {
+          frequency: lerp(startConfig.sineWaves.primary.frequency, config.sineWaves.primary.frequency, t),
+          speed: lerp(startConfig.sineWaves.primary.speed, config.sineWaves.primary.speed, t),
+          amplitude: lerp(startConfig.sineWaves.primary.amplitude, config.sineWaves.primary.amplitude, t)
+        },
+        secondary: {
+          frequency: lerp(startConfig.sineWaves.secondary.frequency, config.sineWaves.secondary.frequency, t),
+          speed: lerp(startConfig.sineWaves.secondary.speed, config.sineWaves.secondary.speed, t),
+          amplitude: lerp(startConfig.sineWaves.secondary.amplitude, config.sineWaves.secondary.amplitude, t)
+        },
+        tertiary: {
+          frequency: lerp(startConfig.sineWaves.tertiary.frequency, config.sineWaves.tertiary.frequency, t),
+          speed: lerp(startConfig.sineWaves.tertiary.speed, config.sineWaves.tertiary.speed, t),
+          amplitude: lerp(startConfig.sineWaves.tertiary.amplitude, config.sineWaves.tertiary.amplitude, t)
+        }
+      });
+
+      requestAnimationFrame(interpolateConfig);
+    };
+
+    interpolateConfig();
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [config]);
 
   // Add performance metrics ref
   const metricsRef = useRef<PerformanceMetrics>({
