@@ -9,6 +9,7 @@ interface CyclicWaveBackgroundProps {
   cycleConfig?: {
     cycleDuration?: number;    // Total duration of one cycle in ms
     transitionRatio?: number;  // Portion of cycle spent transitioning (0-1)
+    variationRange?: number;   // Range of random variation (0-1), default 0.2 (20%)
   };
 }
 
@@ -22,6 +23,44 @@ const smoothEase = (x: number): number => {
 // Linear interpolation helper
 const lerp = (start: number, end: number, t: number) => {
   return start * (1 - t) + end * t;
+};
+
+// Random variation helper
+const addVariation = (value: number, range: number): number => {
+  const variation = (Math.random() - 0.5) * 2 * range; // -range to +range
+  return value * (1 + variation);
+};
+
+// Create a randomized target config
+const createRandomizedConfig = (baseConfig: WaveConfig, variationRange: number): WaveConfig => {
+  return {
+    waves: baseConfig.waves.map(wave => ({
+      ...wave,
+      amplitude: addVariation(wave.amplitude, variationRange),
+      frequency: addVariation(wave.frequency, variationRange * 0.5), // Less variation in frequency
+      speed: addVariation(wave.speed, variationRange * 0.7)
+    })),
+    globalSpeed: addVariation(baseConfig.globalSpeed, variationRange * 0.3),
+    numWaves: baseConfig.numWaves,
+    sineWaves: {
+      primary: {
+        frequency: addVariation(baseConfig.sineWaves.primary.frequency, variationRange * 0.3),
+        speed: addVariation(baseConfig.sineWaves.primary.speed, variationRange * 0.3),
+        amplitude: addVariation(baseConfig.sineWaves.primary.amplitude, variationRange * 0.2)
+      },
+      secondary: {
+        frequency: addVariation(baseConfig.sineWaves.secondary.frequency, variationRange * 0.4),
+        speed: addVariation(baseConfig.sineWaves.secondary.speed, variationRange * 0.4),
+        amplitude: addVariation(baseConfig.sineWaves.secondary.amplitude, variationRange * 0.3)
+      },
+      tertiary: {
+        frequency: addVariation(baseConfig.sineWaves.tertiary.frequency, variationRange * 0.5),
+        speed: addVariation(baseConfig.sineWaves.tertiary.speed, variationRange * 0.5),
+        amplitude: addVariation(baseConfig.sineWaves.tertiary.amplitude, variationRange * 0.4)
+      }
+    },
+    renderConfig: baseConfig.renderConfig
+  };
 };
 
 // Interpolate between two wave configs
@@ -67,20 +106,36 @@ const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
   panel = false,
   initialCollapsed = true,
   cycleConfig: {
-    cycleDuration = 15000,    // 15 seconds per cycle
-    transitionRatio = 0.4     // 40% of cycle time spent transitioning
+    cycleDuration = 15000,     // 15 seconds per cycle
+    transitionRatio = 0.4,     // 40% of cycle time spent transitioning
+    variationRange = 0.2       // 20% variation range
   } = {}
 }) => {
   const [currentConfig, setCurrentConfig] = useState<WaveConfig>(startConfig);
   const startTimeRef = useRef<number>(Date.now());
   const animationFrameRef = useRef<number | undefined>(undefined);
   const lastFrameTimeRef = useRef<number>(0);
+  const targetConfigRef = useRef<WaveConfig>(defaultConfig);
+  const lastCycleRef = useRef<number>(0);
 
   useEffect(() => {
     const animate = () => {
       const now = Date.now();
       const elapsed = now - startTimeRef.current;
       const cycleTime = (elapsed % cycleDuration) / cycleDuration;
+      const currentCycle = Math.floor(elapsed / cycleDuration);
+
+      // Generate new random target config at the start of each cycle
+      if (currentCycle > lastCycleRef.current) {
+        targetConfigRef.current = createRandomizedConfig(defaultConfig, variationRange);
+        lastCycleRef.current = currentCycle;
+        
+        if (window.debug) {
+          window.debug('New cycle started, generated random variation:');
+          window.debug(`Global Speed: ${targetConfigRef.current.globalSpeed}`);
+          window.debug(`Primary Wave Amplitude: ${targetConfigRef.current.waves[0].amplitude}`);
+        }
+      }
 
       // Calculate the animation phase (0 to 1)
       let t: number;
@@ -98,13 +153,13 @@ const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
       // Log animation progress
       if (window.debug && elapsed % 500 < 16) {
         window.debug(`Animation Progress: cycleTime=${Math.round(cycleTime * 100)}% t=${Math.round(t * 100)}% frameTime=${now - lastFrameTimeRef.current}ms`);
-        window.debug(`Animation Values: globalSpeed=${Math.round(lerp(startConfig.globalSpeed, defaultConfig.globalSpeed, t) * 100) / 100} amplitude=${Math.round(lerp(startConfig.waves[0].amplitude, defaultConfig.waves[0].amplitude, t) * 100) / 100}`);
+        window.debug(`Animation Values: globalSpeed=${Math.round(lerp(startConfig.globalSpeed, targetConfigRef.current.globalSpeed, t) * 100) / 100} amplitude=${Math.round(lerp(startConfig.waves[0].amplitude, targetConfigRef.current.waves[0].amplitude, t) * 100) / 100}`);
       }
 
       lastFrameTimeRef.current = now;
 
       // Update the wave configuration
-      setCurrentConfig(interpolateConfig(startConfig, defaultConfig, t));
+      setCurrentConfig(interpolateConfig(startConfig, targetConfigRef.current, t));
 
       animationFrameRef.current = requestAnimationFrame(animate);
     };
@@ -116,7 +171,7 @@ const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [cycleDuration, transitionRatio]);
+  }, [cycleDuration, transitionRatio, variationRange]);
 
   return (
     <WaveBackground
