@@ -1,12 +1,47 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useFeatureFlags } from '../../../utils/featureFlags';
 import { WaveParams, WaveConfig, defaultConfig, SineWaveComposition } from './config';
-import { startConfig } from './startConfig';
 import './styles.css';
+
+/**
+ * WaveBackground Component
+ * 
+ * Creates an animated wave effect using multiple parallel lines with carefully designed
+ * opacity and color gradients to create a 3D tubular appearance.
+ * 
+ * The wave effect is achieved through two main visual techniques:
+ * 
+ * 1. Vertical Opacity Gradient:
+ *    - Multiple parallel lines are drawn with varying opacity
+ *    - Lines are spaced evenly using renderConfig.lineSpacing
+ *    - Opacity follows a linear gradient from edges to center:
+ *      - Edge lines: 5% opacity (0.05)
+ *      - Center line: 35% opacity (0.35)
+ *      - Linear interpolation between edges and center
+ *    - This creates a subtle 3D tube effect without harsh transitions
+ * 
+ * 2. Horizontal Color Gradient:
+ *    - Each line uses the same horizontal color gradient
+ *    - Gradient progresses through carefully chosen blue shades:
+ *      - 0%:  #050A14 - Nearly black with slight blue tint
+ *      - 20%: #0A1A2B - Very dark blue-black
+ *      - 40%: #1A3251 - Dark blue
+ *      - 70%: #2B5486 - Medium-dark blue
+ *      - 90%: #4A90E2 - Bright blue
+ *      - 100%: #66A5F2 - Brightest, saturated blue
+ *    - More color stops in darker range for subtle transition
+ *    - Compressed bright range creates dramatic endpoint
+ * 
+ * The combination of these gradients creates a sophisticated wave effect that:
+ * - Appears as a 3D tube through opacity variation
+ * - Has depth and drama through the color progression
+ * - Maintains smooth transitions without harsh edges
+ * - Creates visual interest through contrast between dark and light
+ */
 
 interface WaveBackgroundProps {
   panel?: boolean;
-  config?: WaveConfig;
+  config: WaveConfig;
   initialCollapsed?: boolean;
 }
 
@@ -44,107 +79,24 @@ const lerp = (start: number, end: number, t: number) => {
   return start * (1 - t) + end * t;
 };
 
-// Animation timing constants
-
 const WaveBackground: React.FC<WaveBackgroundProps> = ({ 
   panel = false, 
-  config = defaultConfig,
+  config,
   initialCollapsed = true 
 }) => {
   const { waveController } = useFeatureFlags();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const timeRef = useRef<number>(0);
-  const startTimeRef = useRef<number>(Date.now());
   const containerRef = useRef<HTMLDivElement>(null);
   const lastFrameTimeRef = useRef<number>(0);
-  const [waves, setWaves] = useState<WaveParams[]>(startConfig.waves);
-  const [globalSpeed, setGlobalSpeed] = useState(startConfig.globalSpeed);
-  const [numWaves, setNumWaves] = useState(startConfig.numWaves);
-  const [sineWaves, setSineWaves] = useState(startConfig.sineWaves);
-  const [renderConfig, setRenderConfig] = useState(startConfig.renderConfig);
+  const [waves, setWaves] = useState<WaveParams[]>(config.waves);
+  const [globalSpeed, setGlobalSpeed] = useState(config.globalSpeed);
+  const [numWaves, setNumWaves] = useState(config.numWaves);
+  const [sineWaves, setSineWaves] = useState(config.sineWaves);
+  const [renderConfig, setRenderConfig] = useState(config.renderConfig);
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const showControls = waveController || panel;
-
-  // Add interpolation effect
-  useEffect(() => {
-    // Ultra smooth easing function
-    const smoothEase = (x: number): number => {
-      // Combine smoothstep with extra smoothing at the edges
-      const t = x * x * x * (x * (x * 6 - 15) + 10); // smoothstep
-      return t * t * (3 - 2 * t); // extra smoothing
-    };
-
-    // Animation timing constants
-    const CYCLE_DURATION = 15000;    // Total duration of one full cycle
-    const TRANSITION_TIME = 0.4;     // Portion of cycle spent transitioning (40%)
-
-    const interpolateConfig = () => {
-      const now = Date.now();
-      const elapsed = now - startTimeRef.current;
-      const cycleTime = (elapsed % CYCLE_DURATION) / CYCLE_DURATION;
-
-      // Calculate the animation phase (0 to 1)
-      let t: number;
-      if (cycleTime < TRANSITION_TIME) {
-        // Transitioning up
-        t = smoothEase(cycleTime / TRANSITION_TIME);
-      } else if (cycleTime < 1 - TRANSITION_TIME) {
-        // Hold at peak
-        t = 1;
-      } else {
-        // Transitioning down
-        t = smoothEase(1 - (cycleTime - (1 - TRANSITION_TIME)) / TRANSITION_TIME);
-      }
-
-      if (window.debug && elapsed % 500 < 16) {
-        window.debug(`Animation Progress: cycleTime=${Math.round(cycleTime * 100)}% t=${Math.round(t * 100)}% frameTime=${now - lastFrameTimeRef.current}ms`);
-        window.debug(`Animation Values: globalSpeed=${Math.round(lerp(startConfig.globalSpeed, config.globalSpeed, t) * 100) / 100} amplitude=${Math.round(lerp(startConfig.waves[0].amplitude, config.waves[0].amplitude, t) * 100) / 100}`);
-      }
-
-      // Interpolate wave parameters
-      setWaves(waves.map((wave, index) => {
-        const startWave = startConfig.waves[index];
-        const finalWave = config.waves[index];
-        return {
-          ...wave,
-          amplitude: lerp(startWave.amplitude, finalWave.amplitude, t),
-          frequency: lerp(startWave.frequency, finalWave.frequency, t),
-          speed: lerp(startWave.speed, finalWave.speed, t)
-        };
-      }));
-
-      setGlobalSpeed(lerp(startConfig.globalSpeed, config.globalSpeed, t));
-
-      setSineWaves({
-        primary: {
-          frequency: lerp(startConfig.sineWaves.primary.frequency, config.sineWaves.primary.frequency, t),
-          speed: lerp(startConfig.sineWaves.primary.speed, config.sineWaves.primary.speed, t),
-          amplitude: lerp(startConfig.sineWaves.primary.amplitude, config.sineWaves.primary.amplitude, t)
-        },
-        secondary: {
-          frequency: lerp(startConfig.sineWaves.secondary.frequency, config.sineWaves.secondary.frequency, t),
-          speed: lerp(startConfig.sineWaves.secondary.speed, config.sineWaves.secondary.speed, t),
-          amplitude: lerp(startConfig.sineWaves.secondary.amplitude, config.sineWaves.secondary.amplitude, t)
-        },
-        tertiary: {
-          frequency: lerp(startConfig.sineWaves.tertiary.frequency, config.sineWaves.tertiary.frequency, t),
-          speed: lerp(startConfig.sineWaves.tertiary.speed, config.sineWaves.tertiary.speed, t),
-          amplitude: lerp(startConfig.sineWaves.tertiary.amplitude, config.sineWaves.tertiary.amplitude, t)
-        }
-      });
-
-      requestAnimationFrame(interpolateConfig);
-    };
-
-    interpolateConfig();
-    
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [config, waves]);
 
   // Add performance metrics ref
   const metricsRef = useRef<PerformanceMetrics>({
@@ -175,60 +127,14 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     return () => clearInterval(logInterval);
   }, []);
 
-  // Listen for debug console state changes
-  useEffect(() => {
-    const handleDebugConsoleChange = (event: CustomEvent) => {
-      if (containerRef.current) {
-        if (event.detail.expanded) {
-          containerRef.current.classList.add('debug-expanded');
-        } else {
-          containerRef.current.classList.remove('debug-expanded');
-        }
-      }
-    };
-
-    // Check initial debug console state
-    const debugConsole = document.querySelector('[class*="debugWrapper"]');
-    if (debugConsole?.classList.contains('expanded') && containerRef.current) {
-      containerRef.current.classList.add('debug-expanded');
-    }
-
-    window.addEventListener('debugConsoleStateChange' as any, handleDebugConsoleChange);
-    
-    return () => {
-      window.removeEventListener('debugConsoleStateChange' as any, handleDebugConsoleChange);
-    };
-  }, []);
-
   // Update state when config prop changes
   useEffect(() => {
-    const configWavesStr = JSON.stringify(config.waves);
-    const currentWavesStr = JSON.stringify(waves);
-    
-    if (configWavesStr !== currentWavesStr) {
-      setWaves(JSON.parse(configWavesStr));
-    }
-    
-    setGlobalSpeed(prevSpeed => {
-      return prevSpeed !== config.globalSpeed ? config.globalSpeed : prevSpeed;
-    });
-    
-    setNumWaves(prevNum => {
-      return prevNum !== config.numWaves ? config.numWaves : prevNum;
-    });
-    
-    setSineWaves(prevSineWaves => {
-      const newSineWavesStr = JSON.stringify(config.sineWaves);
-      const prevSineWavesStr = JSON.stringify(prevSineWaves);
-      return newSineWavesStr !== prevSineWavesStr ? config.sineWaves : prevSineWaves;
-    });
-    
-    setRenderConfig(prevRenderConfig => {
-      const newRenderConfigStr = JSON.stringify(config.renderConfig);
-      const prevRenderConfigStr = JSON.stringify(prevRenderConfig);
-      return newRenderConfigStr !== prevRenderConfigStr ? config.renderConfig : prevRenderConfig;
-    });
-  }, [config, waves]);
+    setWaves(config.waves);
+    setGlobalSpeed(config.globalSpeed);
+    setNumWaves(config.numWaves);
+    setSineWaves(config.sineWaves);
+    setRenderConfig(config.renderConfig);
+  }, [config]);
 
   const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, timeOffset: number) => {
     const startTime = performance.now();
@@ -280,14 +186,15 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     ctx.clip();
 
     const colorGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    const gradientPhase = Math.sin(timeRef.current * wave.speed * renderConfig.gradientPhaseSpeed);
-    const midPoint = 0.5 + 0.2 * gradientPhase;
     
-    colorGradient.addColorStop(0, wave.startColor);
-    colorGradient.addColorStop(0.2, wave.startColor);
-    colorGradient.addColorStop(midPoint, wave.endColor);
-    colorGradient.addColorStop(0.8, wave.endColor);
-    colorGradient.addColorStop(1, wave.endColor);
+    // Add multiple color stops for cubic-like effect
+    // Using the same base color (#4A90E2 - blue) but with different brightness/saturation
+    colorGradient.addColorStop(0, '#050A14');    // Nearly black with slight blue tint
+    colorGradient.addColorStop(0.2, '#0A1A2B');  // Very dark blue-black
+    colorGradient.addColorStop(0.4, '#1A3251');  // Dark blue
+    colorGradient.addColorStop(0.7, '#2B5486');  // Medium-dark blue
+    colorGradient.addColorStop(0.9, '#4A90E2');  // Original bright blue
+    colorGradient.addColorStop(1, '#66A5F2');    // Brightest, saturated blue
 
     for (let i = 0; i < renderConfig.numLines; i++) {
       // Calculate the total line space and spacing
@@ -297,27 +204,37 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
       
       // Calculate the starting position to center all lines
       const startY = -totalHeight / 2;
+
+      // Debug log for line positions
+      if (window.debug) {
+        window.debug(`Drawing ${renderConfig.numLines} lines`);
+        window.debug(`Total height: ${totalHeight}px`);
+        window.debug(`Start Y: ${startY}px`);
+      }
       
       // Calculate exact y position for this line including width and spacing
-      const y = startY + (i * (renderConfig.lineWidth + renderConfig.lineSpacing)) + (renderConfig.lineWidth / 2);
+      const y = startY + (i * (renderConfig.lineWidth + renderConfig.lineSpacing));
       
+      if (window.debug) {
+        window.debug(`Line ${i} Y offset: ${y}px`);
+      }
+
       ctx.beginPath();
       ctx.moveTo(points[0][0], points[0][1] + y);
       
-      for (let j = 1; j < points.length - 2; j++) {
-        const xc = (points[j][0] + points[j + 1][0]) / 2;
-        const yc = (points[j][1] + points[j + 1][1]) / 2;
-        ctx.quadraticCurveTo(points[j][0], points[j][1] + y, xc, yc + y);
+      // Simplified path for debugging - just draw straight lines
+      for (let j = 1; j < points.length; j++) {
+        ctx.lineTo(points[j][0], points[j][1] + y);
       }
       
       ctx.strokeStyle = colorGradient;
       ctx.lineWidth = renderConfig.lineWidth;
+      ctx.globalAlpha = 1.0; // Full opacity for debugging
       
-      // Calculate opacity based on normalized position
-      const normalizedPosition = (y - startY) / totalHeight;
-      const normalizedT = Math.abs(2 * normalizedPosition - 1);
-      const opacity = 0.2 * (1 - normalizedT * normalizedT);
-      ctx.globalAlpha = opacity;
+      if (window.debug) {
+        window.debug(`Drawing line ${i} with color ${wave.startColor}`);
+      }
+      
       ctx.stroke();
     }
 
@@ -353,15 +270,58 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.globalCompositeOperation = 'lighter';
-    waves.slice(0, numWaves).forEach((wave, index) => {
-      drawWave(ctx, wave, index * Math.PI / waves.length);
-    });
-    ctx.globalCompositeOperation = 'source-over';
+    /**
+     * Horizontal Color Gradient Setup
+     * Creates a sophisticated progression from near-black to bright blue
+     * More color stops are used in the darker range (0-70%) to create
+     * subtle transitions, while the bright range is compressed (70-100%)
+     * for dramatic effect at the end
+     */
+    const colorGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+    
+    // Carefully chosen color stops for smooth progression from dark to bright
+    colorGradient.addColorStop(0, '#050A14');    // Nearly black with slight blue tint
+    colorGradient.addColorStop(0.2, '#0A1A2B');  // Very dark blue-black
+    colorGradient.addColorStop(0.4, '#1A3251');  // Dark blue
+    colorGradient.addColorStop(0.7, '#2B5486');  // Medium-dark blue
+    colorGradient.addColorStop(0.9, '#4A90E2');  // Original bright blue
+    colorGradient.addColorStop(1, '#66A5F2');    // Brightest, saturated blue
+
+    // Calculate total height needed for all lines
+    const totalHeight = (renderConfig.numLines - 1) * renderConfig.lineSpacing;
+    const centerY = canvas.height * 0.5;
+    const startY = centerY - (totalHeight / 2);
+
+    // Calculate center line index for opacity gradient
+    const centerLineIndex = Math.floor(renderConfig.numLines / 2);
+
+    // Draw lines
+    for (let i = 0; i < renderConfig.numLines; i++) {
+      const lineY = startY + (i * renderConfig.lineSpacing);
+      
+      /**
+       * Vertical Opacity Gradient Calculation
+       * Creates a subtle 3D tube effect by varying opacity from edges to center
+       * - Uses linear interpolation for smooth transitions
+       * - Starts at 5% opacity at edges
+       * - Peaks at 35% opacity in center
+       * - Linear falloff creates natural-looking depth
+       */
+      const distanceFromCenter = Math.abs(i - centerLineIndex) / centerLineIndex;
+      const opacity = 0.05 + (0.30 * (1 - distanceFromCenter));
+
+      ctx.beginPath();
+      ctx.moveTo(0, lineY);
+      ctx.lineTo(canvas.width, lineY);
+      ctx.strokeStyle = colorGradient;
+      ctx.lineWidth = renderConfig.lineWidth;
+      ctx.globalAlpha = opacity;
+      ctx.stroke();
+    }
 
     timeRef.current += 0.08;
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [waves, numWaves, drawWave]);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;

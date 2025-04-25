@@ -2,6 +2,7 @@ import React from 'react';
 import Button from '../../../basic/Button';
 import Typography from '../../../basic/Typography';
 import WaveBackground from '../../../basic/WaveBackground';
+import { endConfig } from './waveConfigs';
 import './styles.css';
 
 interface HeroSectionProps {
@@ -40,7 +41,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({
       <div className="hero-visual">
         {/* Add hero image or animation here */}
       </div>
-      <WaveBackground/>
+      <WaveBackground
+        config={endConfig}
+        panel={false}
+      />
     </section>
   );
 };
