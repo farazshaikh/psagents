@@ -1,29 +1,193 @@
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 .landing {
+  position: relative;
   height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.landing-top-section,
-.landing-middle-section {
-  height: 33.33vh;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInSide {
+  0% {
+    opacity: 0;
+    transform: translateX(-40px) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotate(0);
+  }
+}
+
+@keyframes evolveUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  60% {
+    transform: translateY(-5px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.landing-wave-section {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 70vh; /* Increased from 50vh to 70vh to create overlap */
+}
+
+.landing-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 10vh; /* 10% of viewport height for navigation */
+  z-index: 10;
+}
+
+.landing-content {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 800px;
+  height: 30vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 5;
+  padding: 0 2rem;
+}
+
+.company-name {
+  font-size: 5.2rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+  background: linear-gradient(135deg,
+    #64E8DE 0%,      /* Soft Teal */
+    #8A64EB 50%,     /* Royal Purple */
+    #E454E5 100%     /* Vibrant Pink */
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out forwards;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  text-shadow: 0 0 60px rgba(100, 232, 222, 0.15);
+}
+
+.tagline {
+  font-size: 2rem;
+  font-weight: 400;
+  margin-bottom: 2.5rem;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: -0.02em;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.15em;
+  line-height: 1.2;
 }
 
-.landing-bottom-section {
-  height: 33.33vh;
+.tagline-part {
+  opacity: 0;
+  animation: slideInSide 0.7s ease-out 0.3s forwards;
+  transform-origin: left center;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.section-content {
-  width: 100%;
-  padding: 2rem;
-  color: white;
-  text-align: center;
+.tagline-separator {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.3s forwards;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tagline-evolved {
+  opacity: 0;
+  animation: evolveUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.7s forwards;
+  background: linear-gradient(135deg,
+    #64E8DE 0%,      /* Soft Teal */
+    #8A64EB 100%     /* Royal Purple */
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transform-origin: bottom center;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 30px rgba(100, 232, 222, 0.15);
+}
+
+.tagline-exclamation {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out 1.2s forwards;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 300;
+}
+
+.cta-button {
+  padding: 1.2rem 2.8rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(138, 100, 235, 0.1);
+  border: 1px solid rgba(100, 232, 222, 0.2);
+  border-radius: 40px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 1.4s forwards;
+  letter-spacing: -0.01em;
+}
+
+.cta-button:hover {
+  background: rgba(138, 100, 235, 0.2);
+  border-color: rgba(100, 232, 222, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(100, 232, 222, 0.15);
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .section-content {
-    padding: 1rem;
+  .company-name {
+    font-size: 3.8rem;
+    letter-spacing: -0.02em;
+  }
+
+  .tagline {
+    font-size: 1.6rem;
+    letter-spacing: -0.01em;
+  }
+
+  .cta-button {
+    padding: 1rem 2.4rem;
+    font-size: 1rem;
   }
 }

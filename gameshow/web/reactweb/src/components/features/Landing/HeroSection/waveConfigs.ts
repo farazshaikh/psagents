@@ -4,43 +4,73 @@ import { WaveConfig } from '../../../basic/WaveBackground/config';
 const commonConfig = {
   waves: [
     {
-      amplitude: 35,
-      frequency: 0.004,
+      amplitude: 45,
+      frequency: 0.003,
       speed: 0.12,
-      baseY: 0.45,  // First wave slightly higher
       width: 1,
-      startColor: '#4A90E2',  // Blue theme
-      endColor: '#66A5F2'
+      startColor: '#404040',  // Much dimmer gray (76.9 IRE)
+      endColor: '#FFFFFF'     // Pure white
+    },
+    {
+      amplitude: 42,
+      frequency: 0.0033,
+      speed: 0.11,
+      width: 1,
+      startColor: '#3D3D00',  // Dimmer yellow (69.0 IRE)
+      endColor: '#FFFF66'     // Brighter yellow
+    },
+    {
+      amplitude: 39,
+      frequency: 0.0036,
+      speed: 0.10,
+      width: 1,
+      startColor: '#336666',  // Dimmer cyan (56.1 IRE)
+      endColor: '#66FFFF'     // Brighter cyan
+    },
+    {
+      amplitude: 36,
+      frequency: 0.0039,
+      speed: 0.09,
+      width: 1,
+      startColor: '#004000',  // Dimmer green (48.2 IRE)
+      endColor: '#66FF66'     // Brighter green
+    },
+    {
+      amplitude: 33,
+      frequency: 0.0042,
+      speed: 0.08,
+      width: 1,
+      startColor: '#400040',  // Dimmer magenta (36.2 IRE)
+      endColor: '#FF66FF'     // Brighter magenta
     },
     {
       amplitude: 30,
-      frequency: 0.005,
-      speed: 0.08,
-      baseY: 0.55,  // Second wave slightly lower
+      frequency: 0.0045,
+      speed: 0.07,
       width: 1,
-      startColor: '#50E3C2',  // Teal theme
-      endColor: '#40B3A2'
+      startColor: '#400000',  // Dimmer red (28.2 IRE)
+      endColor: '#FF6666'     // Brighter red
     },
     {
-      amplitude: 30,
-      frequency: 0.005,
-      speed: 0.08,
-      baseY: 0.55,  // Second wave slightly lower
+      amplitude: 27,
+      frequency: 0.0048,
+      speed: 0.06,
       width: 1,
-      startColor: '#9B51E0',  // Deep purple
-      endColor: '#B794F4',    // Light purple
+      startColor: '#000040',  // Dimmer blue (15.4 IRE)
+      endColor: '#6666FF'     // Brighter blue
     }
   ],
-  globalSpeed: 1,
-  numWaves: 3,  // Now using two waves
+  globalSpeed: 10,
+  numWaves: 7,  // Using all 7 SMPTE colors
   renderConfig: {
-    numLines: 5,
-    lineWidth: 1,
-    lineSpacing:1,
-    waveSpacing: 0,  // Vertical spacing between waves
+    numLines: 20,
+    lineWidth: 2,
+    lineSpacing: 3,
+    waveSpacing: 1,  // Added spacing between waves for visibility
     gradientPhaseSpeed: 0.5
   }
 };
+
 
 // Start config with horizontal lines (zero amplitude sine waves)
 export const startConfig: WaveConfig = {

@@ -5,12 +5,12 @@ import './styles.css';
 
 /**
  * WaveBackground Component
- * 
+ *
  * Creates an animated wave effect using multiple parallel lines with carefully designed
  * opacity and color gradients to create a 3D tubular appearance.
- * 
+ *
  * The wave effect is achieved through two main visual techniques:
- * 
+ *
  * 1. Vertical Opacity Gradient:
  *    - Multiple parallel lines are drawn with varying opacity
  *    - Lines are spaced evenly using renderConfig.lineSpacing
@@ -19,7 +19,7 @@ import './styles.css';
  *      - Center line: 35% opacity (0.35)
  *      - Linear interpolation between edges and center
  *    - This creates a subtle 3D tube effect without harsh transitions
- * 
+ *
  * 2. Horizontal Color Gradient:
  *    - Each line uses the same horizontal color gradient
  *    - Gradient progresses through carefully chosen blue shades:
@@ -31,7 +31,7 @@ import './styles.css';
  *      - 100%: #66A5F2 - Brightest, saturated blue
  *    - More color stops in darker range for subtle transition
  *    - Compressed bright range creates dramatic endpoint
- * 
+ *
  * The combination of these gradients creates a sophisticated wave effect that:
  * - Appears as a 3D tube through opacity variation
  * - Has depth and drama through the color progression
@@ -46,12 +46,6 @@ interface Point {
 
 interface RenderConfig {
   verticalPosition: number;
-}
-
-interface SineWaveComponent {
-  frequency: number;
-  speed: number;
-  amplitude: number;
 }
 
 interface WaveBackgroundParams {
@@ -86,21 +80,16 @@ const DEBUG_PERFORMANCE = false;
 
 const logMetrics = (metrics: PerformanceMetrics) => {
   if (!window.debug) return;
-  
+
   const avgFrameTime = metrics.frameTimeSum / Math.max(1, metrics.frameCount);
   const fps = metrics.frameCount > 0 ? 1000 / avgFrameTime : 0;
-  
+
   window.debug('Wave Background Performance:');
   window.debug(`FPS: ${fps.toFixed(2)}`);
   window.debug(`Frame Time: ${avgFrameTime.toFixed(2)}ms`);
   window.debug(`Wave Calc Time: ${metrics.waveCalculationTime.toFixed(2)}ms`);
   window.debug(`State Updates: ${metrics.stateUpdateCount}`);
   window.debug(`Render Count: ${metrics.renderCount}`);
-};
-
-// Add interpolation helper
-const lerp = (start: number, end: number, t: number) => {
-  return start * (1 - t) + end * t;
 };
 
 // Calculate maximum possible amplitude for a wave
@@ -113,7 +102,7 @@ const calculateMaxAmplitude = (wave: WaveParams, sineWaves: {
   const primaryMax = wave.amplitude * sineWaves.primary.amplitude;
   const secondaryMax = wave.amplitude * sineWaves.secondary.amplitude;
   const tertiaryMax = wave.amplitude * sineWaves.tertiary.amplitude;
-  
+
   // Since all waves could theoretically align at their peaks,
   // the maximum total amplitude is the sum of individual maximums
   return primaryMax + secondaryMax + tertiaryMax;
@@ -132,15 +121,6 @@ const adjustColor = (rgb: [number, number, number], factor: number): string => {
   return `rgb(${adjusted[0]}, ${adjusted[1]}, ${adjusted[2]})`;
 };
 
-const defaultWaveParams: WaveBackgroundParams = {
-  amplitude: 50,
-  frequency: 0.005,
-  speed: 0.1,
-  startColor: '#ff0000',
-  endColor: '#00ff00',
-  width: 1000
-};
-
 const getWavePoints = (
   width: number,
   height: number,
@@ -151,20 +131,20 @@ const getWavePoints = (
   const points: Point[] = [];
   const { amplitude, frequency, speed } = params;
   const { verticalPosition } = renderConfig;
-  
+
   for (let x = 0; x <= width; x += 5) {
-    const y = height * verticalPosition + 
+    const y = height * verticalPosition +
       amplitude * Math.sin(frequency * x + speed * time);
     points.push({ x, y });
   }
-  
+
   return points;
 };
 
-const WaveBackground: React.FC<WaveBackgroundProps> = ({ 
-  panel = false, 
+const WaveBackground: React.FC<WaveBackgroundProps> = ({
+  panel = false,
   config,
-  initialCollapsed = true 
+  initialCollapsed = true
 }) => {
   const { waveController } = useFeatureFlags();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -194,10 +174,10 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
   // Log performance metrics every second
   useEffect(() => {
     if (!DEBUG_PERFORMANCE) return;
-    
+
     const logInterval = setInterval(() => {
       logMetrics(metricsRef.current);
-      
+
       // Reset counters
       metricsRef.current.frameCount = 0;
       metricsRef.current.frameTimeSum = 0;
@@ -222,21 +202,20 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     const startTime = performance.now();
     const points: [number, number][] = [];
     const canvas = ctx.canvas;
-    
     // Calculate wave points
     for (let x = 0; x <= canvas.width; x += 2) {
       const primaryWave = Math.sin(
-        x * wave.frequency * sineWaves.primary.frequency + 
+        x * wave.frequency * sineWaves.primary.frequency +
         timeRef.current * wave.speed * globalSpeed * sineWaves.primary.speed
       ) * wave.amplitude * sineWaves.primary.amplitude;
 
       const secondaryWave = Math.sin(
-        x * wave.frequency * sineWaves.secondary.frequency + 
+        x * wave.frequency * sineWaves.secondary.frequency +
         timeRef.current * wave.speed * globalSpeed * sineWaves.secondary.speed
       ) * wave.amplitude * sineWaves.secondary.amplitude;
 
       const tertiaryWave = Math.sin(
-        x * wave.frequency * sineWaves.tertiary.frequency + 
+        x * wave.frequency * sineWaves.tertiary.frequency +
         timeRef.current * wave.speed * globalSpeed * sineWaves.tertiary.speed
       ) * wave.amplitude * sineWaves.tertiary.amplitude;
 
@@ -250,11 +229,11 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
 
     // Create gradient for the wave
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    
+
     // Create sophisticated multi-stop gradient from wave colors
     const startRGB = hexToRGB(wave.startColor);
     const endRGB = hexToRGB(wave.endColor);
-    
+
     // Add multiple color stops for sophisticated progression
     gradient.addColorStop(0, adjustColor(startRGB, 0.2));  // Nearly black with color tint
     gradient.addColorStop(0.2, adjustColor(startRGB, 0.4)); // Very dark
@@ -276,7 +255,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
 
       // Calculate opacity based on distance from center
       const distanceFromCenter = Math.abs(lineIndex - (renderConfig.numLines - 1) / 2) / ((renderConfig.numLines - 1) / 2);
-      const opacity = 1;  //+ 0.05 + (0.30 * (1 - distanceFromCenter));
+      const opacity = 0.2 + (0.6 * (1 - distanceFromCenter));  // Increased base opacity to 0.4 and max addition to 0.6
 
       ctx.beginPath();
       ctx.moveTo(points[0][0], points[0][1] + lineOffset);
@@ -320,7 +299,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d', { alpha: false });
-    
+
     if (!canvas || !ctx) return;
 
     if (DEBUG_PERFORMANCE) {
@@ -343,8 +322,8 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
 
     waves.slice(0, numWaves).forEach((wave, index) => {
       // Add amplitude padding to ALL waves to shift everything down
-      const waveY =  index * (waveHeight);
-      console.log(` Drawing wave ${index}/${numWaves} at Y position: ${waveY} waveHeight: ${waveHeight} firstWaveMaxAmplitude: ${firstWaveMaxAmplitude}`);
+      // division by 1 will make the waves non overlapping.
+      let waveY =  index * (waveHeight/3);
       drawWave(ctx, wave, waveY + topspacing);
     });
 
@@ -368,22 +347,22 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
       // Use container dimensions directly
       canvas.style.width = '100%';
       canvas.style.height = '100%';
-      
+
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
-      
+
       canvas.width = width * dpr;
       canvas.height = height * dpr;
-      
+
       const ctx = canvas.getContext('2d', { alpha: false });
       if (!ctx) return;
-      
+
       ctx.scale(dpr, dpr);
     };
 
     setCanvasSize();
     window.addEventListener('resize', setCanvasSize);
-    
+
     animate();
 
     return () => {
@@ -396,7 +375,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
 
   const updateWave = useCallback((index: number, updates: Partial<WaveParams>) => {
     setWaves(prevWaves => {
-      const newWaves = prevWaves.map((wave, i) => 
+      const newWaves = prevWaves.map((wave, i) =>
         i === index ? { ...wave, ...updates } : wave
       );
       return newWaves;
@@ -430,7 +409,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
       sineWaves,
       renderConfig
     };
-    
+
     navigator.clipboard.writeText(JSON.stringify(config, null, 2));
 
     if (window.debug) {
@@ -446,7 +425,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
         <div className={`wave-control-panel ${isCollapsed ? 'collapsed' : ''}`}>
           <div className="wave-control-handle" onClick={() => setIsCollapsed(!isCollapsed)}>
             <h3>Wave Controls</h3>
-            <svg 
+            <svg
               className={`wave-control-arrow ${!isCollapsed ? 'up' : ''}`}
               viewBox="0 0 24 24"
               fill="none"
@@ -478,12 +457,12 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
                         const amplitudeDecrement = 5;
                         const frequencyIncrement = 0.0005;
                         const speedDecrement = 0.01;
-                        
+
                         // Generate new colors by shifting hue
                         const hueStep = 30; // degrees
                         const startHue = (i * hueStep) % 360;
                         const endHue = ((i * hueStep) + 60) % 360;
-                        
+
                         newWaves.push({
                           ...lastWave,
                           amplitude: Math.max(15, lastWave.amplitude - amplitudeDecrement),
@@ -491,7 +470,6 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
                           speed: Math.max(0.03, lastWave.speed - speedDecrement),
                           startColor: `hsl(${startHue}, 100%, 50%)`,
                           endColor: `hsl(${endHue}, 100%, 50%)`,
-                          width: lastWave.width
                         });
                       }
                       setWaves(newWaves);
@@ -714,14 +692,14 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
           </div>
 
           <div className="button-group">
-            <button 
-              className="reset-button" 
+            <button
+              className="reset-button"
               onClick={handleReset}
             >
               Reset to Default
             </button>
-            <button 
-              className="dump-button" 
+            <button
+              className="dump-button"
               onClick={handleDumpSettings}
             >
               Dump Settings

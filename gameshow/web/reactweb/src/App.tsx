@@ -4,7 +4,7 @@ import { useFeatureFlags } from './utils/featureFlags';
 import './App.css';
 
 // Only import DebugConsole in development
-const DebugConsole = process.env.NODE_ENV === 'development' 
+const DebugConsole = process.env.NODE_ENV === 'development'
   ? lazy(() => import('./components/basic/DebugConsole'))
   : () => null;
 
@@ -56,7 +56,7 @@ function App() {
             debug(`Long Task detected: ${Math.round(entry.duration)}ms`);
           });
         });
-        
+
         observer.observe({ entryTypes: ['longtask'] });
         clearInterval(logMetricsInterval);
         return () => observer.disconnect();
@@ -65,7 +65,7 @@ function App() {
 
     return () => clearInterval(logMetricsInterval);
   }, []);
-  
+
   return (
     <div className="app">
       <Landing />

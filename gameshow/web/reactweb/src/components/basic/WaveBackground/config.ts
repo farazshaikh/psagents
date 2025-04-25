@@ -4,7 +4,6 @@ export interface WaveParams {
   speed: number;
   startColor: string;
   endColor: string;
-  width: number;
 }
 
 export interface SineWaveComposition {
@@ -46,7 +45,6 @@ export const defaultConfig: WaveConfig = {
       speed: 0.12,
       startColor: '#666600', // Dark yellow
       endColor: '#FFFF00',  // Bright yellow
-      width: 40
     },
     {
       amplitude: 42,
@@ -54,7 +52,6 @@ export const defaultConfig: WaveConfig = {
       speed: 0.11,
       startColor: '#006666', // Dark cyan
       endColor: '#00FFFF',  // Bright cyan
-      width: 40
     },
     {
       amplitude: 39,
@@ -62,7 +59,6 @@ export const defaultConfig: WaveConfig = {
       speed: 0.10,
       startColor: '#006600', // Dark green
       endColor: '#00FF00',  // Bright green
-      width: 40
     },
     {
       amplitude: 36,
@@ -70,7 +66,6 @@ export const defaultConfig: WaveConfig = {
       speed: 0.09,
       startColor: '#660066', // Dark magenta
       endColor: '#FF00FF',  // Bright magenta
-      width: 40
     },
     {
       amplitude: 33,
@@ -78,7 +73,6 @@ export const defaultConfig: WaveConfig = {
       speed: 0.08,
       startColor: '#660000', // Dark red
       endColor: '#FF0000',  // Bright red
-      width: 40
     },
     {
       amplitude: 30,
@@ -86,7 +80,6 @@ export const defaultConfig: WaveConfig = {
       speed: 0.07,
       startColor: '#000066', // Dark blue
       endColor: '#0000FF',  // Bright blue
-      width: 40
     },
     {
       amplitude: 27,
@@ -94,7 +87,6 @@ export const defaultConfig: WaveConfig = {
       speed: 0.06,
       startColor: '#666666', // Dark white/gray
       endColor: '#FFFFFF',  // Bright white
-      width: 40
     }
   ],
   globalSpeed: 5.0,

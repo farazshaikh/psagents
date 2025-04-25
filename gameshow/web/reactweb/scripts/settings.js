@@ -4,6 +4,8 @@
 const DEFAULT_SETTINGS = {
   cdn_url: 'https://cdn.example.com',
   api_url: 'https://api.example.com',
+  company_name: 'TrueMetry',
+  tagline: 'Entertainment, Evolved !',
   features: {
     debug_console: false,
     wave_controller: false
