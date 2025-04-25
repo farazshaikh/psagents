@@ -60,13 +60,13 @@ const commonConfig = {
       endColor: '#6666FF'     // Brighter blue
     }
   ],
-  globalSpeed: 10,
+  globalSpeed: 5,
   numWaves: 7,  // Using all 7 SMPTE colors
   renderConfig: {
-    numLines: 20,
-    lineWidth: 2,
-    lineSpacing: 3,
-    waveSpacing: 1,  // Added spacing between waves for visibility
+    numLines: 10,         // Increased number of lines for more pattern visibility
+    lineWidth: 6,       // Slightly thinner for clarity
+    lineSpacing: 4,       // Tighter spacing to fit more lines
+    waveSpacing: 0.8,     // Closer wave spacing for more intricate patterns
     gradientPhaseSpeed: 0.5
   }
 };
@@ -77,8 +77,8 @@ export const startConfig: WaveConfig = {
   ...commonConfig,
   sineWaves: {
     primary: { frequency: 1, speed: 1, amplitude: 0 },
-    secondary: { frequency: 1.5, speed: 0.8, amplitude: 0 },
-    tertiary: { frequency: 2, speed: 0.6, amplitude: 0 }
+    secondary: { frequency: 1.618, speed: 0.8, amplitude: 0 },    // Golden ratio frequency
+    tertiary: { frequency: 2.618, speed: 0.6, amplitude: 0 }     // Golden ratio squared
   }
 };
 
@@ -87,15 +87,15 @@ export const endConfig: WaveConfig = {
   ...commonConfig,
   sineWaves: {
     primary: { frequency: 1, speed: 1, amplitude: 1 },
-    secondary: { frequency: 1.5, speed: 0.8, amplitude: 0.4 },
-    tertiary: { frequency: 2, speed: 0.6, amplitude: 0.2 }
+    secondary: { frequency: 1.618, speed: 0.8, amplitude: 0.5 },  // Golden ratio harmonics
+    tertiary: { frequency: 2.618, speed: 0.6, amplitude: 0.3 }   // More pronounced patterns
   }
 };
 
 // Custom cycle timing configuration
 export const cycleConfig = {
   cycleDuration: 30000,    // 30 second cycle
-  startWaitTime: 0.4,      // Wait 40% at start (12 seconds)
-  endWaitTime: 0.3,        // Wait 30% at end (9 seconds)
-  transitionTime: 0.1      // 10% transition time (3 seconds)
+  startWaitTime: 0,        // No wait at start
+  endWaitTime: 0,         // No wait at end
+  transitionTime: 0.5      // 50% time for each direction (15 seconds each way)
 };

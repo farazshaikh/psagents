@@ -141,25 +141,12 @@ const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
       const elapsed = now - startTimeRef.current;
       const cycleTime = (elapsed % cycleDuration) / cycleDuration;
 
-      // Calculate animation phase
-      let t: number;
-      if (cycleTime < startWaitTime) {
-        // Hold at start config
-        t = 0;
-      } else if (cycleTime < startWaitTime + transitionTime) {
-        // Transition to end config
-        t = smoothEase((cycleTime - startWaitTime) / transitionTime);
-      } else if (cycleTime < startWaitTime + transitionTime + endWaitTime) {
-        // Hold at end config
-        t = 1;
-      } else if (cycleTime < startWaitTime + transitionTime + endWaitTime + transitionTime) {
-        // Transition back to start config
-        t = 1 - smoothEase((cycleTime - (startWaitTime + transitionTime + endWaitTime)) / transitionTime);
-      } else {
-        // Hold at start config until next cycle
-        t = 0;
-      }
+      // Pure linear transition back and forth - no easing at all
+      const t = cycleTime < 0.5 
+        ? cycleTime * 2        // Linear 0 to 1
+        : 2 * (1 - cycleTime); // Linear 1 to 0
 
+      // Remove smoothEase to eliminate any pausing at endpoints
       setCurrentConfig(lerpConfig(startConfig, endConfig, t));
       animationFrameRef.current = requestAnimationFrame(updateConfig);
     };
@@ -172,7 +159,7 @@ const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [startConfig, endConfig, cycleDuration, startWaitTime, endWaitTime, transitionTime]);
+  }, [startConfig, endConfig, cycleDuration]);
 
   return (
     <WaveBackground

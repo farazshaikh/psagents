@@ -230,17 +230,13 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     // Create gradient for the wave
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
 
-    // Create sophisticated multi-stop gradient from wave colors
+    // Create simple linear opacity gradient from start to end
     const startRGB = hexToRGB(wave.startColor);
     const endRGB = hexToRGB(wave.endColor);
 
-    // Add multiple color stops for sophisticated progression
-    gradient.addColorStop(0, adjustColor(startRGB, 0.2));  // Nearly black with color tint
-    gradient.addColorStop(0.2, adjustColor(startRGB, 0.4)); // Very dark
-    gradient.addColorStop(0.4, adjustColor(startRGB, 0.6)); // Dark
-    gradient.addColorStop(0.7, adjustColor(startRGB, 0.8)); // Medium
-    gradient.addColorStop(0.9, wave.startColor);           // Original color
-    gradient.addColorStop(1, wave.endColor);              // Brightest
+    // Just two stops for a pure linear gradient from transparent to fully opaque
+    gradient.addColorStop(0, `rgba(${startRGB[0]}, ${startRGB[1]}, ${startRGB[2]}, 0.0)`);    // Start fully transparent
+    gradient.addColorStop(1, `rgba(${endRGB[0]}, ${endRGB[1]}, ${endRGB[2]}, 1.0)`);         // End fully opaque
 
     // Calculate the total height of all lines
     const totalHeight = (renderConfig.numLines - 1) * renderConfig.lineSpacing;
@@ -248,14 +244,11 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
 
     // Draw multiple parallel lines
     for (let lineIndex = 0; lineIndex < renderConfig.numLines; lineIndex++) {
-      // When spacing is 0, lines are consecutive pixels
-      // When spacing is 1, there's 1 pixel gap between lines (so multiply by 2)
-      // When spacing is 2, there's 2 pixel gap between lines (so multiply by 3)
       const lineOffset = -halfHeight + (lineIndex * (renderConfig.lineSpacing + 1));
 
       // Calculate opacity based on distance from center
       const distanceFromCenter = Math.abs(lineIndex - (renderConfig.numLines - 1) / 2) / ((renderConfig.numLines - 1) / 2);
-      const opacity = 0.2 + (0.6 * (1 - distanceFromCenter));  // Increased base opacity to 0.4 and max addition to 0.6
+      const verticalOpacity = 0.2 + (0.6 * (1 - distanceFromCenter));  // Base vertical opacity variation
 
       ctx.beginPath();
       ctx.moveTo(points[0][0], points[0][1] + lineOffset);
@@ -278,7 +271,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
 
       ctx.strokeStyle = gradient;
       ctx.lineWidth = renderConfig.lineWidth;
-      ctx.globalAlpha = opacity;
+      ctx.globalAlpha = verticalOpacity;  // Apply vertical opacity variation
       ctx.stroke();
     }
 

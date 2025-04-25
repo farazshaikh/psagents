@@ -46,9 +46,9 @@ export const Landing: React.FC = () => {
           endConfig={endConfig}
           cycleConfig={{
             cycleDuration: 20000,     // 20 seconds per cycle
-            startWaitTime: 0.006,     // 0.6% brief pause at start
-            endWaitTime: 0.005,       // 0.5% brief pause at end
-            transitionTime: 0.45      // 45% each transition (9s × 2 = 18s)
+            startWaitTime: 0.00,     // 0.6% brief pause at start
+            endWaitTime: 0.00,       // 0.5% brief pause at end
+            transitionTime: 0.495      // 45% each transition (9s × 2 = 18s)
           }}
         />
       </div>
