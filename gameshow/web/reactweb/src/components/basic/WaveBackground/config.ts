@@ -1,5 +1,4 @@
 export interface WaveParams {
-  baseY: number;
   amplitude: number;
   frequency: number;
   speed: number;
@@ -18,7 +17,8 @@ export interface RenderConfig {
   numLines: number;
   gradientPhaseSpeed: number;
   lineWidth: number;      // Width of each line in pixels
-  lineSpacing: number;    // Space between lines in pixels
+  lineSpacing: number;    // Vertical Space between lines of a single wave in pixels
+  waveSpacing: number;    // Vertical spacing between waves in pixels
 }
 
 export interface WaveConfig {
@@ -41,7 +41,6 @@ export interface WaveConfig {
 export const defaultConfig: WaveConfig = {
   waves: [
     {
-      baseY: 0.60,
       amplitude: 45,
       frequency: 0.003,
       speed: 0.12,
@@ -50,7 +49,6 @@ export const defaultConfig: WaveConfig = {
       width: 40
     },
     {
-      baseY: 0.65,
       amplitude: 42,
       frequency: 0.0033,
       speed: 0.11,
@@ -59,7 +57,6 @@ export const defaultConfig: WaveConfig = {
       width: 40
     },
     {
-      baseY: 0.70,
       amplitude: 39,
       frequency: 0.0036,
       speed: 0.10,
@@ -68,7 +65,6 @@ export const defaultConfig: WaveConfig = {
       width: 40
     },
     {
-      baseY: 0.75,
       amplitude: 36,
       frequency: 0.0039,
       speed: 0.09,
@@ -77,7 +73,6 @@ export const defaultConfig: WaveConfig = {
       width: 40
     },
     {
-      baseY: 0.80,
       amplitude: 33,
       frequency: 0.0042,
       speed: 0.08,
@@ -86,7 +81,6 @@ export const defaultConfig: WaveConfig = {
       width: 40
     },
     {
-      baseY: 0.85,
       amplitude: 30,
       frequency: 0.0045,
       speed: 0.07,
@@ -95,7 +89,6 @@ export const defaultConfig: WaveConfig = {
       width: 40
     },
     {
-      baseY: 0.90,
       amplitude: 27,
       frequency: 0.0048,
       speed: 0.06,
@@ -130,7 +123,8 @@ export const defaultConfig: WaveConfig = {
   renderConfig: {
     numLines: 20,          // Number of lines used to create wave thickness
     gradientPhaseSpeed: 0.5, // Speed of color gradient animation
-    lineWidth: 1.5,      // Default line width of 1.5 pixels
-    lineSpacing: 3     // Default spacing of 2.5 pixels between lines
+    lineWidth: 1.5,        // Width of each line in pixels
+    lineSpacing: 3,        // Space between lines in a wave
+    waveSpacing: 15        // Space between waves
   }
 };

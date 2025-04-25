@@ -2,7 +2,7 @@ import React from 'react';
 import Button from '../../../basic/Button';
 import Typography from '../../../basic/Typography';
 import WaveBackground from '../../../basic/WaveBackground';
-import { endConfig } from './waveConfigs';
+import { endConfig, startConfig } from './waveConfigs';
 import './styles.css';
 
 interface HeroSectionProps {

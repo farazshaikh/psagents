@@ -4,21 +4,40 @@ import { WaveConfig } from '../../../basic/WaveBackground/config';
 const commonConfig = {
   waves: [
     {
-      amplitude: 40,
-      frequency: 0.005,
-      speed: 0.1,
-      baseY: 0.5,
+      amplitude: 35,
+      frequency: 0.004,
+      speed: 0.12,
+      baseY: 0.45,  // First wave slightly higher
       width: 1,
-      startColor: '#4A90E2',
-      endColor: '#50E3C2'
+      startColor: '#4A90E2',  // Blue theme
+      endColor: '#66A5F2'
+    },
+    {
+      amplitude: 30,
+      frequency: 0.005,
+      speed: 0.08,
+      baseY: 0.55,  // Second wave slightly lower
+      width: 1,
+      startColor: '#50E3C2',  // Teal theme
+      endColor: '#40B3A2'
+    },
+    {
+      amplitude: 30,
+      frequency: 0.005,
+      speed: 0.08,
+      baseY: 0.55,  // Second wave slightly lower
+      width: 1,
+      startColor: '#9B51E0',  // Deep purple
+      endColor: '#B794F4',    // Light purple
     }
   ],
   globalSpeed: 1,
-  numWaves: 1,
+  numWaves: 3,  // Now using two waves
   renderConfig: {
-    numLines: 15,
-    lineWidth: 2,
-    lineSpacing: 4,
+    numLines: 5,
+    lineWidth: 1,
+    lineSpacing:1,
+    waveSpacing: 0,  // Vertical spacing between waves
     gradientPhaseSpeed: 0.5
   }
 };
@@ -28,8 +47,8 @@ export const startConfig: WaveConfig = {
   ...commonConfig,
   sineWaves: {
     primary: { frequency: 1, speed: 1, amplitude: 0 },
-    secondary: { frequency: 2, speed: 0.8, amplitude: 0 },
-    tertiary: { frequency: 3, speed: 0.6, amplitude: 0 }
+    secondary: { frequency: 1.5, speed: 0.8, amplitude: 0 },
+    tertiary: { frequency: 2, speed: 0.6, amplitude: 0 }
   }
 };
 
@@ -38,8 +57,8 @@ export const endConfig: WaveConfig = {
   ...commonConfig,
   sineWaves: {
     primary: { frequency: 1, speed: 1, amplitude: 1 },
-    secondary: { frequency: 2, speed: 0.8, amplitude: 0.5 },
-    tertiary: { frequency: 3, speed: 0.6, amplitude: 0.3 }
+    secondary: { frequency: 1.5, speed: 0.8, amplitude: 0.4 },
+    tertiary: { frequency: 2, speed: 0.6, amplitude: 0.2 }
   }
 };
 

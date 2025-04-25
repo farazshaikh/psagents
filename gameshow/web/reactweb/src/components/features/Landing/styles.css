@@ -1,18 +1,29 @@
 .landing {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  height: 100vh;
 }
 
-.landing-hero {
-  min-height: 80vh;
+.landing-top-section,
+.landing-middle-section {
+  height: 33.33vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--background-color);
 }
 
-.landing-products {
-  padding: 4rem 0;
-  background-color: var(--secondary-color);
+.landing-bottom-section {
+  height: 33.33vh;
+}
+
+.section-content {
+  width: 100%;
+  padding: 2rem;
+  color: white;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .section-content {
+    padding: 1rem;
+  }
 }

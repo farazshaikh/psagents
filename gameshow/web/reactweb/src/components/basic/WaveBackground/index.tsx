@@ -39,6 +39,30 @@ import './styles.css';
  * - Creates visual interest through contrast between dark and light
  */
 
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface RenderConfig {
+  verticalPosition: number;
+}
+
+interface SineWaveComponent {
+  frequency: number;
+  speed: number;
+  amplitude: number;
+}
+
+interface WaveBackgroundParams {
+  amplitude: number;
+  frequency: number;
+  speed: number;
+  startColor: string;
+  endColor: string;
+  width: number;
+}
+
 interface WaveBackgroundProps {
   panel?: boolean;
   config: WaveConfig;
@@ -58,7 +82,7 @@ interface PerformanceMetrics {
 // Performance optimization constants
 const TARGET_FPS = 60;
 const FRAME_TIME = 1000 / TARGET_FPS;
-const DEBUG_PERFORMANCE = true;
+const DEBUG_PERFORMANCE = false;
 
 const logMetrics = (metrics: PerformanceMetrics) => {
   if (!window.debug) return;
@@ -77,6 +101,64 @@ const logMetrics = (metrics: PerformanceMetrics) => {
 // Add interpolation helper
 const lerp = (start: number, end: number, t: number) => {
   return start * (1 - t) + end * t;
+};
+
+// Calculate maximum possible amplitude for a wave
+const calculateMaxAmplitude = (wave: WaveParams, sineWaves: {
+  primary: SineWaveComposition;
+  secondary: SineWaveComposition;
+  tertiary: SineWaveComposition;
+}) => {
+  // Sum the maximum possible amplitudes of all component waves
+  const primaryMax = wave.amplitude * sineWaves.primary.amplitude;
+  const secondaryMax = wave.amplitude * sineWaves.secondary.amplitude;
+  const tertiaryMax = wave.amplitude * sineWaves.tertiary.amplitude;
+  
+  // Since all waves could theoretically align at their peaks,
+  // the maximum total amplitude is the sum of individual maximums
+  return primaryMax + secondaryMax + tertiaryMax;
+};
+
+// Add these helper functions at the top of the file after imports
+const hexToRGB = (hex: string): [number, number, number] => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+};
+
+const adjustColor = (rgb: [number, number, number], factor: number): string => {
+  const adjusted = rgb.map(c => Math.floor(c * factor));
+  return `rgb(${adjusted[0]}, ${adjusted[1]}, ${adjusted[2]})`;
+};
+
+const defaultWaveParams: WaveBackgroundParams = {
+  amplitude: 50,
+  frequency: 0.005,
+  speed: 0.1,
+  startColor: '#ff0000',
+  endColor: '#00ff00',
+  width: 1000
+};
+
+const getWavePoints = (
+  width: number,
+  height: number,
+  time: number,
+  params: WaveBackgroundParams,
+  renderConfig: RenderConfig
+) => {
+  const points: Point[] = [];
+  const { amplitude, frequency, speed } = params;
+  const { verticalPosition } = renderConfig;
+  
+  for (let x = 0; x <= width; x += 5) {
+    const y = height * verticalPosition + 
+      amplitude * Math.sin(frequency * x + speed * time);
+    points.push({ x, y });
+  }
+  
+  return points;
 };
 
 const WaveBackground: React.FC<WaveBackgroundProps> = ({ 
@@ -136,29 +218,29 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     setRenderConfig(config.renderConfig);
   }, [config]);
 
-  const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, timeOffset: number) => {
+  const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, waveY: number) => {
     const startTime = performance.now();
     const points: [number, number][] = [];
     const canvas = ctx.canvas;
     
+    // Calculate wave points
     for (let x = 0; x <= canvas.width; x += 2) {
       const primaryWave = Math.sin(
         x * wave.frequency * sineWaves.primary.frequency + 
         timeRef.current * wave.speed * globalSpeed * sineWaves.primary.speed
-      ) * sineWaves.primary.amplitude;
+      ) * wave.amplitude * sineWaves.primary.amplitude;
 
       const secondaryWave = Math.sin(
         x * wave.frequency * sineWaves.secondary.frequency + 
-        (timeRef.current + timeOffset) * wave.speed * globalSpeed * sineWaves.secondary.speed
-      ) * sineWaves.secondary.amplitude;
+        timeRef.current * wave.speed * globalSpeed * sineWaves.secondary.speed
+      ) * wave.amplitude * sineWaves.secondary.amplitude;
 
       const tertiaryWave = Math.sin(
         x * wave.frequency * sineWaves.tertiary.frequency + 
         timeRef.current * wave.speed * globalSpeed * sineWaves.tertiary.speed
-      ) * sineWaves.tertiary.amplitude;
+      ) * wave.amplitude * sineWaves.tertiary.amplitude;
 
-      const y = canvas.height * wave.baseY + 
-               wave.amplitude * (primaryWave + secondaryWave + tertiaryWave);
+      const y = waveY + (primaryWave + secondaryWave + tertiaryWave);
       points.push([x, y]);
     }
 
@@ -166,84 +248,65 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
       metricsRef.current.waveCalculationTime += performance.now() - startTime;
     }
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(points[0][0], points[0][1] - wave.width);
+    // Create gradient for the wave
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
     
-    for (let i = 1; i < points.length - 2; i++) {
-      const xc = (points[i][0] + points[i + 1][0]) / 2;
-      const yc = (points[i][1] + points[i + 1][1]) / 2;
-      ctx.quadraticCurveTo(points[i][0], points[i][1] - wave.width, xc, yc - wave.width);
-    }
+    // Create sophisticated multi-stop gradient from wave colors
+    const startRGB = hexToRGB(wave.startColor);
+    const endRGB = hexToRGB(wave.endColor);
     
-    for (let i = points.length - 2; i > 0; i--) {
-      const xc = (points[i][0] + points[i - 1][0]) / 2;
-      const yc = (points[i][1] + points[i - 1][1]) / 2;
-      ctx.quadraticCurveTo(points[i][0], points[i][1] + wave.width, xc, yc + wave.width);
-    }
-    
-    ctx.closePath();
-    ctx.clip();
+    // Add multiple color stops for sophisticated progression
+    gradient.addColorStop(0, adjustColor(startRGB, 0.2));  // Nearly black with color tint
+    gradient.addColorStop(0.2, adjustColor(startRGB, 0.4)); // Very dark
+    gradient.addColorStop(0.4, adjustColor(startRGB, 0.6)); // Dark
+    gradient.addColorStop(0.7, adjustColor(startRGB, 0.8)); // Medium
+    gradient.addColorStop(0.9, wave.startColor);           // Original color
+    gradient.addColorStop(1, wave.endColor);              // Brightest
 
-    const colorGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    
-    // Add multiple color stops for cubic-like effect
-    // Using the same base color (#4A90E2 - blue) but with different brightness/saturation
-    colorGradient.addColorStop(0, '#050A14');    // Nearly black with slight blue tint
-    colorGradient.addColorStop(0.2, '#0A1A2B');  // Very dark blue-black
-    colorGradient.addColorStop(0.4, '#1A3251');  // Dark blue
-    colorGradient.addColorStop(0.7, '#2B5486');  // Medium-dark blue
-    colorGradient.addColorStop(0.9, '#4A90E2');  // Original bright blue
-    colorGradient.addColorStop(1, '#66A5F2');    // Brightest, saturated blue
+    // Calculate the total height of all lines
+    const totalHeight = (renderConfig.numLines - 1) * renderConfig.lineSpacing;
+    const halfHeight = totalHeight / 2;
 
-    for (let i = 0; i < renderConfig.numLines; i++) {
-      // Calculate the total line space and spacing
-      const totalLineSpace = renderConfig.numLines * renderConfig.lineWidth;
-      const totalGapSpace = (renderConfig.numLines - 1) * renderConfig.lineSpacing;
-      const totalHeight = totalLineSpace + totalGapSpace;
-      
-      // Calculate the starting position to center all lines
-      const startY = -totalHeight / 2;
+    // Draw multiple parallel lines
+    for (let lineIndex = 0; lineIndex < renderConfig.numLines; lineIndex++) {
+      // When spacing is 0, lines are consecutive pixels
+      // When spacing is 1, there's 1 pixel gap between lines (so multiply by 2)
+      // When spacing is 2, there's 2 pixel gap between lines (so multiply by 3)
+      const lineOffset = -halfHeight + (lineIndex * (renderConfig.lineSpacing + 1));
 
-      // Debug log for line positions
-      if (window.debug) {
-        window.debug(`Drawing ${renderConfig.numLines} lines`);
-        window.debug(`Total height: ${totalHeight}px`);
-        window.debug(`Start Y: ${startY}px`);
-      }
-      
-      // Calculate exact y position for this line including width and spacing
-      const y = startY + (i * (renderConfig.lineWidth + renderConfig.lineSpacing));
-      
-      if (window.debug) {
-        window.debug(`Line ${i} Y offset: ${y}px`);
-      }
+      // Calculate opacity based on distance from center
+      const distanceFromCenter = Math.abs(lineIndex - (renderConfig.numLines - 1) / 2) / ((renderConfig.numLines - 1) / 2);
+      const opacity = 1;  //+ 0.05 + (0.30 * (1 - distanceFromCenter));
 
       ctx.beginPath();
-      ctx.moveTo(points[0][0], points[0][1] + y);
-      
-      // Simplified path for debugging - just draw straight lines
-      for (let j = 1; j < points.length; j++) {
-        ctx.lineTo(points[j][0], points[j][1] + y);
+      ctx.moveTo(points[0][0], points[0][1] + lineOffset);
+
+      // Draw the line using quadratic curves for smooth interpolation
+      for (let i = 1; i < points.length - 2; i++) {
+        const xc = (points[i][0] + points[i + 1][0]) / 2;
+        const yc = (points[i][1] + points[i + 1][1]) / 2;
+        ctx.quadraticCurveTo(
+          points[i][0],
+          points[i][1] + lineOffset,
+          xc,
+          yc + lineOffset
+        );
       }
-      
-      ctx.strokeStyle = colorGradient;
+
+      // Draw the last segment
+      const last = points[points.length - 1];
+      ctx.lineTo(last[0], last[1] + lineOffset);
+
+      ctx.strokeStyle = gradient;
       ctx.lineWidth = renderConfig.lineWidth;
-      ctx.globalAlpha = 1.0; // Full opacity for debugging
-      
-      if (window.debug) {
-        window.debug(`Drawing line ${i} with color ${wave.startColor}`);
-      }
-      
+      ctx.globalAlpha = opacity;
       ctx.stroke();
     }
-
-    ctx.restore();
 
     if (DEBUG_PERFORMANCE) {
       metricsRef.current.renderCount++;
     }
-  }, [globalSpeed, sineWaves, renderConfig]);
+  }, [sineWaves, globalSpeed]);
 
   const animate = useCallback(() => {
     const now = performance.now();
@@ -267,61 +330,28 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
 
     lastFrameTimeRef.current = now;
 
+    // Clear the entire canvas with proper dimensions
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    /**
-     * Horizontal Color Gradient Setup
-     * Creates a sophisticated progression from near-black to bright blue
-     * More color stops are used in the darker range (0-70%) to create
-     * subtle transitions, while the bright range is compressed (70-100%)
-     * for dramatic effect at the end
-     */
-    const colorGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    
-    // Carefully chosen color stops for smooth progression from dark to bright
-    colorGradient.addColorStop(0, '#050A14');    // Nearly black with slight blue tint
-    colorGradient.addColorStop(0.2, '#0A1A2B');  // Very dark blue-black
-    colorGradient.addColorStop(0.4, '#1A3251');  // Dark blue
-    colorGradient.addColorStop(0.7, '#2B5486');  // Medium-dark blue
-    colorGradient.addColorStop(0.9, '#4A90E2');  // Original bright blue
-    colorGradient.addColorStop(1, '#66A5F2');    // Brightest, saturated blue
+    // Draw each wave
+    const firstWaveMaxAmplitude = calculateMaxAmplitude(waves[0], sineWaves);
+    const waveHeight = renderConfig.numLines * (renderConfig.lineWidth + renderConfig.lineSpacing) + renderConfig.waveSpacing
+    const topspacing = firstWaveMaxAmplitude + 0.5 * waveHeight
 
-    // Calculate total height needed for all lines
-    const totalHeight = (renderConfig.numLines - 1) * renderConfig.lineSpacing;
-    const centerY = canvas.height * 0.5;
-    const startY = centerY - (totalHeight / 2);
+    waves.slice(0, numWaves).forEach((wave, index) => {
+      // Add amplitude padding to ALL waves to shift everything down
+      const waveY =  index * (waveHeight);
+      console.log(` Drawing wave ${index}/${numWaves} at Y position: ${waveY} waveHeight: ${waveHeight} firstWaveMaxAmplitude: ${firstWaveMaxAmplitude}`);
+      drawWave(ctx, wave, waveY + topspacing);
+    });
 
-    // Calculate center line index for opacity gradient
-    const centerLineIndex = Math.floor(renderConfig.numLines / 2);
-
-    // Draw lines
-    for (let i = 0; i < renderConfig.numLines; i++) {
-      const lineY = startY + (i * renderConfig.lineSpacing);
-      
-      /**
-       * Vertical Opacity Gradient Calculation
-       * Creates a subtle 3D tube effect by varying opacity from edges to center
-       * - Uses linear interpolation for smooth transitions
-       * - Starts at 5% opacity at edges
-       * - Peaks at 35% opacity in center
-       * - Linear falloff creates natural-looking depth
-       */
-      const distanceFromCenter = Math.abs(i - centerLineIndex) / centerLineIndex;
-      const opacity = 0.05 + (0.30 * (1 - distanceFromCenter));
-
-      ctx.beginPath();
-      ctx.moveTo(0, lineY);
-      ctx.lineTo(canvas.width, lineY);
-      ctx.strokeStyle = colorGradient;
-      ctx.lineWidth = renderConfig.lineWidth;
-      ctx.globalAlpha = opacity;
-      ctx.stroke();
-    }
-
-    timeRef.current += 0.08;
+    // Increase animation speed by adjusting time increment
+    timeRef.current += 0.016 * globalSpeed; // Adjusted for 60fps and using globalSpeed
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, []);
+  }, [drawWave]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -331,10 +361,24 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     if (!ctx) return;
 
     const setCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const dpr = window.devicePixelRatio || 1;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      // Use container dimensions directly
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      
+      const ctx = canvas.getContext('2d', { alpha: false });
+      if (!ctx) return;
+      
+      ctx.scale(dpr, dpr);
     };
 
     setCanvasSize();
@@ -431,7 +475,6 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
                       const lastWave = waves[waves.length - 1];
                       const newWaves = [...waves];
                       for (let i = waves.length; i < newNumWaves; i++) {
-                        const baseYIncrement = 0.05;
                         const amplitudeDecrement = 5;
                         const frequencyIncrement = 0.0005;
                         const speedDecrement = 0.01;
@@ -443,12 +486,12 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
                         
                         newWaves.push({
                           ...lastWave,
-                          baseY: Math.min(0.95, lastWave.baseY + baseYIncrement),
                           amplitude: Math.max(15, lastWave.amplitude - amplitudeDecrement),
                           frequency: lastWave.frequency + frequencyIncrement,
                           speed: Math.max(0.03, lastWave.speed - speedDecrement),
                           startColor: `hsl(${startHue}, 100%, 50%)`,
                           endColor: `hsl(${endHue}, 100%, 50%)`,
+                          width: lastWave.width
                         });
                       }
                       setWaves(newWaves);
@@ -584,6 +627,20 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
                   onChange={(e) => updateRenderConfig({ gradientPhaseSpeed: parseFloat(e.target.value) })}
                 />
                 <span>{renderConfig.gradientPhaseSpeed.toFixed(1)}x</span>
+              </label>
+            </div>
+            <div className="control-group">
+              <label>
+                Wave Spacing:
+                <input
+                  type="range"
+                  min="0"
+                  max="50"
+                  step="1"
+                  value={renderConfig.waveSpacing}
+                  onChange={(e) => updateRenderConfig({ waveSpacing: parseInt(e.target.value) })}
+                />
+                <span>{renderConfig.waveSpacing}px</span>
               </label>
             </div>
           </div>

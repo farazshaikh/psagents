@@ -1,21 +1,28 @@
 import React from 'react';
 import HeroSection from './HeroSection';
+import WaveBackground from '../../basic/WaveBackground';
+import { startConfig } from './HeroSection/waveConfigs';
 import './styles.css';
 
 export const Landing: React.FC = () => {
   return (
     <div className="landing">
-      <HeroSection 
-        title="Transform Your Content with AI"
-        description="Create engaging, interactive content experiences powered by artificial intelligence. Turn your ideas into immersive stories."
-        ctaText="Get Started"
-        onCtaClick={() => console.log('CTA clicked')}
-      />
-
-      <section className="landing-products">
-        <div className="container">
-          {/* Products showcase will go here */}
+      <section className="landing-top-section">
+        <div className="section-content">
+          {/* Top section content */}
+          <h1>Top Section</h1>
         </div>
+      </section>
+
+      <section className="landing-middle-section">
+        <div className="section-content">
+          {/* Middle section content */}
+          <h1>Middle Section</h1>
+        </div>
+      </section>
+
+      <section className="landing-bottom-section">
+        <WaveBackground config={startConfig} />
       </section>
     </div>
   );
