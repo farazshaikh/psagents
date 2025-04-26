@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { WaveConfig } from '../WaveBackground/config';
 import WaveBackground from '../WaveBackground';
+import WaveBackgroundControlPanel from '../WaveBackgroundControlPanel';
+import { useFeatureFlags } from '../../../utils/featureFlags';
 
 /**
  * CyclicWaveBackground Component
@@ -76,10 +78,9 @@ const lerp = (a: number, b: number, t: number): number =>
 const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
   startConfig,
   endConfig,
-  panel = false,
-  initialCollapsed = true,
   cycleConfig = {}
 }) => {
+  const { waveController } = useFeatureFlags();
   const {
     cycleDuration = defaultCycleConfig.cycleDuration,
   } = cycleConfig;
@@ -149,7 +150,12 @@ const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
     };
   }, [startConfig, endConfig, cycleDuration]);
 
-  return (
+  return waveController ? (
+    <WaveBackgroundControlPanel
+      config={currentConfig}
+      onConfigChange={setCurrentConfig}
+    />
+  ) : (
     <WaveBackground config={currentConfig}/>
   );
 };
