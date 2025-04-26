@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import styles from './styles.module.css';
+import { useTheme } from '../../basic/ThemeProvider';
+import './styles.css';
 
 interface DebugEntry {
   message: string;
@@ -20,6 +21,7 @@ declare global {
 }
 
 const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) => {
+  const { theme } = useTheme();
   const [logs, setLogs] = useState<DebugEntry[]>([]);
   const [isVisible, setIsVisible] = useState(initialVisible);
   const [copyText, setCopyText] = useState('Copy Logs');
@@ -122,6 +124,10 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
   const toggleVisibility = useCallback(() => {
     setIsVisible(prev => {
       const newState = !prev;
+      // Clear unread count when expanding
+      if (newState) {
+        setUnreadCount(0);
+      }
       // Emit custom event for state change
       window.dispatchEvent(new CustomEvent('debugConsoleStateChange', {
         detail: { expanded: newState }
@@ -138,26 +144,73 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
   }, [isVisible]);
 
   return (
-    <div className={`${styles.debugWrapper} ${isVisible ? styles.expanded : styles.collapsed}`}>
-      <div className={styles.debugHandle} onClick={toggleVisibility}>
-        <div className={styles.debugHandleLeft}>
-          <span className={styles.debugHandleText}>
+    <div 
+      className={`debugWrapper ${isVisible ? 'expanded' : 'collapsed'}`}
+      style={{
+        backgroundColor: theme.colors.bg.overlay,
+        color: theme.colors.fg.primary,
+        fontFamily: theme.typography.fontFamily
+      }}
+    >
+      <div 
+        className="debugHandle"
+        onClick={toggleVisibility}
+      >
+        <div className="debugHandleLeft">
+          <span className="debugHandleText">
             Debug Console
             {unreadCount > 0 && (
-              <span className={styles.unreadBadge}>{unreadCount}</span>
+              <span 
+                className="unreadBadge"
+                style={{
+                  backgroundColor: theme.colors.accent.primary,
+                  color: theme.colors.fg.inverse
+                }}
+              >
+                {unreadCount}
+              </span>
             )}
           </span>
-          <span className={styles.copyLogs} onClick={(e) => { e.stopPropagation(); handleCopyLogs(); }}>
+          <span 
+            className="copyLogs"
+            onClick={(e) => { e.stopPropagation(); handleCopyLogs(); }}
+            style={{
+              color: theme.colors.fg.primary,
+              backgroundColor: `${theme.colors.fg.primary}1A`, // 10% opacity of text color
+              fontFamily: theme.typography.fontFamily
+            }}
+          >
             {copyText}
           </span>
         </div>
       </div>
-      <div className={styles.debugConsole}>
+      <div 
+        className="debugConsole"
+        style={{
+          backgroundColor: theme.colors.bg.secondary
+        }}
+      >
         {logs.map((log, index) => (
-          <div key={index} className={`${styles.debugEntry} ${log.type === 'error' ? styles.errorEntry : ''}`}>
+          <div 
+            key={index} 
+            className={`debugEntry ${log.type === 'error' ? 'errorEntry' : ''}`}
+            style={{
+              color: log.type === 'error' ? theme.colors.accent.error : theme.colors.fg.primary,
+              backgroundColor: log.type === 'error' ? `${theme.colors.accent.error}1A` : 'transparent',
+              borderLeftColor: log.type === 'error' ? theme.colors.accent.error : 'transparent'
+            }}
+          >
             [{new Date(log.timestamp).toISOString()}] {log.message}
             {log.stack && (
-              <div className={styles.stackTrace}>{log.stack}</div>
+              <div 
+                className="stackTrace"
+                style={{
+                  color: `${theme.colors.accent.error}CC`, // 80% opacity
+                  borderLeftColor: `${theme.colors.accent.error}4D` // 30% opacity
+                }}
+              >
+                {log.stack}
+              </div>
             )}
           </div>
         ))}

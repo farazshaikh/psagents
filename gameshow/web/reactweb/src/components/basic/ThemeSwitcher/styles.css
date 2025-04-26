@@ -81,4 +81,4 @@ input:focus + .slider {
 /* Active animation */
 .slider:active:before {
   width: 28px;
-} 
+}

@@ -17,12 +17,12 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ isDark, onToggle }) => {
           aria-label="Toggle theme"
         />
         <span className="slider">
-          <span className="icon">🌙</span>
-          <span className="icon">☀️</span>
+          <span className="icon">☼</span>
+          <span className="icon">☾</span>
         </span>
       </label>
     </div>
   );
 };
 
-export default ThemeSwitcher; 
+export default ThemeSwitcher;

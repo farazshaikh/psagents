@@ -9,27 +9,27 @@ export const lightTheme: Theme = {
       overlay: 'rgba(255, 255, 255, 0.8)'
     },
     fg: {
-      primary: 'rgba(0, 0, 0, 1)',
-      secondary: 'rgba(0, 0, 0, 0.7)',
-      tertiary: 'rgba(0, 0, 0, 0.4)',
+      primary: 'rgba(38, 38, 38, 1)',
+      secondary: 'rgba(142, 142, 142, 1)',
+      tertiary: 'rgba(199, 199, 199, 1)',
       inverse: 'rgba(255, 255, 255, 1)'
     },
     accent: {
-      primary: 'rgba(0, 149, 246, 1)',
-      secondary: 'rgba(88, 81, 219, 1)',
+      primary: 'rgba(88, 81, 219, 1)',
+      secondary: 'rgba(64, 93, 230, 1)',
       success: 'rgba(88, 195, 34, 1)',
       error: 'rgba(237, 73, 86, 1)',
       warning: 'rgba(255, 164, 26, 1)'
     },
     border: {
-      light: 'rgba(0, 0, 0, 0.1)',
-      medium: 'rgba(0, 0, 0, 0.2)',
-      heavy: 'rgba(0, 0, 0, 0.3)'
+      light: 'rgba(219, 219, 219, 1)',
+      medium: 'rgba(199, 199, 199, 1)',
+      heavy: 'rgba(168, 168, 168, 1)'
     },
     gradients: {
-      primary: 'linear-gradient(45deg, rgba(0, 149, 246, 1), rgba(88, 81, 219, 1))',
+      primary: 'linear-gradient(45deg, rgba(88, 81, 219, 1), rgba(64, 93, 230, 1))',
       surface: 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 100%)',
-      accent: 'linear-gradient(135deg, rgba(64, 93, 230, 1) 0%, rgba(225, 48, 108, 1) 50%, rgba(252, 175, 69, 1) 100%)'
+      accent: 'linear-gradient(135deg, rgba(64, 93, 230, 1), rgba(88, 81, 219, 1), rgba(119, 68, 255, 1))'
     },
     overlay: {
       light: 'rgba(0, 0, 0, 0.1)',
