@@ -1,7 +1,9 @@
 import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Landing } from './components/features/Landing';
+import { LandingV2 } from './components/features/LandingV2';
 import { useFeatureFlags } from './utils/featureFlags';
 import './App.css';
+import { ThemeProvider } from './components/basic/ThemeProvider';
 
 // Only import DebugConsole in development
 const DebugConsole = process.env.NODE_ENV === 'development'
@@ -67,14 +69,16 @@ function App() {
   }, []);
 
   return (
-    <div className="app">
-      <Landing />
-      {debugConsole && (
-        <Suspense fallback={null}>
-          <DebugConsole initialVisible={false} />
-        </Suspense>
-      )}
-    </div>
+    <ThemeProvider defaultTheme="light">
+      <div className="app">
+        <LandingV2 />
+        {debugConsole && (
+          <Suspense fallback={null}>
+            <DebugConsole initialVisible={false} />
+          </Suspense>
+        )}
+      </div>
+    </ThemeProvider>
   );
 }
 

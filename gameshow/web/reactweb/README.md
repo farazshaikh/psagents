@@ -126,17 +126,61 @@ ComponentName/
    - Styles should be component-scoped
    - State should be properly encapsulated
 
-3. **Configuration**
+3. **React Function Components**
+   - Use function components over class components
+   - Benefits:
+     - Better TypeScript integration and type inference
+     - Hooks support for state and side effects
+     - Simpler testing with pure functions
+     - Easier logic reuse through custom hooks
+     - Reduced boilerplate and cleaner syntax
+     - Better performance (no instance creation, smaller bundle)
+   - Exception: Only use class components when dealing with Error Boundaries (React limitation)
+
+4. **Theme-Driven Component Design**
+   - Use React Context for centralized theme management
+   - Basic components must be unopinionated and derive styles from theme
+   - Theme structure:
+     - Typography: fonts, sizes, weights
+     - Colors: primary, secondary, error, text, background
+     - Spacing: consistent spacing scale
+     - Component-specific tokens (buttons, inputs, etc.)
+   - Benefits:
+     - Consistent styling across the application
+     - Easy theme switching
+     - Type-safe theme values
+     - Single source of truth for design tokens
+   - Example:
+     ```typescript
+     // Good - Theme-driven button
+     const Button = () => {
+       const { theme } = useTheme();
+       return <button style={{ 
+         backgroundColor: theme.buttons.variants.contained.background,
+         padding: theme.spacing.md
+       }}/>;
+     };
+
+     // Bad - Hardcoded values
+     const Button = () => {
+       return <button style={{ 
+         backgroundColor: '#0095F6',
+         padding: '16px'
+       }}/>;
+     };
+     ```
+
+5. **Configuration**
    - No hardcoded values
    - All constants in AppData
    - Environment-based configuration
 
-4. **Testing**
+6. **Testing**
    - Component-level tests
    - Integration tests for features
    - End-to-end tests for critical flows
 
-5. **Feature Flags**
+7. **Feature Flags**
    - Development features can be enabled via settings.json, each entry which is true is converted to REACT_APP_<entry_name>
    - Available flags:
      - `REACT_APP_DEBUGCONSOLE`: Enables the debug console (pull-up panel at bottom of screen)

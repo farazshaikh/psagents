@@ -7,7 +7,7 @@ const DEFAULT_SETTINGS = {
   company_name: 'TrueMetry',
   tagline: 'Entertainment, Evolved !',
   features: {
-    debug_console: false,
+    debug_console: true,
     wave_controller: false
   }
 };

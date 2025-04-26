@@ -1,33 +1,5 @@
-html, body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  height: 100%;
-  width: 100%;
-}
-
-.wave-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  z-index: var(--z-negative);
-  background: linear-gradient(to bottom, 
-    rgba(0, 0, 0, 0.9) 0%,
-    rgba(0, 0, 0, 0.85) 100%
-  );
-}
-
+/* Core wave rendering styles */
 .wave-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.wave-content {
   position: relative;
   width: 100%;
   height: 100%;
@@ -41,96 +13,51 @@ html, body {
   height: 100%;
 }
 
-.wave {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: auto;
-  transform-origin: bottom;
-}
-
-.wave1 {
-  animation: wave-animation 25s linear infinite;
-}
-
-.wave2 {
-  animation: wave-animation 20s linear infinite;
-  animation-delay: -5s;
-}
-
-.wave3 {
-  animation: wave-animation 15s linear infinite;
-  animation-delay: -2s;
-}
-
-@keyframes wave-animation {
-  0% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(-25%);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
+/* Control panel styles */
 .wave-control-panel {
   position: fixed;
-  bottom: 48px;
-  right: 20px;
-  width: 400px;
-  background: rgba(0, 0, 0, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: white;
-  font-family: 'Arial', sans-serif;
-  transition: transform 0.3s ease, bottom 0.3s ease;
-  max-height: calc(100vh - 96px);
+  bottom: var(--wave-control-bottom, 48px);
+  right: var(--wave-control-right, 20px);
+  width: var(--wave-control-width, 400px);
+  background: var(--wave-control-bg, rgba(0, 0, 0, 0.9));
+  border: var(--wave-control-border-width, 1px) solid var(--wave-control-border-color, rgba(255, 255, 255, 0.1));
+  border-radius: var(--wave-control-border-radius, 8px);
+  color: var(--wave-control-color, white);
+  transition: var(--wave-control-transition, all 0.3s ease);
+  max-height: var(--wave-control-max-height, calc(100vh - 96px));
   overflow-y: auto;
-  z-index: 998;
+  z-index: var(--wave-control-z-index, 998);
 }
 
 .wave-control-panel.collapsed {
-  transform: translateY(calc(100% - 40px));
-}
-
-.debug-expanded .wave-control-panel {
-  bottom: 348px;
-  max-height: calc(100vh - 396px);
-}
-
-.debug-expanded .wave-control-panel.collapsed {
-  transform: translateY(calc(100% - 40px));
-  bottom: 348px;
+  transform: translateY(var(--wave-control-collapsed-transform, calc(100% - 40px)));
 }
 
 .wave-control-handle {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  background: rgba(50, 50, 50, 0.9);
+  padding: var(--wave-control-handle-padding, 8px 16px);
+  background: var(--wave-control-handle-bg, rgba(50, 50, 50, 0.9));
   cursor: pointer;
   user-select: none;
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--wave-control-handle-border-radius, 8px 8px 0 0);
 }
 
 .wave-control-handle:hover {
-  background: rgba(60, 60, 60, 0.9);
+  background: var(--wave-control-handle-hover-bg, rgba(60, 60, 60, 0.9));
 }
 
 .wave-control-handle h3 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--wave-control-title-size, 14px);
+  font-weight: var(--wave-control-title-weight, 600);
 }
 
 .wave-control-arrow {
-  width: 20px;
-  height: 20px;
-  transition: transform 0.3s ease;
+  width: var(--wave-control-arrow-size, 20px);
+  height: var(--wave-control-arrow-size, 20px);
+  transition: var(--wave-control-arrow-transition, transform 0.3s ease);
 }
 
 .wave-control-arrow.up {
@@ -138,25 +65,25 @@ html, body {
 }
 
 .control-section {
-  padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: var(--wave-control-section-padding, 16px);
+  border-bottom: var(--wave-control-section-border-width, 1px) solid var(--wave-control-section-border-color, rgba(255, 255, 255, 0.1));
 }
 
 .control-section h3 {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  font-weight: 600;
+  margin: 0 0 var(--wave-control-section-title-margin, 16px) 0;
+  font-size: var(--wave-control-section-title-size, 14px);
+  font-weight: var(--wave-control-section-title-weight, 600);
 }
 
 .control-group {
-  margin-bottom: 12px;
+  margin-bottom: var(--wave-control-group-margin, 12px);
 }
 
 .control-group label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: var(--wave-control-label-gap, 8px);
+  font-size: var(--wave-control-label-size, 12px);
 }
 
 .control-group input[type="range"] {
@@ -164,26 +91,26 @@ html, body {
 }
 
 .control-group span {
-  min-width: 40px;
+  min-width: var(--wave-control-value-width, 40px);
   text-align: right;
 }
 
 .wave-controls {
-  margin-top: 16px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
+  margin-top: var(--wave-controls-margin-top, 16px);
+  padding: var(--wave-controls-padding, 12px);
+  background: var(--wave-controls-bg, rgba(255, 255, 255, 0.05));
+  border-radius: var(--wave-controls-border-radius, 4px);
 }
 
 .wave-controls h4 {
-  margin: 0 0 12px 0;
-  font-size: 13px;
-  font-weight: 500;
+  margin: 0 0 var(--wave-controls-title-margin, 12px) 0;
+  font-size: var(--wave-controls-title-size, 13px);
+  font-weight: var(--wave-controls-title-weight, 500);
 }
 
 .colors {
   display: flex;
-  gap: 12px;
+  gap: var(--wave-colors-gap, 12px);
 }
 
 .colors label {
@@ -191,43 +118,43 @@ html, body {
 }
 
 .button-group {
-  padding: 16px;
+  padding: var(--wave-button-group-padding, 16px);
   display: flex;
-  gap: 8px;
+  gap: var(--wave-button-group-gap, 8px);
 }
 
 .reset-button,
 .dump-button {
   flex: 1;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  padding: var(--wave-button-padding, 8px);
+  background: var(--wave-button-bg, rgba(255, 255, 255, 0.1));
   border: none;
-  border-radius: 4px;
-  color: white;
+  border-radius: var(--wave-button-border-radius, 4px);
+  color: var(--wave-button-color, white);
   cursor: pointer;
-  font-size: 12px;
-  transition: background 0.2s;
+  font-size: var(--wave-button-font-size, 12px);
+  transition: var(--wave-button-transition, background 0.2s);
 }
 
 .reset-button:hover,
 .dump-button:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--wave-button-hover-bg, rgba(255, 255, 255, 0.2));
 }
 
 /* Scrollbar Styles */
 .wave-control-panel::-webkit-scrollbar {
-  width: 8px;
+  width: var(--wave-scrollbar-width, 8px);
 }
 
 .wave-control-panel::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--wave-scrollbar-track-bg, rgba(0, 0, 0, 0.2));
 }
 
 .wave-control-panel::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  background: var(--wave-scrollbar-thumb-bg, rgba(255, 255, 255, 0.2));
+  border-radius: var(--wave-scrollbar-thumb-radius, 4px);
 }
 
 .wave-control-panel::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--wave-scrollbar-thumb-hover-bg, rgba(255, 255, 255, 0.3));
 } 
