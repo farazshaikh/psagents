@@ -1,6 +1,7 @@
 import React from 'react';
 import CyclicWaveBackground from '../../basic/CyclicWaveBackground';
 import { endConfig, startConfig } from './HeroSection/waveConfigs';
+import CompanyHeader from './CompanyHeader';
 import './styles.css';
 
 /**
@@ -9,8 +10,7 @@ import './styles.css';
  * Layout structure:
  * - Navigation (10% viewport height, top)
  * - Centered Content (30% viewport height, center)
- *   - Company Name (animated fade in)
- *   - Tagline (split animation: "Entertainment" fades in, "Evolved" pulls in)
+ *   - CompanyHeader Component (company name and tagline with animations)
  *   - CTA Button
  * - Wave Background (70% viewport height, bottom)
  * 
@@ -22,7 +22,7 @@ import './styles.css';
  */
 export const Landing: React.FC = () => {
   const companyName = process.env.REACT_APP_COMPANY_NAME || 'TrueMetry';
-  
+
   return (
     <div className="landing">
       <nav className="landing-nav">
@@ -30,13 +30,11 @@ export const Landing: React.FC = () => {
       </nav>
 
       <div className="landing-content">
-        <h1 className="company-name">{companyName}</h1>
-        <h2 className="tagline">
-          <span className="tagline-part">Entertainment</span>
-          <span className="tagline-separator">, </span>
-          <span className="tagline-evolved">Evolved</span>
-          <span className="tagline-exclamation"> !</span>
-        </h2>
+        <CompanyHeader
+          companyName={companyName}
+          tag_line_word_1="Entertainment"
+          tag_line_word_2="Evolved"
+        />
         <button className="cta-button">Get Started</button>
       </div>
 
