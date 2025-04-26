@@ -25,8 +25,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --max-warnings 0",
-    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix --max-warnings 0",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --max-warnings 0 || exit 1",
+    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix --max-warnings 0 || exit 1",
     "prepare": "cd ../.. && husky"
   },
   "eslintConfig": {
@@ -51,12 +51,12 @@
       "last 1 safari version"
     ]
   },
-  "devDependencies": {
-    "husky": "^9.1.7"
-  },
   "husky": {
     "hooks": {
       "pre-commit": "cd gameshow/web/reactweb && npm run lint"
     }
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
   }
 }
