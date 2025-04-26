@@ -7,3 +7,4 @@ data/output/
 data/qdrant
 data/neo4j
 data/logs
+node_modules/
