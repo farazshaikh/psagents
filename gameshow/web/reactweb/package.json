@@ -26,7 +26,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix"
+    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "prepare": "husky"
   },
   "eslintConfig": {
     "extends": [
@@ -45,5 +46,13 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "cd gameshow/web/reactweb && npm run lint"
+    }
   }
 }

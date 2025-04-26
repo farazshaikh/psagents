@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Get the list of staged files in the React project
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=d | grep "^gameshow/web/reactweb/")
+
+# If there are no staged files in the React project, exit successfully
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+# Change to the React project directory
+cd gameshow/web/reactweb
+
+# Run the linter
+echo "🔍 Running ESLint on staged files..."
+npm run lint
+
+# If linting failed, prevent the commit
+if [ $? -ne 0 ]; then
+    echo "❌ ESLint found issues. Please fix them and try committing again."
+    exit 1
+fi
+
+echo "✅ ESLint check passed!" 
