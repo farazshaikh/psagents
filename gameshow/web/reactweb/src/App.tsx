@@ -1,8 +1,9 @@
 import React, { lazy, Suspense, useEffect, useRef } from 'react';
-import { Landing } from './components/features/Landing';
+//import { Landing } from './components/features/Landing';
 import { useFeatureFlags } from './utils/featureFlags';
 import './App.css';
 import { ThemeProvider } from './components/basic/ThemeProvider';
+import NextGenLanding from './components/features/NextGenLanding';
 
 // Only import DebugConsole in development
 const DebugConsole = process.env.NODE_ENV === 'development'
@@ -73,7 +74,8 @@ function App() {
   return (
     <ThemeProvider themeName={initialTheme as 'light' | 'dark'}>
     <div className="app">
-        <Landing />
+       { /* <Landing /> */ }
+        <NextGenLanding />
       {debugConsole && (
         <Suspense fallback={null}>
           <DebugConsole initialVisible={false} />

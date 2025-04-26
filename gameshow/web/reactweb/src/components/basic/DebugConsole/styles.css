@@ -62,8 +62,6 @@
   overflow-y: auto;
   padding: 8px 12px;
   font-size: 0.9em;
-  border-bottom: 1px solid currentColor;
-  margin-bottom: 1px;
 }
 
 .debugEntry {
