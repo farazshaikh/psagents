@@ -11,7 +11,7 @@ import './styles.css';
  * A modern landing page with smooth vertical scrolling sections
  * Built on top of the original Landing styles
  */
-const NextGenLanding: React.FC = () => {
+const LandingWithSections: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
   const companyName = process.env.REACT_APP_COMPANY_NAME || 'TrueMetry';
 
@@ -66,4 +66,4 @@ const NextGenLanding: React.FC = () => {
   );
 };
 
-export default NextGenLanding; 
+export default LandingWithSections;

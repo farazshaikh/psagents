@@ -3,7 +3,7 @@ import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { useFeatureFlags } from './utils/featureFlags';
 import './App.css';
 import { ThemeProvider } from './components/basic/ThemeProvider';
-import NextGenLanding from './components/features/NextGenLanding';
+import NextGenLanding from './components/features/LandingWithSections';
 
 // Only import DebugConsole in development
 const DebugConsole = process.env.NODE_ENV === 'development'
