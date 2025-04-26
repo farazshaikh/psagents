@@ -4,7 +4,7 @@ const Button: React.FC = () => {
   const unusedVariable = "This will cause a lint error";  // Introducing lint error
   return (
     <button>
-      Click me
+      {invalidVariable}  // This will cause an error since invalidVariable is not defined
     </button>
   );
 };
