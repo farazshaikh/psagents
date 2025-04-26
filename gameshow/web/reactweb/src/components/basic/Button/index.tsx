@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTheme } from '../ThemeProvider';
-import './Button.css';
+import './styles.css';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'contained' | 'outlined' | 'text';
