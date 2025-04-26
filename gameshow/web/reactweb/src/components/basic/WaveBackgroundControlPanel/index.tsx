@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { WaveParams, WaveConfig, defaultConfig, SineWaveComposition, RenderConfig } from '../WaveBackground/config';
+import { WaveParams, WaveConfig, defaultConfig } from '../WaveBackground/config';
 import WaveBackground from '../WaveBackground';
 import './styles.css';
 
@@ -30,11 +30,9 @@ const WaveBackgroundControlPanel: React.FC<WaveBackgroundControlPanelProps> = ({
   const handleNumWavesChange = useCallback((newNumWaves: number) => {
     let newWaves = [...config.waves];
     if (newNumWaves > config.waves.length) {
-      // Add waves
+      // Add waves with random parameters
       while (newWaves.length < newNumWaves) {
-        const sourceWave = newWaves[newWaves.length - 1];
-        const newWave = { ...sourceWave }; // Clone the last wave
-        newWaves.push(newWave);
+        newWaves.push(generateRandomWaveParams());
       }
     } else {
       // Remove waves
