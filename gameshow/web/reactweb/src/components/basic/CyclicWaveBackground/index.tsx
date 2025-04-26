@@ -4,24 +4,24 @@ import WaveBackground from '../WaveBackground';
 
 /**
  * CyclicWaveBackground Component
- * 
+ *
  * A composable animation adapter component that provides cyclic transitions between two wave states.
  * This component wraps the base WaveBackground component and handles the animation logic,
  * allowing for smooth transitions between different wave configurations.
- * 
+ *
  * Features:
  * - Smooth interpolation between wave configurations
  * - Configurable cycle timing and behavior
  * - Cubic easing for natural transitions
  * - Automatic animation cleanup
- * 
+ *
  * Animation Cycle:
  * 1. Hold at start configuration (startWaitTime)
  * 2. Smoothly interpolate to end configuration (transitionTime)
  * 3. Hold at end configuration (endWaitTime)
  * 4. Smoothly interpolate back to start configuration (transitionTime)
  * 5. Repeat
- * 
+ *
  * @example
  * ```tsx
  * <CyclicWaveBackground
@@ -70,7 +70,7 @@ const defaultCycleConfig = {
 /**
  * Linear interpolation between two numbers
  */
-const lerp = (a: number, b: number, t: number): number => 
+const lerp = (a: number, b: number, t: number): number =>
   a * (1 - t) + b * t;
 
 const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
@@ -130,7 +130,7 @@ const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
       const cycleTime = (elapsed % cycleDuration) / cycleDuration;
 
       // Pure linear transition back and forth - no easing at all
-      const t = cycleTime < 0.5 
+      const t = cycleTime < 0.5
         ? cycleTime * 2        // Linear 0 to 1
         : 2 * (1 - cycleTime); // Linear 1 to 0
 
@@ -150,12 +150,8 @@ const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
   }, [startConfig, endConfig, cycleDuration]);
 
   return (
-    <WaveBackground
-      config={currentConfig}
-      panel={panel}
-      initialCollapsed={initialCollapsed}
-    />
+    <WaveBackground config={currentConfig}/>
   );
 };
 
-export default CyclicWaveBackground; 
+export default CyclicWaveBackground;

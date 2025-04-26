@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useFeatureFlags } from '../../../utils/featureFlags';
-import { WaveParams, WaveConfig, defaultConfig, SineWaveComposition } from './config';
+import React, { useEffect, useRef, useCallback } from 'react';
+import { WaveParams, WaveConfig, SineWaveComposition } from './config';
 import './styles.css';
 
 /**
@@ -39,11 +38,8 @@ import './styles.css';
  * - Creates visual interest through contrast between dark and light
  */
 
-
 interface WaveBackgroundProps {
-  panel?: boolean;
   config: WaveConfig;
-  initialCollapsed?: boolean;
 }
 
 interface PerformanceMetrics {
@@ -99,24 +95,12 @@ const hexToRGB = (hex: string): [number, number, number] => {
   return [r, g, b];
 };
 
-const WaveBackground: React.FC<WaveBackgroundProps> = ({
-  panel = false,
-  config,
-  initialCollapsed = true
-}) => {
-  const { waveController } = useFeatureFlags();
+const WaveBackground: React.FC<WaveBackgroundProps> = ({ config }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const timeRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastFrameTimeRef = useRef<number>(0);
-  const [waves, setWaves] = useState<WaveParams[]>(config.waves);
-  const [globalSpeed, setGlobalSpeed] = useState(config.globalSpeed);
-  const [numWaves, setNumWaves] = useState(config.numWaves);
-  const [sineWaves, setSineWaves] = useState(config.sineWaves);
-  const [renderConfig, setRenderConfig] = useState(config.renderConfig);
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
-  const showControls = waveController || panel;
 
   // Add performance metrics ref
   const metricsRef = useRef<PerformanceMetrics>({
@@ -147,15 +131,6 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     return () => clearInterval(logInterval);
   }, []);
 
-  // Update state when config prop changes
-  useEffect(() => {
-    setWaves(config.waves);
-    setGlobalSpeed(config.globalSpeed);
-    setNumWaves(config.numWaves);
-    setSineWaves(config.sineWaves);
-    setRenderConfig(config.renderConfig);
-  }, [config]);
-
   const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, waveY: number) => {
     const startTime = performance.now();
     const points: [number, number][] = [];
@@ -163,19 +138,19 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     // Calculate wave points
     for (let x = 0; x <= canvas.width; x += 2) {
       const primaryWave = Math.sin(
-        x * wave.frequency * sineWaves.primary.frequency +
-        timeRef.current * wave.speed * globalSpeed * sineWaves.primary.speed
-      ) * wave.amplitude * sineWaves.primary.amplitude;
+        x * wave.frequency * config.sineWaves.primary.frequency +
+        timeRef.current * wave.speed * config.globalSpeed * config.sineWaves.primary.speed
+      ) * wave.amplitude * config.sineWaves.primary.amplitude;
 
       const secondaryWave = Math.sin(
-        x * wave.frequency * sineWaves.secondary.frequency +
-        timeRef.current * wave.speed * globalSpeed * sineWaves.secondary.speed
-      ) * wave.amplitude * sineWaves.secondary.amplitude;
+        x * wave.frequency * config.sineWaves.secondary.frequency +
+        timeRef.current * wave.speed * config.globalSpeed * config.sineWaves.secondary.speed
+      ) * wave.amplitude * config.sineWaves.secondary.amplitude;
 
       const tertiaryWave = Math.sin(
-        x * wave.frequency * sineWaves.tertiary.frequency +
-        timeRef.current * wave.speed * globalSpeed * sineWaves.tertiary.speed
-      ) * wave.amplitude * sineWaves.tertiary.amplitude;
+        x * wave.frequency * config.sineWaves.tertiary.frequency +
+        timeRef.current * wave.speed * config.globalSpeed * config.sineWaves.tertiary.speed
+      ) * wave.amplitude * config.sineWaves.tertiary.amplitude;
 
       const y = waveY + (primaryWave + secondaryWave + tertiaryWave);
       points.push([x, y]);
@@ -197,15 +172,15 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     gradient.addColorStop(1, `rgba(${endRGB[0]}, ${endRGB[1]}, ${endRGB[2]}, 1.0)`);         // End fully opaque
 
     // Calculate the total height of all lines
-    const totalHeight = (renderConfig.numLines - 1) * renderConfig.lineSpacing;
+    const totalHeight = (config.renderConfig.numLines - 1) * config.renderConfig.lineSpacing;
     const halfHeight = totalHeight / 2;
 
     // Draw multiple parallel lines
-    for (let lineIndex = 0; lineIndex < renderConfig.numLines; lineIndex++) {
-      const lineOffset = -halfHeight + (lineIndex * (renderConfig.lineSpacing + 1));
+    for (let lineIndex = 0; lineIndex < config.renderConfig.numLines; lineIndex++) {
+      const lineOffset = -halfHeight + (lineIndex * (config.renderConfig.lineSpacing + 1));
 
       // Calculate opacity based on distance from center
-      const distanceFromCenter = Math.abs(lineIndex - (renderConfig.numLines - 1) / 2) / ((renderConfig.numLines - 1) / 2);
+      const distanceFromCenter = Math.abs(lineIndex - (config.renderConfig.numLines - 1) / 2) / ((config.renderConfig.numLines - 1) / 2);
       const verticalOpacity = 0.2 + (0.6 * (1 - distanceFromCenter));  // Base vertical opacity variation
 
       ctx.beginPath();
@@ -228,7 +203,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
       ctx.lineTo(last[0], last[1] + lineOffset);
 
       ctx.strokeStyle = gradient;
-      ctx.lineWidth = renderConfig.lineWidth;
+      ctx.lineWidth = config.renderConfig.lineWidth;
       ctx.globalAlpha = verticalOpacity;  // Apply vertical opacity variation
       ctx.stroke();
     }
@@ -236,7 +211,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     if (DEBUG_PERFORMANCE) {
       metricsRef.current.renderCount++;
     }
-  }, [sineWaves, globalSpeed, renderConfig.lineSpacing, renderConfig.lineWidth, renderConfig.numLines]);
+  }, [config]);
 
   const animate = useCallback(() => {
     const now = performance.now();
@@ -267,11 +242,11 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw each wave
-    const firstWaveMaxAmplitude = calculateMaxAmplitude(waves[0], sineWaves);
-    const waveHeight = renderConfig.numLines * (renderConfig.lineWidth + renderConfig.lineSpacing) + renderConfig.waveSpacing
+    const firstWaveMaxAmplitude = calculateMaxAmplitude(config.waves[0], config.sineWaves);
+    const waveHeight = config.renderConfig.numLines * (config.renderConfig.lineWidth + config.renderConfig.lineSpacing) + config.renderConfig.waveSpacing
     const topspacing = firstWaveMaxAmplitude + 0.5 * waveHeight
 
-    waves.slice(0, numWaves).forEach((wave, index) => {
+    config.waves.slice(0, config.numWaves).forEach((wave, index) => {
       // Add amplitude padding to ALL waves to shift everything down
       // division by 1 will make the waves non overlapping.
       let waveY =  index * (waveHeight/3);
@@ -279,9 +254,9 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     });
 
     // Increase animation speed by adjusting time increment
-    timeRef.current += 0.016 * globalSpeed; // Adjusted for 60fps and using globalSpeed
+    timeRef.current += 0.016 * config.globalSpeed; // Adjusted for 60fps and using globalSpeed
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [drawWave, waves, numWaves, globalSpeed, renderConfig.lineSpacing, renderConfig.lineWidth, renderConfig.numLines, renderConfig.waveSpacing, sineWaves]);
+  }, [drawWave, config]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -324,340 +299,9 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     };
   }, [animate]);
 
-  const updateWave = useCallback((index: number, updates: Partial<WaveParams>) => {
-    setWaves(prevWaves => {
-      const newWaves = prevWaves.map((wave, i) =>
-        i === index ? { ...wave, ...updates } : wave
-      );
-      return newWaves;
-    });
-  }, []);
-
-  const updateSineWave = useCallback((type: 'primary' | 'secondary' | 'tertiary', updates: Partial<SineWaveComposition>) => {
-    setSineWaves(prev => ({
-      ...prev,
-      [type]: { ...prev[type], ...updates }
-    }));
-  }, []);
-
-  const updateRenderConfig = useCallback((updates: Partial<typeof renderConfig>) => {
-    setRenderConfig(prev => ({ ...prev, ...updates }));
-  }, []);
-
-  const handleReset = useCallback(() => {
-    setWaves(defaultConfig.waves);
-    setGlobalSpeed(defaultConfig.globalSpeed);
-    setNumWaves(defaultConfig.numWaves);
-    setSineWaves(defaultConfig.sineWaves);
-    setRenderConfig(defaultConfig.renderConfig);
-  }, []);
-
-  const handleDumpSettings = useCallback(() => {
-    const config: WaveConfig = {
-      waves: waves.slice(0, numWaves),
-      globalSpeed,
-      numWaves,
-      sineWaves,
-      renderConfig
-    };
-
-    navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-
-    if (window.debug) {
-      window.debug('Current Wave Configuration:');
-      window.debug(JSON.stringify(config, null, 2));
-    }
-  }, [waves, globalSpeed, numWaves, sineWaves, renderConfig]);
-
   return (
     <div className="wave-container" ref={containerRef}>
       <canvas ref={canvasRef} className="wave-canvas" />
-      {showControls && (
-        <div className={`wave-control-panel ${isCollapsed ? 'collapsed' : ''}`}>
-          <div className="wave-control-handle" onClick={() => setIsCollapsed(!isCollapsed)}>
-            <h3>Wave Controls</h3>
-            <svg
-              className={`wave-control-arrow ${!isCollapsed ? 'up' : ''}`}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-          <div className="control-section">
-            <h3>Global Controls</h3>
-            <div className="control-group">
-              <label>
-                Number of Waves:
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={numWaves}
-                  onChange={(e) => {
-                    const newNumWaves = parseInt(e.target.value);
-                    if (newNumWaves > waves.length) {
-                      // Add new waves based on the last wave's configuration
-                      const lastWave = waves[waves.length - 1];
-                      const newWaves = [...waves];
-                      for (let i = waves.length; i < newNumWaves; i++) {
-                        const amplitudeDecrement = 5;
-                        const frequencyIncrement = 0.0005;
-                        const speedDecrement = 0.01;
-
-                        // Generate new colors by shifting hue
-                        const hueStep = 30; // degrees
-                        const startHue = (i * hueStep) % 360;
-                        const endHue = ((i * hueStep) + 60) % 360;
-
-                        newWaves.push({
-                          ...lastWave,
-                          amplitude: Math.max(15, lastWave.amplitude - amplitudeDecrement),
-                          frequency: lastWave.frequency + frequencyIncrement,
-                          speed: Math.max(0.03, lastWave.speed - speedDecrement),
-                          startColor: `hsl(${startHue}, 100%, 50%)`,
-                          endColor: `hsl(${endHue}, 100%, 50%)`,
-                        });
-                      }
-                      setWaves(newWaves);
-                    } else if (newNumWaves < waves.length) {
-                      // Remove waves from the end
-                      setWaves(waves.slice(0, newNumWaves));
-                    }
-                    setNumWaves(newNumWaves);
-                  }}
-                />
-                <span>{numWaves}</span>
-              </label>
-            </div>
-            <div className="control-group">
-              <label>
-                Animation Speed:
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={globalSpeed}
-                  onChange={(e) => setGlobalSpeed(parseFloat(e.target.value))}
-                />
-                <span>{globalSpeed.toFixed(1)}x</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="control-section">
-            <h3>Wave Composition</h3>
-            {(['primary', 'secondary', 'tertiary'] as const).map(type => (
-              <div key={type} className="wave-controls">
-                <h4>{type.charAt(0).toUpperCase() + type.slice(1)} Wave</h4>
-                <div className="control-group">
-                  <label>
-                    Frequency Multiplier:
-                    <input
-                      type="range"
-                      min="0.1"
-                      max={type === 'primary' ? 2 : 5}
-                      step="0.1"
-                      value={sineWaves[type].frequency}
-                      onChange={(e) => updateSineWave(type, { frequency: parseFloat(e.target.value) })}
-                    />
-                    <span>{sineWaves[type].frequency.toFixed(1)}x</span>
-                  </label>
-                </div>
-                <div className="control-group">
-                  <label>
-                    Speed Multiplier:
-                    <input
-                      type="range"
-                      min="0.1"
-                      max="2"
-                      step="0.1"
-                      value={sineWaves[type].speed}
-                      onChange={(e) => updateSineWave(type, { speed: parseFloat(e.target.value) })}
-                    />
-                    <span>{sineWaves[type].speed.toFixed(1)}x</span>
-                  </label>
-                </div>
-                <div className="control-group">
-                  <label>
-                    Amplitude:
-                    <input
-                      type="range"
-                      min="0"
-                      max={type === 'primary' ? 1 : 0.5}
-                      step="0.05"
-                      value={sineWaves[type].amplitude}
-                      onChange={(e) => updateSineWave(type, { amplitude: parseFloat(e.target.value) })}
-                    />
-                    <span>{(sineWaves[type].amplitude * 100).toFixed(0)}%</span>
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="control-section">
-            <h3>Render Settings</h3>
-            <div className="control-group">
-              <label>
-                Line Count:
-                <input
-                  type="range"
-                  min="10"
-                  max="40"
-                  value={renderConfig.numLines}
-                  onChange={(e) => updateRenderConfig({ numLines: parseInt(e.target.value) })}
-                />
-                <span>{renderConfig.numLines}</span>
-              </label>
-            </div>
-            <div className="control-group">
-              <label>
-                Line Width:
-                <input
-                  type="range"
-                  min="0.5"
-                  max="5.0"
-                  step="0.5"
-                  value={renderConfig.lineWidth}
-                  onChange={(e) => updateRenderConfig({ lineWidth: parseFloat(e.target.value) })}
-                />
-                <span>{renderConfig.lineWidth.toFixed(1)}px</span>
-              </label>
-            </div>
-            <div className="control-group">
-              <label>
-                Line Spacing:
-                <input
-                  type="range"
-                  min="0"
-                  max="5.0"
-                  step="0.1"
-                  value={renderConfig.lineSpacing}
-                  onChange={(e) => updateRenderConfig({ lineSpacing: parseFloat(e.target.value) })}
-                />
-                <span>{renderConfig.lineSpacing.toFixed(1)}px</span>
-              </label>
-            </div>
-            <div className="control-group">
-              <label>
-                Gradient Speed:
-                <input
-                  type="range"
-                  min="0.1"
-                  max="2"
-                  step="0.1"
-                  value={renderConfig.gradientPhaseSpeed}
-                  onChange={(e) => updateRenderConfig({ gradientPhaseSpeed: parseFloat(e.target.value) })}
-                />
-                <span>{renderConfig.gradientPhaseSpeed.toFixed(1)}x</span>
-              </label>
-            </div>
-            <div className="control-group">
-              <label>
-                Wave Spacing:
-                <input
-                  type="range"
-                  min="0"
-                  max="50"
-                  step="1"
-                  value={renderConfig.waveSpacing}
-                  onChange={(e) => updateRenderConfig({ waveSpacing: parseInt(e.target.value) })}
-                />
-                <span>{renderConfig.waveSpacing}px</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="control-section">
-            <h3>Individual Waves</h3>
-            {waves.slice(0, numWaves).map((wave, index) => (
-              <div key={`wave-${index}`} className="wave-controls">
-                <h4>Wave {index + 1}</h4>
-                <div className="control-group">
-                  <label>
-                    Amplitude:
-                    <input
-                      type="range"
-                      min="10"
-                      max="60"
-                      value={wave.amplitude}
-                      onChange={(e) => updateWave(index, { amplitude: parseInt(e.target.value) })}
-                    />
-                    <span>{wave.amplitude}</span>
-                  </label>
-                </div>
-                <div className="control-group">
-                  <label>
-                    Frequency:
-                    <input
-                      type="range"
-                      min="0.001"
-                      max="0.01"
-                      step="0.0005"
-                      value={wave.frequency}
-                      onChange={(e) => updateWave(index, { frequency: parseFloat(e.target.value) })}
-                    />
-                    <span>{wave.frequency.toFixed(4)}</span>
-                  </label>
-                </div>
-                <div className="control-group">
-                  <label>
-                    Speed:
-                    <input
-                      type="range"
-                      min="0.01"
-                      max="0.2"
-                      step="0.01"
-                      value={wave.speed}
-                      onChange={(e) => updateWave(index, { speed: parseFloat(e.target.value) })}
-                    />
-                    <span>{wave.speed.toFixed(2)}</span>
-                  </label>
-                </div>
-                <div className="control-group colors">
-                  <label>
-                    Start Color:
-                    <input
-                      type="color"
-                      value={wave.startColor}
-                      onChange={(e) => updateWave(index, { startColor: e.target.value })}
-                    />
-                  </label>
-                  <label>
-                    End Color:
-                    <input
-                      type="color"
-                      value={wave.endColor}
-                      onChange={(e) => updateWave(index, { endColor: e.target.value })}
-                    />
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="button-group">
-            <button
-              className="reset-button"
-              onClick={handleReset}
-            >
-              Reset to Default
-            </button>
-            <button
-              className="dump-button"
-              onClick={handleDumpSettings}
-            >
-              Dump Settings
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
