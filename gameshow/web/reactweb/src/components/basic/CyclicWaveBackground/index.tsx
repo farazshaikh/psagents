@@ -68,15 +68,6 @@ const defaultCycleConfig = {
 };
 
 /**
- * Smooth easing function for natural-looking transitions
- * Combines smoothstep with additional smoothing for more organic movement
- */
-const smoothEase = (x: number): number => {
-  const t = x * x * x * (x * (x * 6 - 15) + 10); // smoothstep
-  return t * t * (3 - 2 * t); // extra smoothing
-};
-
-/**
  * Linear interpolation between two numbers
  */
 const lerp = (a: number, b: number, t: number): number => 
@@ -91,9 +82,6 @@ const CyclicWaveBackground: React.FC<CyclicWaveBackgroundProps> = ({
 }) => {
   const {
     cycleDuration = defaultCycleConfig.cycleDuration,
-    startWaitTime = defaultCycleConfig.startWaitTime,
-    endWaitTime = defaultCycleConfig.endWaitTime,
-    transitionTime = defaultCycleConfig.transitionTime,
   } = cycleConfig;
 
   const [currentConfig, setCurrentConfig] = useState<WaveConfig>(startConfig);

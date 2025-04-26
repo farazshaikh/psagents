@@ -1,0 +1,29 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Rules for attempting bug fixes introduced generated AI Code
+
+## Use interactive approach ###
+Look at the issue
+Understand the root cause
+Present approach to fixing before attempting a fix.
+
+## Attempting a fix ###
+
+Recursively reason how a fix would impact existing logic. For example if i remove this variable, which other part fo the code will be impacted.
+
+Pay extereme focus on no regressing on existing functionality
+
+## Don't fix by implementing new code path ##
+
+The fix involves understanding and editing existing code. DO NOT ATTEMPT TO REWRITE THE ENTIRE LOGIC AGAIN.
+
+## If bug isn't clear Ask for logs ##
+
+If the bug isn't clear ask additional logs, you can insert logs and request for logs for you to review.
+
+## Most of the code is working and bugs are usually point fixes ##
+
+Never go into a mode of unilaterally rewriting large parts of the code without user consent.

@@ -39,23 +39,6 @@ import './styles.css';
  * - Creates visual interest through contrast between dark and light
  */
 
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface RenderConfig {
-  verticalPosition: number;
-}
-
-interface WaveBackgroundParams {
-  amplitude: number;
-  frequency: number;
-  speed: number;
-  startColor: string;
-  endColor: string;
-  width: number;
-}
 
 interface WaveBackgroundProps {
   panel?: boolean;
@@ -114,31 +97,6 @@ const hexToRGB = (hex: string): [number, number, number] => {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return [r, g, b];
-};
-
-const adjustColor = (rgb: [number, number, number], factor: number): string => {
-  const adjusted = rgb.map(c => Math.floor(c * factor));
-  return `rgb(${adjusted[0]}, ${adjusted[1]}, ${adjusted[2]})`;
-};
-
-const getWavePoints = (
-  width: number,
-  height: number,
-  time: number,
-  params: WaveBackgroundParams,
-  renderConfig: RenderConfig
-) => {
-  const points: Point[] = [];
-  const { amplitude, frequency, speed } = params;
-  const { verticalPosition } = renderConfig;
-
-  for (let x = 0; x <= width; x += 5) {
-    const y = height * verticalPosition +
-      amplitude * Math.sin(frequency * x + speed * time);
-    points.push({ x, y });
-  }
-
-  return points;
 };
 
 const WaveBackground: React.FC<WaveBackgroundProps> = ({
@@ -278,7 +236,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     if (DEBUG_PERFORMANCE) {
       metricsRef.current.renderCount++;
     }
-  }, [sineWaves, globalSpeed]);
+  }, [sineWaves, globalSpeed, renderConfig.lineSpacing, renderConfig.lineWidth, renderConfig.numLines]);
 
   const animate = useCallback(() => {
     const now = performance.now();
@@ -323,7 +281,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({
     // Increase animation speed by adjusting time increment
     timeRef.current += 0.016 * globalSpeed; // Adjusted for 60fps and using globalSpeed
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [drawWave]);
+  }, [drawWave, waves, numWaves, globalSpeed, renderConfig.lineSpacing, renderConfig.lineWidth, renderConfig.numLines, renderConfig.waveSpacing, sineWaves]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

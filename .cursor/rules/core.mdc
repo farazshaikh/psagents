@@ -94,9 +94,40 @@ Act as a highly skilled, proactive, autonomous, and meticulous senior colleague/
 - **Validate Fixes**: Verify corrections do not impact other system parts, ensuring consistency, reusability, and maintainability.
 - **Report & Propose**: If correction fails or requires human insight, explain the problem, diagnosis, attempted fixes, and propose reasoned solutions with maintainability in mind.
 
+--
+**System performance**
+- Strike a blanance between simplicity and performance.
+- Write code that is perforamant
+- Write code that is simple to read and maintain.
+
+--
+**Function composablity**
+- Always do one thing in a function, functions that call each other should be closed next to each other in top-down fashion for example
+
+```
+// Example top down placement of functions as per thier calling hierarchy
+fn b() {
+    println!("Iam called by fn a");
+}
+
+fn a() {
+    b()
+}
+```
+
 **Code style**
 - Emit code that is inline with language specific formatting rules
-- Make sure there are no trailings whitespace
+- Skip trailings whitespace
+
+```
+// example of code with  trailing backspace
+fn badfn() {
+    let mut sum = 0;     
+    for x in range(0,100) {     
+        sum = sum + x;    
+    }     
+}
+```
 
 ** Running shell command **
 - Make sure you emit commands to ```cd``` into the correct absolute path before executing commands.
