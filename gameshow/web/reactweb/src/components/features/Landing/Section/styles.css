@@ -1,0 +1,35 @@
+.next-gen-section {
+  width: 100%;
+  min-height: 50vh;
+  padding: var(--spacing-xl) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.next-gen-section.full-height {
+  min-height: 100vh;
+  padding: 0; /* Remove padding for full-height sections to match original layout */
+}
+
+.section-content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  z-index: 1;
+}
+
+/* Ensure section headings don't interfere with CompanyHeader */
+.section-content h1:not(.company-name),
+.section-content h2 {
+  font-size: var(--typography-fontSize-2xl);
+  font-weight: var(--typography-fontWeight-bold);
+  margin-bottom: var(--spacing-lg);
+  text-align: center;
+} 
