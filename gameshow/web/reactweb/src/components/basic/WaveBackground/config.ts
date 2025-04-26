@@ -43,50 +43,50 @@ export const defaultConfig: WaveConfig = {
       amplitude: 45,
       frequency: 0.003,
       speed: 0.12,
-      startColor: '#666600', // Dark yellow
-      endColor: '#FFFF00',  // Bright yellow
+      startColor: 'rgba(51, 51, 26, 0.2)',  // Very transparent muted yellow
+      endColor: 'rgba(153, 153, 77, 0.4)',  // Semi-transparent soft yellow
     },
     {
       amplitude: 42,
       frequency: 0.0033,
       speed: 0.11,
-      startColor: '#006666', // Dark cyan
-      endColor: '#00FFFF',  // Bright cyan
+      startColor: 'rgba(26, 51, 51, 0.2)',  // Very transparent muted cyan
+      endColor: 'rgba(77, 153, 153, 0.4)',  // Semi-transparent soft cyan
     },
     {
       amplitude: 39,
       frequency: 0.0036,
       speed: 0.10,
-      startColor: '#006600', // Dark green
-      endColor: '#00FF00',  // Bright green
+      startColor: 'rgba(26, 51, 26, 0.2)',  // Very transparent muted green
+      endColor: 'rgba(77, 153, 77, 0.4)',   // Semi-transparent soft green
     },
     {
       amplitude: 36,
       frequency: 0.0039,
       speed: 0.09,
-      startColor: '#660066', // Dark magenta
-      endColor: '#FF00FF',  // Bright magenta
+      startColor: 'rgba(51, 26, 51, 0.2)',  // Very transparent muted magenta
+      endColor: 'rgba(153, 77, 153, 0.4)',  // Semi-transparent soft magenta
     },
     {
       amplitude: 33,
       frequency: 0.0042,
       speed: 0.08,
-      startColor: '#660000', // Dark red
-      endColor: '#FF0000',  // Bright red
+      startColor: 'rgba(51, 26, 26, 0.2)',  // Very transparent muted red
+      endColor: 'rgba(153, 77, 77, 0.4)',   // Semi-transparent soft red
     },
     {
       amplitude: 30,
       frequency: 0.0045,
       speed: 0.07,
-      startColor: '#000066', // Dark blue
-      endColor: '#0000FF',  // Bright blue
+      startColor: 'rgba(26, 26, 51, 0.2)',  // Very transparent muted blue
+      endColor: 'rgba(77, 77, 153, 0.4)',   // Semi-transparent soft blue
     },
     {
       amplitude: 27,
       frequency: 0.0048,
       speed: 0.06,
-      startColor: '#666666', // Dark white/gray
-      endColor: '#FFFFFF',  // Bright white
+      startColor: 'rgba(51, 51, 51, 0.2)',  // Very transparent dark gray
+      endColor: 'rgba(153, 153, 153, 0.4)', // Semi-transparent light gray
     }
   ],
   globalSpeed: 5.0,

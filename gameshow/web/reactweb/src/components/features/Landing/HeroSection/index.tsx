@@ -1,10 +1,8 @@
 import React from 'react';
-import Button from '../../../basic/Button';
+import { Button } from '../../../basic/Button';
 import Typography from '../../../basic/Typography';
-import WaveBackground from '../../../basic/WaveBackground';
 //import { endConfig, startConfig } from './waveConfigs';
 import './styles.css';
-import { defaultConfig } from '../../../basic/WaveBackground/config';
 
 interface HeroSectionProps {
   title?: string;

@@ -1,5 +1,3 @@
-@import './themes/instagram.css';
-
 /* Reset and Base Styles */
 * {
   margin: 0;
@@ -10,97 +8,102 @@
 }
 
 body {
-  font-family: var(--font-family-primary);
-  font-size: var(--font-size-sm);  /* Instagram uses 14px as base */
-  line-height: 1.5;
-  color: var(--text-primary);
-  background-color: var(--background-light);
+  font-family: var(--typography-fontFamily);
+  font-size: var(--spacing-sm);
+  line-height: var(--typography-lineHeight-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-background-main);
 }
 
-/* Typography - Instagram Style */
+/* Landing page specific styles */
+body.landing-page {
+  background-color: transparent !important;
+}
+
+/* Typography */
 h1 {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
+  font-size: var(--typography-fontSize-2xl);
+  font-weight: var(--typography-fontWeight-bold);
 }
 
 h2 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--typography-fontSize-xl);
+  font-weight: var(--typography-fontWeight-semibold);
 }
 
 h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--typography-fontSize-lg);
+  font-weight: var(--typography-fontWeight-semibold);
 }
 
 p {
   margin-bottom: var(--spacing-md);
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
-/* Links - Instagram Style */
+/* Links */
 a {
-  color: var(--primary);
+  color: var(--color-primary);
   text-decoration: none;
 }
 
 a:hover {
-  color: var(--primary-dark);
+  color: var(--button-primary-hover);
 }
 
-/* Container - Instagram Style */
+/* Container */
 .container {
   width: 100%;
-  max-width: var(--container-lg);
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--spacing-md);
 }
 
-/* Instagram-specific Utility Classes */
+/* Utility Classes */
 .text-center { text-align: center; }
-.text-primary { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
-.text-blue { color: var(--primary); }
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-accent { color: var(--color-primary); }
 
-.bg-white { background-color: var(--background-white); }
-.bg-light { background-color: var(--background-light); }
-.bg-dark { background-color: var(--background-dark); }
+.bg-main { background-color: var(--color-background-main); }
+.bg-surface { background-color: var(--color-background-surface); }
+.bg-elevated { background-color: var(--color-background-elevated); }
 
-/* Instagram Card Style */
+/* Card Style */
 .card {
-  background: var(--background-white);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--button-borderRadius);
 }
 
-/* Instagram Button Styles */
+/* Button Base Styles */
 .button {
   display: inline-block;
   padding: var(--spacing-xs) var(--spacing-lg);
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
+  border-radius: var(--button-borderRadius);
+  font-weight: var(--typography-fontWeight-semibold);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: var(--button-transition);
 }
 
 .button-primary {
-  background-color: var(--primary);
-  color: var(--text-white);
+  background-color: var(--button-primary-bg);
+  color: var(--button-primary-color);
   border: none;
 }
 
 .button-primary:hover {
-  background-color: var(--primary-dark);
+  background-color: var(--button-primary-hover-bg);
 }
 
 .button-secondary {
-  background-color: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background-color: var(--button-secondary-bg);
+  color: var(--button-secondary-color);
+  border: 1px solid var(--color-border);
 }
 
 .button-secondary:hover {
-  background-color: var(--background-light);
+  background-color: var(--button-secondary-hover-bg);
 }
 
 /* Spacing Utilities */
@@ -116,9 +119,9 @@ a:hover {
 .m-lg { margin: var(--spacing-lg); }
 .m-xl { margin: var(--spacing-xl); }
 
-/* Instagram-style Animations */
+/* Animations */
 .fade-in {
-  animation: fadeIn var(--transition-normal);
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 @keyframes fadeIn {
@@ -126,12 +129,12 @@ a:hover {
   to { opacity: 1; }
 }
 
-/* Instagram-style Loading Spinner */
+/* Loading Spinner */
 .loading-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid var(--border-color);
-  border-top-color: var(--primary);
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -140,7 +143,7 @@ a:hover {
   to { transform: rotate(360deg); }
 }
 
-/* Responsive Design - Instagram Style */
+/* Responsive Design */
 @media (max-width: 935px) {
   .container {
     padding: 0;
@@ -150,7 +153,7 @@ a:hover {
 
 @media (max-width: 600px) {
   body {
-    background-color: var(--background-white);
+    background-color: var(--color-background-main);
   }
 
   .card {

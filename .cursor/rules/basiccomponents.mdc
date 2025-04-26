@@ -1,0 +1,207 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Basic Component Implementation Guidelines
+@description("Guidelines for implementing basic/primitive components to ensure they remain composable and reusable")
+@matches(files="**/components/basic/**/*.{ts,tsx}")
+@matches(content="React|Component|function|const.*=.*=>")
+
+# Basic Component Styling Guidelines
+
+Basic/primitive components should follow the principle of "style what you own, nothing more". This ensures components are reusable and composable.
+
+## Core Principles
+
+1. **Component Identity**: Style only what defines the component's core functionality and identity
+2. **Composability**: Enable easy composition through proper style isolation
+3. **Customization**: Support theming and style overrides through CSS custom properties
+4. **Accessibility**: Include proper styling for all accessibility states
+
+## Auto-Attachment
+This rule is automatically attached when:
+- Editing files in src/components/basic/ or gameshow/web/reactweb/src/components/basic/
+- Importing from basic components
+- Using basic component classes
+
+## ✅ DO
+
+### Essential Styling
+- Use semantic HTML elements as base
+- Style only what is essential for the component's core functionality
+- Keep styles that define the component's identity
+- Include states (hover, active, disabled) that are intrinsic
+- Use CSS custom properties for themeable values
+- Support RTL layouts where applicable
+
+### Component API
+- Accept `className` prop for style overrides
+- Support `style` prop for inline customization
+- Forward `ref` for DOM access
+- Document CSS custom properties
+- Provide TypeScript types for all props
+
+### States & Variants
+- Style all accessibility states (focus, disabled, aria-*)
+- Implement variants through props
+- Handle interaction states consistently
+- Support color scheme variations (light/dark)
+
+## ❌ DON'T
+
+### Layout & Positioning
+- Don't set margins or spacing that affects other components
+- Don't use fixed dimensions unless core to functionality
+- Don't use absolute/fixed positioning (except for overlays/tooltips)
+- Don't set z-index (parent should control stacking)
+- Don't use CSS Grid/Flexbox for external layout
+
+### Styling Scope
+- Don't style parent or sibling elements
+- Don't use global styles or reset rules
+- Don't override inherited properties unnecessarily
+- Don't use !important
+- Don't hardcode colors or spacing values
+
+### Responsive Design
+- Don't include media queries (parent handles responsiveness)
+- Don't set viewport-specific styles
+- Don't handle container queries
+- Don't implement responsive variants
+
+## Examples
+
+### ✅ Good Basic Component
+```tsx
+// Button.tsx
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary';
+  size?: 'small' | 'medium' | 'large';
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
+  className,
+  variant = 'primary',
+  size = 'medium',
+  ...props
+}, ref) => (
+  <button
+    className={clsx('button', `button--${variant}`, `button--${size}`, className)}
+    ref={ref}
+    {...props}
+  />
+));
+
+// button.css
+.button {
+  /* Core button styling */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--button-padding);
+  border-radius: var(--button-radius);
+  border: var(--button-border);
+  background: var(--button-bg);
+  color: var(--button-color);
+  cursor: pointer;
+  
+  /* Intrinsic states */
+  &:hover {
+    background: var(--button-hover-bg);
+  }
+  
+  &:focus-visible {
+    outline: var(--focus-ring);
+  }
+  
+  &:disabled {
+    opacity: var(--disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+```
+
+### ❌ Bad Basic Component
+```tsx
+// BadButton.tsx
+const BadButton = ({ children }) => (
+  <button
+    style={{
+      position: 'fixed',
+      bottom: '20px',
+      right: '20px',
+      margin: '10px',
+      width: '200px',
+      background: '#ff0000',
+      fontFamily: 'Arial',
+      zIndex: 1000,
+    }}
+  >
+    {children}
+  </button>
+);
+
+// bad-button.css
+.bad-button {
+  /* Opinionated layout */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin: 2rem;
+  
+  /* Fixed dimensions */
+  width: 300px;
+  height: 50px;
+  
+  /* Hardcoded values */
+  background: #ff0000;
+  font-family: Arial;
+  
+  /* Media queries */
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+}
+```
+
+## CSS Custom Properties API
+
+Document all CSS custom properties that can be used to customize the component:
+
+```css
+/**
+ * Component CSS API:
+ * --button-padding: Controls internal padding
+ * --button-radius: Controls border radius
+ * --button-border: Controls border style
+ * --button-bg: Controls background color
+ * --button-color: Controls text color
+ * --button-hover-bg: Controls hover background
+ * --focus-ring: Controls focus outline
+ * --disabled-opacity: Controls disabled state opacity
+ */
+```
+
+## Implementation Checklist
+
+1. ✓ Use semantic HTML base
+2. ✓ Style only core functionality
+3. ✓ Support className and style props
+4. ✓ Forward ref
+5. ✓ Use CSS custom properties
+6. ✓ Handle all states
+7. ✓ Document style API
+8. ✓ Add TypeScript types
+9. ✓ Test accessibility
+10. ✓ Verify composability
+
+## File Patterns
+This rule applies to:
+- src/components/basic/**/*.(tsx|css|scss)
+- gameshow/web/reactweb/src/components/basic/**/*.(tsx|css|scss)
+
+## Content Patterns
+This rule is triggered by:
+- import.*from.*components/basic
+- className=.*basic- 

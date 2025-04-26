@@ -1,0 +1,84 @@
+.theme-switcher {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-background-elevated);
+  border: 2px solid var(--color-border);
+  transition: .4s;
+  border-radius: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 2px;
+  background-color: var(--color-primary);
+  transition: .4s;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.icon {
+  z-index: 1;
+  font-size: 14px;
+  line-height: 1;
+  user-select: none;
+}
+
+/* Ensure icons are positioned correctly */
+.icon:first-child {
+  margin-right: auto;
+}
+
+.icon:last-child {
+  margin-left: auto;
+}
+
+input:checked + .slider:before {
+  transform: translateX(30px);
+}
+
+/* Hover effect */
+.slider:hover {
+  box-shadow: 0 0 5px var(--color-primary);
+}
+
+/* Focus styles for accessibility */
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--color-primary);
+}
+
+/* Active animation */
+.slider:active:before {
+  width: 28px;
+} 

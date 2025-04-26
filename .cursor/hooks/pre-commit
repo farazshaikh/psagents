@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Get list of staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "src/components/basic/.*\.(tsx|css|scss)$" || true)
+
+if [ -n "$STAGED_FILES" ]; then
+  echo "🔍 Checking basic component guidelines..."
+  
+  # Check each staged file
+  for FILE in $STAGED_FILES; do
+    echo "Checking $FILE..."
+    
+    # For CSS/SCSS files
+    if [[ $FILE =~ \.(css|scss)$ ]]; then
+      VIOLATIONS=$(grep -n -E "position:\s*(fixed|absolute)|margin:|z-index:|!important|font-family:|@media" "$FILE" || true)
+      
+      if [ -n "$VIOLATIONS" ]; then
+        echo "⚠️ Found prohibited CSS properties in $FILE:"
+        echo "$VIOLATIONS"
+        echo "Please follow basic component guidelines in .cursor/rules/basic_components.md"
+        exit 1
+      fi
+    fi
+    
+    # For TSX files
+    if [[ $FILE =~ \.tsx$ ]]; then
+      # Check if className and style props are accepted
+      if ! grep -q "className?: string" "$FILE"; then
+        echo "⚠️ Missing className prop in $FILE"
+        echo "Basic components should accept className for customization"
+        exit 1
+      fi
+      
+      if ! grep -q "style?: React.CSSProperties" "$FILE"; then
+        echo "⚠️ Missing style prop in $FILE"
+        echo "Basic components should accept style prop for customization"
+        exit 1
+      fi
+    fi
+  done
+  
+  echo "✅ Basic component checks passed"
+fi
+
+exit 0 

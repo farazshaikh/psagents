@@ -113,6 +113,14 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({ config }) => {
     stateUpdateCount: 0
   });
 
+  // Get theme background color from CSS variable
+  const getThemeBackgroundColor = useCallback(() => {
+    const root = document.documentElement;
+    const computedStyle = getComputedStyle(root);
+    const color = computedStyle.getPropertyValue('--color-background-main').trim() || '#000000';
+    return color;
+  }, []);
+
   // Log performance metrics every second
   useEffect(() => {
     if (!DEBUG_PERFORMANCE) return;
@@ -235,28 +243,46 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({ config }) => {
 
     lastFrameTimeRef.current = now;
 
-    // Clear the entire canvas with proper dimensions
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Use theme background color consistently
+    const backgroundColor = getThemeBackgroundColor();
+    // Clear and set background with a single fill
+    ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw each wave
     const firstWaveMaxAmplitude = calculateMaxAmplitude(config.waves[0], config.sineWaves);
-    const waveHeight = config.renderConfig.numLines * (config.renderConfig.lineWidth + config.renderConfig.lineSpacing) + config.renderConfig.waveSpacing
-    const topspacing = firstWaveMaxAmplitude + 0.5 * waveHeight
+    const waveHeight = config.renderConfig.numLines * (config.renderConfig.lineWidth + config.renderConfig.lineSpacing) + config.renderConfig.waveSpacing;
+    const topspacing = firstWaveMaxAmplitude + 0.5 * waveHeight;
 
     config.waves.slice(0, config.numWaves).forEach((wave, index) => {
-      // Add amplitude padding to ALL waves to shift everything down
-      // division by 1 will make the waves non overlapping.
-      let waveY =  index * (waveHeight/3);
+      let waveY = index * (waveHeight/3);
       drawWave(ctx, wave, waveY + topspacing);
     });
 
-    // Increase animation speed by adjusting time increment
-    timeRef.current += 0.016 * config.globalSpeed; // Adjusted for 60fps and using globalSpeed
+    timeRef.current += 0.016 * config.globalSpeed;
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [drawWave, config]);
+  }, [drawWave, config, getThemeBackgroundColor]);
+
+  // Add theme change observer
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext('2d', { alpha: false });
+        if (ctx) {
+          const backgroundColor = getThemeBackgroundColor();
+          ctx.fillStyle = backgroundColor;
+          ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+      }
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme']
+    });
+
+    return () => observer.disconnect();
+  }, [getThemeBackgroundColor]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

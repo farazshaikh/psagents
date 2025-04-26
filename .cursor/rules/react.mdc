@@ -11,31 +11,66 @@ alwaysApply: false
 
 2. Think slowly, step by step, and outline your reasoning
 
-3. Always refer to them styling logic in @gameshow/web/reactweb/styles/README.md
+3. Always use function components over class components:
+   - Use the FC type annotation for clear prop typing
+   - Leverage hooks for state and side effects
+   - Keep components pure and testable
+   - Exception: Only use class components for Error Boundaries
 
-4. Check if a similar component and styles that already exists in any of the following locations
+4. Follow theme-driven component design:
+   - All basic components must be unopinionated
+   - Use the useTheme hook to access theme values
+   - Never hardcode colors, spacing, typography, or other design tokens
+   - Structure styles to support theme switching
+   - Example pattern:
+     ```typescript
+     const Component: React.FC<Props> = () => {
+       const { theme } = useTheme();
+       return <div style={{
+         color: theme.colors.text.primary,
+         padding: theme.spacing.md,
+         fontFamily: theme.typography.fontFamily
+       }}>
+         {/* content */}
+       </div>
+     };
+     ```
+
+5. Always refer to them styling logic in @gameshow/web/reactweb/styles/README.md
+
+6. Check if a similar component and styles that already exists in any of the following locations
    1. gameshow/web/reactweb/src/components
    2. gameshow/web/reactweb/styles
    3. component specific style
 
-
-5. If it doesn't exist, generate a detailed prompt for the component, including:
+7. If it doesn't exist, generate a detailed prompt for the component, including:
    - Component name and purpose
    - Desired props and their types
+   - Theme integration requirements
    - Any specific styling or behavior requirements
    - Mention of using CSS for styling
    - Request for TypeScript usage
-   - Maintain styling consitency for color themes, fonts, font sizing - similar to the Instagram app and its it live feature.
-   - Create components that can be built and test in isolation. Prioritize composability, reuse and simplicity.
-   - Avoid all use of static images etc for styling keep the who UI text based, for small animation use JS animations if possible.
-   - Make use of common unicode character for UX elements as needed, for example instead of a image of a green dot use the corresponding unicode character.
+   - Maintain styling consistency for color themes, fonts, font sizing - similar to the Instagram app and its live feature
+   - Create components that can be built and test in isolation. Prioritize composability, reuse and simplicity
+   - Avoid all use of static images etc for styling keep the whole UI text based, for small animation use JS animations if possible
+   - Make use of common unicode character for UX elements as needed, for example instead of an image of a green dot use the corresponding unicode character
 
-
-6. After generating, adapt the component to fit our project structure:
+8. After generating, adapt the component to fit our project structure:
    - Ensure it follows our existing component patterns
    - Add any necessary custom logic or state management
+   - Verify theme integration is complete
+   - Check that all visual properties come from theme
 
-7. Always delete files that are not referenced from the project anymore
+9. Component Structure:
+   ```
+   ComponentName/
+   ├── index.tsx          # Function component with theme integration
+   ├── styles.css         # Only structural CSS, no colors/tokens
+   ├── types.ts           # TypeScript definitions
+   └── test.tsx          # Component tests
+   ```
+
+10. Always delete files that are not referenced from the project anymore
 
 8. Comments start with // don't include them in rules.
 -- Follwing are comments dont include them

@@ -2,6 +2,8 @@ import React from 'react';
 import CyclicWaveBackground from '../../basic/CyclicWaveBackground';
 import { endConfig, startConfig } from './HeroSection/waveConfigs';
 import CompanyHeader from './CompanyHeader';
+import ThemeSwitcher from '../../basic/ThemeSwitcher';
+import { useTheme } from '../../basic/ThemeProvider';
 import './styles.css';
 
 /**
@@ -21,34 +23,38 @@ import './styles.css';
  * - Second Transition (9s, 45%): Smooth transition back to start
  */
 export const Landing: React.FC = () => {
+  const { isDark, toggleTheme } = useTheme();
   const companyName = process.env.REACT_APP_COMPANY_NAME || 'TrueMetry';
 
   return (
-    <div className="landing">
-      <nav className="landing-nav">
-        {/* Navigation content will go here */}
-      </nav>
+    <div className="landing-container">
+      <ThemeSwitcher isDark={isDark} onToggle={toggleTheme} />
+      <div className="landing">
+        <nav className="landing-nav">
+          {/* Navigation content will go here */}
+        </nav>
 
-      <div className="landing-content">
-        <CompanyHeader
-          companyName={companyName}
-          tag_line_word_1="Entertainment"
-          tag_line_word_2="Evolved"
-        />
-        <button className="cta-button">Get Started</button>
-      </div>
+        <div className="landing-content">
+          <CompanyHeader
+            companyName={companyName}
+            tag_line_word_1="Entertainment"
+            tag_line_word_2="Evolved"
+          />
+          <button className="cta-button">Get Started</button>
+        </div>
 
-      <div className="landing-wave-section">
-        <CyclicWaveBackground
-          startConfig={startConfig}
-          endConfig={endConfig}
-          cycleConfig={{
-            cycleDuration: 20000,     // 20 seconds per cycle
-            startWaitTime: 0.00,     // 0.6% brief pause at start
-            endWaitTime: 0.00,       // 0.5% brief pause at end
-            transitionTime: 0.495      // 45% each transition (9s × 2 = 18s)
-          }}
-        />
+        <div className="landing-wave-section">
+          <CyclicWaveBackground
+            startConfig={startConfig}
+            endConfig={endConfig}
+            cycleConfig={{
+              cycleDuration: 20000,     // 20 seconds per cycle
+              startWaitTime: 0.00,     // 0.6% brief pause at start
+              endWaitTime: 0.00,       // 0.5% brief pause at end
+              transitionTime: 0.495      // 45% each transition (9s × 2 = 18s)
+            }}
+          />
+        </div>
       </div>
     </div>
   );

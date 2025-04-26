@@ -242,4 +242,98 @@
 
 .btn-text:hover {
   background: rgba(59, 130, 246, 0.1);
+}
+
+/* Button base styles */
+.button {
+  /* Base styles using theme variables */
+  background-color: var(--colors-accent-primary);
+  color: var(--colors-fg-inverse);
+  border: 1px solid var(--colors-border-light);
+  box-shadow: var(--effects-shadow-sm);
+  transition: var(--button-transition);
+}
+
+.button:hover {
+  background-color: var(--colors-accent-secondary);
+  border-color: var(--colors-border-medium);
+  box-shadow: var(--effects-shadow-md);
+}
+
+.button:active {
+  background-color: var(--colors-accent-primary);
+  border-color: var(--colors-border-heavy);
+  box-shadow: var(--effects-shadow-sm);
+}
+
+/* Primary button */
+.button-primary {
+  background: var(--colors-gradients-primary);
+  color: var(--colors-fg-inverse);
+  border: none;
+}
+
+.button-primary:hover {
+  filter: brightness(1.1);
+}
+
+.button-primary:active {
+  filter: brightness(0.9);
+}
+
+/* Secondary button */
+.button-secondary {
+  background-color: var(--colors-bg-secondary);
+  color: var(--colors-fg-primary);
+  border: 1px solid var(--colors-border-light);
+}
+
+.button-secondary:hover {
+  background-color: var(--colors-bg-tertiary);
+  border-color: var(--colors-border-medium);
+}
+
+.button-secondary:active {
+  background-color: var(--colors-bg-primary);
+  border-color: var(--colors-border-heavy);
+}
+
+/* Error button */
+.button-error {
+  background-color: var(--colors-accent-error);
+  color: var(--colors-fg-inverse);
+  border: none;
+}
+
+.button-error:hover {
+  filter: brightness(1.1);
+}
+
+.button-error:active {
+  filter: brightness(0.9);
+}
+
+/* Disabled state */
+.button-disabled {
+  opacity: var(--button-disabled-opacity);
+  cursor: not-allowed;
+  background-color: var(--colors-bg-tertiary);
+  color: var(--colors-fg-tertiary);
+  border: 1px solid var(--colors-border-light);
+}
+
+/* Size variants */
+.button-small {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--typography-fontSize-sm);
+}
+
+.button-medium {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--typography-fontSize-md);
+}
+
+.button-large {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--typography-fontSize-lg);
 } 

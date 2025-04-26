@@ -1,5 +1,14 @@
-/* Import Inter font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* CompanyHeader styles */
+.company-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
+}
 
 @keyframes fadeInUp {
   from {
@@ -26,91 +35,86 @@
 @keyframes evolveUp {
   0% {
     opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  60% {
-    transform: translateY(-5px) scale(1.02);
+    transform: translateY(20px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-.company-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
 .company-name {
-  font-size: 5.2rem;
-  font-weight: 700;
-  margin-bottom: 0.8rem;
-  color: rgba(255, 255, 255, 0.92);
+  font-size: calc(var(--typography-fontSize-2xl) * 2);
+  font-weight: var(--typography-fontWeight-bold);
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-primary);
   opacity: 0;
   animation: fadeInUp 0.6s ease-out forwards;
   letter-spacing: -0.03em;
-  line-height: 1.1;
+  line-height: var(--typography-lineHeight-tight);
 }
 
 .tagline {
-  font-size: 2rem;
-  font-weight: 400;
-  margin-bottom: 2.5rem;
-  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--typography-fontSize-xl);
+  font-weight: var(--typography-fontWeight-regular);
+  margin-bottom: var(--spacing-xl);
+  color: var(--color-text-secondary);
   letter-spacing: -0.02em;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.15em;
-  line-height: 1.2;
+  line-height: var(--typography-lineHeight-normal);
 }
 
 .tagline-part {
   opacity: 0;
   animation: slideInSide 0.7s ease-out 0.3s forwards;
   transform-origin: left center;
-  font-weight: 300;
-  color: rgba(255, 255, 255, 0.78);
+  font-weight: var(--typography-fontWeight-regular);
+  color: var(--color-text-primary);
 }
 
 .tagline-separator {
   opacity: 0;
   animation: fadeInUp 0.6s ease-out 0.3s forwards;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-disabled);
 }
 
 .tagline-evolved {
   opacity: 0;
   animation: evolveUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.7s forwards;
-  color: rgba(255, 255, 255, 0.92);
-  transform-origin: bottom center;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-weight: var(--typography-fontWeight-bold);
+  color: var(--color-text-primary);
 }
 
 .tagline-exclamation {
   opacity: 0;
   animation: fadeInUp 0.4s ease-out 1.2s forwards;
-  color: rgba(255, 255, 255, 0.45);
-  font-weight: 300;
+  color: var(--color-text-disabled);
+  font-weight: var(--typography-fontWeight-regular);
+}
+
+.debug-visible {
+  color: red !important;
+  opacity: 1 !important;
+  animation: none !important;
+  background: none !important;
+  -webkit-text-fill-color: red !important;
+  display: inline !important;
+  visibility: visible !important;
+  z-index: 9999 !important;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .company-name {
-    font-size: 3.8rem;
+    font-size: calc(var(--typography-fontSize-2xl) * 1.5);
     letter-spacing: -0.02em;
   }
 
   .tagline {
-    font-size: 1.6rem;
+    font-size: var(--typography-fontSize-lg);
     letter-spacing: -0.01em;
   }
-} 
+}

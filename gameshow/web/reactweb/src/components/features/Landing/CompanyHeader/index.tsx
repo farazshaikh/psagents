@@ -15,7 +15,7 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({ companyName, tag_l
         <span className="tagline-part">{tag_line_word_1}</span>
         <span className="tagline-separator">, </span>
         <span className="tagline-evolved">{tag_line_word_2}</span>
-        <span className="tagline-exclamation"> !</span>
+        <span className="tagline-exclamation">!</span>
       </h2>
     </div>
   );

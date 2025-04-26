@@ -1,6 +1,5 @@
 import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Landing } from './components/features/Landing';
-import { LandingV2 } from './components/features/LandingV2';
 import { useFeatureFlags } from './utils/featureFlags';
 import './App.css';
 import { ThemeProvider } from './components/basic/ThemeProvider';
@@ -14,6 +13,9 @@ function App() {
   const { debugConsole } = useFeatureFlags();
   const performanceMetricsRef = useRef<string[]>([]);
   const hasLoggedMetrics = useRef(false);
+
+  // Get initial theme from localStorage or default to light
+  const initialTheme = localStorage.getItem('theme') || 'light';
 
   // Collect performance metrics early
   useEffect(() => {
@@ -69,15 +71,15 @@ function App() {
   }, []);
 
   return (
-    <ThemeProvider defaultTheme="light">
-      <div className="app">
-        <LandingV2 />
-        {debugConsole && (
-          <Suspense fallback={null}>
-            <DebugConsole initialVisible={false} />
-          </Suspense>
-        )}
-      </div>
+    <ThemeProvider themeName={initialTheme as 'light' | 'dark'}>
+    <div className="app">
+        <Landing />
+      {debugConsole && (
+        <Suspense fallback={null}>
+          <DebugConsole initialVisible={false} />
+        </Suspense>
+      )}
+    </div>
     </ThemeProvider>
   );
 }

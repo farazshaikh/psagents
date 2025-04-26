@@ -1,125 +1,111 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTheme } from '../ThemeProvider';
-import './styles.css';
+import './Button.css';
 
-type BaseButtonProps = {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'contained' | 'outlined' | 'text';
   color?: 'primary' | 'secondary' | 'error';
   size?: 'small' | 'medium' | 'large';
-  effect?: 'frosted' | 'gradient';
+  effect?: 'frosted' | 'gradient' | 'none';
   fullWidth?: boolean;
   iconStart?: React.ReactNode;
   iconEnd?: React.ReactNode;
-  component?: React.ElementType;
-  children?: React.ReactNode;
-};
-
-export type ButtonProps = BaseButtonProps & (
-  | (Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof BaseButtonProps> & { href?: never })
-  | (Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, keyof BaseButtonProps> & { href: string })
-);
+  href?: string;
+}
 
 export const Button: React.FC<ButtonProps> = ({
   variant = 'contained',
   color = 'primary',
   size = 'medium',
-  effect,
+  effect = 'none',
   fullWidth = false,
+  disabled = false,
+  className = '',
   iconStart,
   iconEnd,
-  component: Component = 'button',
-  className = '',
-  style: propStyle = {},
   children,
+  href,
+  onClick,
   ...props
 }) => {
   const { theme } = useTheme();
-  
-  const buttonStyle = React.useMemo(() => {
-    const baseStyle = {
+
+  const buttonStyles = useMemo(() => {
+    const styles: React.CSSProperties = {
+      backgroundColor: 'transparent',
+      color: theme.colors.fg.primary,
       borderRadius: theme.buttons.borderRadius,
       transition: theme.buttons.transition,
-      ...(fullWidth && { width: '100%' }),
     };
 
     if (variant === 'contained') {
-      return {
-        ...baseStyle,
-        backgroundColor: theme.buttons.variants.contained.background,
-        color: theme.buttons.variants.contained.color,
-        '&:hover': {
-          backgroundColor: theme.buttons.variants.contained.hover,
-        },
-        '&:active': {
-          backgroundColor: theme.buttons.variants.contained.active,
-        },
-      };
+      if (color === 'primary') {
+        styles.backgroundColor = theme.colors.accent.primary;
+        styles.color = theme.colors.fg.inverse;
+      } else if (color === 'secondary') {
+        styles.backgroundColor = theme.colors.accent.secondary;
+        styles.color = theme.colors.fg.inverse;
+      } else if (color === 'error') {
+        styles.backgroundColor = theme.colors.accent.error;
+        styles.color = theme.colors.fg.inverse;
+      }
+    } else if (variant === 'outlined') {
+      styles.border = `1px solid ${theme.colors.border.medium}`;
+      styles.color = theme.colors.fg.primary;
+    } else if (effect === 'gradient') {
+      styles.background = theme.colors.gradients[color === 'primary' ? 'primary' : 'surface'];
+      styles.color = theme.colors.fg.primary;
     }
 
-    if (variant === 'outlined') {
-      return {
-        ...baseStyle,
-        border: theme.buttons.variants.outlined.border,
-        color: theme.buttons.variants.outlined.color,
-        backgroundColor: 'transparent',
-        '&:hover': {
-          backgroundColor: theme.buttons.variants.outlined.hover,
-        },
-      };
+    if (disabled) {
+      styles.opacity = theme.buttons.disabled.opacity;
+      styles.cursor = 'not-allowed';
+      styles.backgroundColor = theme.colors.bg.tertiary;
+      styles.color = theme.colors.fg.tertiary;
+      styles.border = `1px solid ${theme.colors.border.light}`;
     }
 
-    // text variant
-    return {
-      ...baseStyle,
-      backgroundColor: 'transparent',
-      color: theme.buttons.variants.text.color,
-      '&:hover': {
-        backgroundColor: theme.buttons.variants.text.hover,
-      },
-    };
-  }, [theme, variant, fullWidth]);
+    return styles;
+  }, [theme, variant, color, effect, disabled]);
 
-  const classes = [
-    'btn',
-    `btn-${variant}`,
-    color !== 'primary' && `btn-${color}`,
-    size !== 'medium' && `btn-${size}`,
-    effect && `btn-effect-${effect}`,
-    fullWidth && 'btn-full-width',
-    (iconStart || iconEnd) && 'btn-icon',
+  const buttonClasses = [
+    'button',
+    `button--${size}`,
+    fullWidth && 'button--full-width',
+    disabled && 'button--disabled',
     className
-  ]
-    .filter(Boolean)
-    .join(' ');
+  ].filter(Boolean).join(' ');
+
+  const commonProps = {
+    className: buttonClasses,
+    style: buttonStyles,
+    disabled,
+    onClick: disabled ? undefined : onClick,
+    ...props
+  };
 
   const content = (
     <>
-      {iconStart && <span className="btn-icon-start">{iconStart}</span>}
+      {iconStart}
       {children}
-      {iconEnd && <span className="btn-icon-end">{iconEnd}</span>}
+      {iconEnd}
     </>
   );
 
-  const finalStyle = {
-    ...buttonStyle,
-    ...propStyle,
-  };
-
-  if ('href' in props) {
+  if (href && !disabled) {
     return (
-      <a className={classes} style={finalStyle} {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
+      <a
+        href={href}
+        {...commonProps as React.AnchorHTMLAttributes<HTMLAnchorElement>}
+      >
         {content}
       </a>
     );
   }
 
   return (
-    <Component 
-      className={classes} 
-      style={finalStyle}
-      {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
-    >
+    <button {...commonProps}>
       {content}
-    </Component>
+    </button>
   );
 }; 

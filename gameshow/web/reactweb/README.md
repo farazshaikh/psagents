@@ -312,3 +312,118 @@ The project includes a simple Python-based development server:
 ## License
 
 [License Type] - See LICENSE file in the top level folder or the repositorfor details
+
+## Theming and Styling Architecture
+
+The project follows a clear separation of styling concerns to maintain consistency, reusability, and component independence:
+
+### 1. Global Theme Provider
+
+- **Purpose**: Manages all color-related styling and design tokens
+- **Implementation**: Uses React Context to provide theme variables
+- **Responsibilities**:
+  - Color schemes and palettes
+  - Gradient definitions
+  - Text colors and opacity levels
+  - Border colors
+  - Shadow effects
+  - Global design tokens
+- **Usage**:
+  ```typescript
+  const Button = () => {
+    // Colors and effects from theme
+    return <button style={{ 
+      background: 'var(--effects-gradient-primary)',
+      color: 'var(--color-text-primary)'
+    }}/>;
+  };
+  ```
+
+### 2. Component-Level Styling
+
+- **Purpose**: Controls component-specific visual behaviors
+- **Scope**: Limited to the component's own styles.css file
+- **Responsibilities**:
+  - Animations and transitions
+  - Shape transformations
+  - Interactive behaviors
+  - Component-specific layout
+  - State-based styling (hover, active, etc.)
+- **Example**:
+  ```css
+  .tagline-evolved {
+    /* Animation controlled by component */
+    opacity: 0;
+    animation: evolveUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    transform-origin: bottom center;
+    
+    /* Colors from theme */
+    background: var(--effects-gradient-evolved);
+  }
+  ```
+
+### 3. Parent-Level Layout
+
+- **Purpose**: Controls component positioning and layout relationships
+- **Scope**: Defined in parent component styles
+- **Responsibilities**:
+  - Component positioning
+  - Spacing between components
+  - Grid/Flex layouts
+  - Responsive layout adjustments
+  - Container dimensions
+- **Example**:
+  ```css
+  .landing-content {
+    /* Layout controlled by parent */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    padding: var(--spacing-xl);
+  }
+  ```
+
+### Benefits of This Architecture
+
+1. **Maintainability**:
+   - Clear separation of concerns
+   - Easy theme switching
+   - Simplified debugging
+   - Centralized color management
+
+2. **Reusability**:
+   - Components are self-contained
+   - Consistent theming across app
+   - Portable animations
+   - Flexible layouts
+
+3. **Performance**:
+   - Optimized style recalculations
+   - Reduced CSS specificity conflicts
+   - Better rendering performance
+
+4. **Development Workflow**:
+   - Clear ownership of styles
+   - Easier collaboration
+   - Simplified refactoring
+   - Better code organization
+
+### Best Practices
+
+1. **Theme Usage**:
+   - Always use theme variables for colors
+   - Never hardcode color values
+   - Use semantic color names
+   - Maintain dark/light theme parity
+
+2. **Component Styles**:
+   - Keep animations with components
+   - Use BEM naming convention
+   - Avoid global styles
+   - Document complex animations
+
+3. **Layout Patterns**:
+   - Use CSS Grid/Flexbox
+   - Implement mobile-first
+   - Use theme spacing units
+   - Keep layouts flexible

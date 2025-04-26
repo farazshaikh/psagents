@@ -1,233 +1,19 @@
-import React, { createContext, useContext, useCallback, useMemo } from 'react';
-import '../../styles/themes/base.css';
-import '../../styles/themes/dark.css';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { lightTheme } from '../../../styles/themes/light';
+import { darkTheme } from '../../../styles/themes/dark';
+import type { Theme, ThemeName } from '../../../styles/themes/types';
 
-interface Typography {
-  fontFamily: string;
-  fontSize: {
-    small: string;
-    medium: string;
-    large: string;
-  };
-  fontWeight: {
-    regular: number;
-    medium: number;
-    bold: number;
-  };
-}
-
-interface Colors {
-  primary: {
-    main: string;
-    hover: string;
-    active: string;
-    text: string;
-  };
-  secondary: {
-    main: string;
-    hover: string;
-    active: string;
-    text: string;
-  };
-  error: {
-    main: string;
-    hover: string;
-    active: string;
-    text: string;
-  };
-  background: {
-    default: string;
-    paper: string;
-  };
-  text: {
-    primary: string;
-    secondary: string;
-    disabled: string;
-  };
-}
-
-interface Spacing {
-  unit: number;
-  xs: string;
-  sm: string;
-  md: string;
-  lg: string;
-  xl: string;
-}
-
-interface ButtonTheme {
-  borderRadius: string;
-  transition: string;
-  sizes: {
-    small: {
-      padding: string;
-      fontSize: string;
-    };
-    medium: {
-      padding: string;
-      fontSize: string;
-    };
-    large: {
-      padding: string;
-      fontSize: string;
-    };
-  };
-  disabled: {
-    opacity: number;
-  };
-  variants: {
-    contained: {
-      background: string;
-      color: string;
-      hover: string;
-      active: string;
-      focusRing: string;
-    };
-    outlined: {
-      border: string;
-      color: string;
-      hover: string;
-      focusRing: string;
-    };
-    text: {
-      color: string;
-      hover: string;
-      focusRing: string;
-    };
-  };
-  effects: {
-    frosted: {
-      background: string;
-      backdropFilter: string;
-      border: string;
-    };
-    gradient: {
-      background: string;
-      hover: string;
-      active: string;
-    };
-  };
-}
-
-interface Theme {
-  typography: Typography;
-  colors: Colors;
-  spacing: Spacing;
-  buttons: ButtonTheme;
-}
-
-interface ThemeContextValue {
+interface ThemeContextType {
   theme: Theme;
-  updateTheme: (newTheme: Partial<Theme>) => void;
+  isDark: boolean;
+  toggleTheme: () => void;
 }
 
-const defaultTheme: Theme = {
-  typography: {
-    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif',
-    fontSize: {
-      small: '0.875rem',
-      medium: '1rem',
-      large: '1.125rem',
-    },
-    fontWeight: {
-      regular: 400,
-      medium: 500,
-      bold: 700,
-    },
-  },
-  colors: {
-    primary: {
-      main: '#0095F6',
-      hover: '#1877F2',
-      active: '#0077E6',
-      text: '#FFFFFF',
-    },
-    secondary: {
-      main: '#6B7280',
-      hover: '#4B5563',
-      active: '#374151',
-      text: '#FFFFFF',
-    },
-    error: {
-      main: '#DC2626',
-      hover: '#B91C1C',
-      active: '#991B1B',
-      text: '#FFFFFF',
-    },
-    background: {
-      default: '#FFFFFF',
-      paper: '#F3F4F6',
-    },
-    text: {
-      primary: '#111827',
-      secondary: '#6B7280',
-      disabled: '#9CA3AF',
-    },
-  },
-  spacing: {
-    unit: 4,
-    xs: '0.25rem',
-    sm: '0.5rem',
-    md: '1rem',
-    lg: '1.5rem',
-    xl: '2rem',
-  },
-  buttons: {
-    borderRadius: '4px',
-    transition: 'all 0.2s ease-in-out',
-    sizes: {
-      small: {
-        padding: '0.25rem 0.5rem',
-        fontSize: '0.875rem',
-      },
-      medium: {
-        padding: '0.5rem 1rem',
-        fontSize: '1rem',
-      },
-      large: {
-        padding: '0.75rem 1.5rem',
-        fontSize: '1.125rem',
-      },
-    },
-    disabled: {
-      opacity: 0.6,
-    },
-    variants: {
-      contained: {
-        background: '#0095F6',
-        color: '#FFFFFF',
-        hover: '#1877F2',
-        active: '#0077E6',
-        focusRing: 'rgba(0, 149, 246, 0.5)',
-      },
-      outlined: {
-        border: '1px solid #0095F6',
-        color: '#0095F6',
-        hover: 'rgba(0, 149, 246, 0.1)',
-        focusRing: 'rgba(0, 149, 246, 0.5)',
-      },
-      text: {
-        color: '#0095F6',
-        hover: 'rgba(0, 149, 246, 0.1)',
-        focusRing: 'rgba(0, 149, 246, 0.5)',
-      },
-    },
-    effects: {
-      frosted: {
-        background: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(8px)',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
-      },
-      gradient: {
-        background: 'linear-gradient(135deg, #FF4E50 0%, #F43B47 50%, #453A94 100%)',
-        hover: 'linear-gradient(135deg, #FF6B6C 0%, #F54E59 50%, #5849A6 100%)',
-        active: 'linear-gradient(135deg, #E64547 0%, #DC3540 50%, #3D3485 100%)',
-      },
-    },
-  },
-};
-
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType>({
+  theme: lightTheme,
+  isDark: false,
+  toggleTheme: () => {},
+});
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
@@ -238,37 +24,100 @@ export const useTheme = () => {
 };
 
 interface ThemeProviderProps {
-  initialTheme?: Partial<Theme>;
   children: React.ReactNode;
+  themeName: ThemeName;
 }
 
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({
-  initialTheme,
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ 
   children,
+  themeName,
 }) => {
-  const [theme, setTheme] = React.useState<Theme>({
-    ...defaultTheme,
-    ...initialTheme,
+  const [isDark, setIsDark] = useState(() => {
+    localStorage.setItem('theme', themeName);
+    return themeName === 'dark';
   });
 
-  const updateTheme = useCallback((newTheme: Partial<Theme>) => {
-    setTheme(prevTheme => ({
-      ...prevTheme,
-      ...newTheme,
-    }));
+  const theme = isDark ? darkTheme : lightTheme;
+
+  const toggleTheme = useCallback(() => {
+    setIsDark(prev => {
+      const newTheme = !prev ? 'dark' : 'light';
+      localStorage.setItem('theme', newTheme);
+      return !prev;
+    });
   }, []);
 
-  const value = useMemo(
-    () => ({
-      theme,
-      updateTheme,
-    }),
-    [theme, updateTheme]
-  );
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    // Set theme class
+    root.classList.remove('dark-theme', 'light-theme');
+    root.classList.add(isDark ? 'dark-theme' : 'light-theme');
+    
+    // Set core colors immediately
+    root.style.setProperty('--color-background-main', theme.colors.bg.primary);
+    root.style.setProperty('--color-background-surface', theme.colors.bg.secondary);
+    root.style.setProperty('--color-background-elevated', theme.colors.bg.tertiary);
+    root.style.setProperty('--color-text-primary', theme.colors.fg.primary);
+    root.style.setProperty('--color-text-secondary', theme.colors.fg.secondary);
+    root.style.setProperty('--color-text-disabled', theme.colors.fg.tertiary);
+    root.style.setProperty('--color-primary', theme.colors.accent.primary);
+    root.style.setProperty('--color-secondary', theme.colors.accent.secondary);
+    root.style.setProperty('--color-border', theme.colors.border.light);
+
+    // Set button styles
+    root.style.setProperty('--button-primary-background', theme.buttons.primary.background);
+    root.style.setProperty('--button-primary-text', theme.buttons.primary.text);
+    root.style.setProperty('--button-primary-hover', theme.buttons.primary.hover);
+    root.style.setProperty('--button-primary-active', theme.buttons.primary.active);
+    
+    root.style.setProperty('--button-secondary-background', theme.buttons.secondary.background);
+    root.style.setProperty('--button-secondary-text', theme.buttons.secondary.text);
+    root.style.setProperty('--button-secondary-hover', theme.buttons.secondary.hover);
+    root.style.setProperty('--button-secondary-active', theme.buttons.secondary.active);
+    
+    root.style.setProperty('--button-error-background', theme.buttons.error.background);
+    root.style.setProperty('--button-error-text', theme.buttons.error.text);
+    root.style.setProperty('--button-error-hover', theme.buttons.error.hover);
+    root.style.setProperty('--button-error-active', theme.buttons.error.active);
+    
+    root.style.setProperty('--button-disabled-opacity', theme.buttons.disabled.opacity.toString());
+    root.style.setProperty('--button-border-radius', theme.buttons.borderRadius);
+    root.style.setProperty('--button-transition', theme.buttons.transition);
+
+    // Set typography
+    root.style.setProperty('--typography-font-family', theme.typography.fontFamily);
+    Object.entries(theme.typography.fontSize).forEach(([key, value]) => {
+      root.style.setProperty(`--typography-font-size-${key}`, value);
+    });
+    Object.entries(theme.typography.fontWeight).forEach(([key, value]) => {
+      root.style.setProperty(`--typography-font-weight-${key}`, value.toString());
+    });
+    Object.entries(theme.typography.lineHeight).forEach(([key, value]) => {
+      root.style.setProperty(`--typography-line-height-${key}`, value.toString());
+    });
+
+    // Set spacing
+    Object.entries(theme.spacing).forEach(([key, value]) => {
+      root.style.setProperty(`--spacing-${key}`, value);
+    });
+
+    // Set effects
+    root.style.setProperty('--effects-gradient-primary', theme.colors.gradients.primary);
+    root.style.setProperty('--effects-gradient-dark', theme.colors.gradients.surface);
+    root.style.setProperty('--effects-gradient-accent', theme.colors.gradients.accent);
+
+    // Set body styles consistently
+    document.body.style.backgroundColor = theme.colors.bg.primary;
+    document.body.style.color = theme.colors.fg.primary;
+
+  }, [theme, isDark]);
 
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext.Provider value={{ theme, isDark, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
-}; 
+};
+
+export default ThemeProvider;
