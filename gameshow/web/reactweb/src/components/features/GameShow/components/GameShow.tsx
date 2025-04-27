@@ -1,7 +1,6 @@
 import React from 'react';
 import { GameProvider } from '../context/GameContext';
 import { ChatPanel } from './ChatPanel';
-import { DebugConsole } from './DebugConsole';
 import { VideoPlayer } from './VideoPlayer';
 
 interface GameShowProps {
@@ -20,7 +19,6 @@ export const GameShow: React.FC<GameShowProps> = ({ videoUrl, captionsUrl }) => 
 
         <VideoPlayer src={videoUrl} captionsSrc={captionsUrl} />
         <ChatPanel />
-        <DebugConsole />
       </div>
     </GameProvider>
   );

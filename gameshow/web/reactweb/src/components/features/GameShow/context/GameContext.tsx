@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import { debugLog, debugError } from '../../../../utils/debug';
 
 export interface Question {
   id: string;
@@ -64,145 +65,165 @@ const initialState: GameState = {
 };
 
 const gameReducer = (state: GameState, action: GameAction): GameState => {
-  switch (action.type) {
-    case 'START_GAME':
-      return {
-        ...state,
-        isPlaying: true,
-        messages: [],
-        isTyping: false,
-        currentCaption: null,
-        currentQuestion: null,
-        hasShownFinalQuestion: false,
-        countdown: 20,
-        videoState: {
-          ...state.videoState,
-          currentTime: 0,
-          isPlaying: true,
-          isMuted: false
-        }
-      };
+  try {
+    const newState = (() => {
+      switch (action.type) {
+        case 'START_GAME':
+          return {
+            ...state,
+            isPlaying: true,
+            messages: [],
+            isTyping: false,
+            currentCaption: null,
+            currentQuestion: null,
+            hasShownFinalQuestion: false,
+            countdown: 20,
+            videoState: {
+              ...state.videoState,
+              currentTime: 0,
+              isPlaying: true,
+              isMuted: false
+            }
+          };
 
-    case 'SET_VIDEO_STATE':
-      return {
-        ...state,
-        videoState: {
-          ...state.videoState,
-          ...action.payload,
-        },
-      };
+        case 'SET_VIDEO_STATE':
+          return {
+            ...state,
+            videoState: {
+              ...state.videoState,
+              ...action.payload,
+            },
+          };
 
-    case 'ADD_MESSAGE':
-      // Don't add duplicate messages
-      if (state.messages.some(msg => msg.text === action.payload.text)) {
-        return state;
-      }
-      return {
-        ...state,
-        messages: [...state.messages, action.payload],
-        isTyping: false
-      };
-
-    case 'SET_CURRENT_QUESTION':
-      if (action.payload) {
-        return {
-          ...state,
-          currentQuestion: action.payload,
-          messages: [...state.messages, {
-            id: `question-${action.payload.id}`,
-            text: action.payload.text,
-            type: 'question',
-            timestamp: Date.now()
-          }]
-        };
-      }
-      return {
-        ...state,
-        currentQuestion: null
-      };
-
-    case 'SET_CURRENT_CAPTION':
-      if (action.payload === null) {
-        return {
-          ...state,
-          currentCaption: null
-        };
-      }
-      return {
-        ...state,
-        currentCaption: action.payload,
-        messages: [
-          ...state.messages,
-          {
-            id: `caption-${Date.now()}`,
-            text: action.payload,
-            type: 'text',
-            timestamp: Date.now()
+        case 'ADD_MESSAGE':
+          // Don't add duplicate messages
+          if (state.messages.some(msg => msg.text === action.payload.text)) {
+            return state;
           }
-        ]
-      };
+          return {
+            ...state,
+            messages: [...state.messages, action.payload],
+            isTyping: false
+          };
 
-    case 'SET_TYPING':
-      return {
-        ...state,
-        isTyping: action.payload,
-      };
+        case 'SET_CURRENT_QUESTION':
+          if (action.payload) {
+            return {
+              ...state,
+              currentQuestion: action.payload,
+              messages: [...state.messages, {
+                id: `question-${action.payload.id}`,
+                text: action.payload.text,
+                type: 'question' as const,
+                timestamp: Date.now()
+              }]
+            };
+          }
+          return {
+            ...state,
+            currentQuestion: null
+          };
 
-    case 'SET_FINAL_QUESTION_SHOWN':
-      return {
-        ...state,
-        hasShownFinalQuestion: action.payload,
-      };
+        case 'SET_CURRENT_CAPTION':
+          if (action.payload === null) {
+            return {
+              ...state,
+              currentCaption: null
+            };
+          }
+          return {
+            ...state,
+            currentCaption: action.payload,
+            messages: [
+              ...state.messages,
+              {
+                id: `caption-${Date.now()}`,
+                text: action.payload,
+                type: 'text' as const,
+                timestamp: Date.now()
+              }
+            ]
+          };
 
-    case 'QUESTION_TIMEOUT':
-      // Check if we already have a timeout message for this question
-      if (state.messages.some(msg => 
-        msg.type === 'text' && 
-        msg.text === "Time's up! Let's move on to the next question."
-      )) {
-        return state;
+        case 'SET_TYPING':
+          return {
+            ...state,
+            isTyping: action.payload,
+          };
+
+        case 'SET_FINAL_QUESTION_SHOWN':
+          return {
+            ...state,
+            hasShownFinalQuestion: action.payload,
+          };
+
+        case 'QUESTION_TIMEOUT':
+          // Check if we already have a timeout message for this question
+          if (state.messages.some(msg => 
+            msg.type === 'text' && 
+            msg.text === "Time's up! Let's move on to the next question."
+          )) {
+            return state;
+          }
+          return {
+            ...state,
+            messages: [
+              ...state.messages,
+              {
+                id: Date.now().toString(),
+                type: 'text' as const,
+                text: "Time's up! Let's move on to the next question.",
+                timestamp: Date.now()
+              }
+            ]
+          };
+
+        case 'ANSWER_SELECTED':
+          return {
+            ...state,
+            messages: [
+              ...state.messages,
+              {
+                id: Date.now().toString(),
+                type: 'text' as const,
+                text: `You selected option ${String.fromCharCode(65 + action.payload)}. Let's see if that's correct!`,
+                timestamp: Date.now()
+              }
+            ]
+          };
+
+        case 'SET_COUNTDOWN':
+          return {
+            ...state,
+            countdown: action.payload
+          };
+
+        case 'DECREMENT_COUNTDOWN':
+          return {
+            ...state,
+            countdown: Math.max(0, state.countdown - 1)
+          };
+
+        default:
+          return state;
       }
-      return {
-        ...state,
-        messages: [
-          ...state.messages,
-          {
-            id: Date.now().toString(),
-            type: 'text',
-            text: "Time's up! Let's move on to the next question.",
-            timestamp: Date.now()
-          }
-        ]
-      };
+    })();
 
-    case 'ANSWER_SELECTED':
-      return {
-        ...state,
-        messages: [
-          ...state.messages,
-          {
-            id: Date.now().toString(),
-            type: 'text',
-            text: `You selected option ${String.fromCharCode(65 + action.payload)}. Let's see if that's correct!`,
-            timestamp: Date.now()
-          }
-        ]
-      };
+    // Log state changes
+    debugLog(
+      `Game state updated:\n` +
+      `    - Action: ${action.type}\n` +
+      `    - Playing: ${newState.isPlaying}\n` +
+      `    - Video time: ${newState.videoState.currentTime.toFixed(3)}\n` +
+      `    - Messages: ${newState.messages.length}\n` +
+      `    - Current caption: ${newState.currentCaption || 'none'}\n` +
+      `    - Has final question: ${newState.hasShownFinalQuestion}`
+    );
 
-    case 'SET_COUNTDOWN':
-      return {
-        ...state,
-        countdown: action.payload
-      };
-
-    case 'DECREMENT_COUNTDOWN':
-      return {
-        ...state,
-        countdown: Math.max(0, state.countdown - 1)
-      };
-
-    default:
-      return state;
+    return newState;
+  } catch (error) {
+    debugError(error as Error, `Error in gameReducer with action: ${action.type}`);
+    return state;
   }
 };
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useGameContext } from '../context/GameContext';
 import type { Message } from '../context/GameContext';
+import { debugLog, debugError } from '../../../../utils/debug';
 
 interface MessageProps {
   message: Message;
@@ -9,42 +10,6 @@ interface MessageProps {
 
 const COUNTDOWN_DURATION = 20000; // 20 seconds in milliseconds
 const OPTION_REVEAL_DELAY = 1000; // 1 second between each option reveal
-
-// Debounce function
-const debounce = (func: Function, wait: number) => {
-  let timeout: NodeJS.Timeout | null = null;
-  return (...args: any[]) => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-// Debug logging function
-const logToDebug = debounce((message: string) => {
-  const timestamp = new Date().toISOString();
-  const logMessage = `[LOG] [${timestamp}] ${message}`;
-  
-  // Log to browser console
-  console.log(logMessage);
-  
-  // Find debug console element
-  const debugConsole = document.querySelector('.debug-messages');
-  if (debugConsole) {
-    const logEntry = document.createElement('div');
-    logEntry.className = 'debug-message';
-    logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
-    debugConsole.appendChild(logEntry);
-    
-    // Keep only last 100 messages
-    const messages = debugConsole.children;
-    while (messages.length > 100) {
-      debugConsole.removeChild(messages[0]);
-    }
-    
-    // Scroll to bottom
-    debugConsole.scrollTop = debugConsole.scrollHeight;
-  }
-}, 100);
 
 const MessageComponent: React.FC<MessageProps> = ({ message, isLast }) => {
   const { state, dispatch } = useGameContext();
@@ -63,54 +28,61 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast }) => {
   }, []);
 
   const startCountdown = useCallback(() => {
-    if (startTimeRef.current === null) {
-      startTimeRef.current = Date.now();
-      logToDebug('Countdown started');
-      
-      const updateCountdown = () => {
-        if (startTimeRef.current === null) return;
-        
-        const elapsedTime = Date.now() - startTimeRef.current;
-        const remainingTime = Math.max(0, COUNTDOWN_DURATION - elapsedTime);
-        const newSecondsLeft = Math.ceil(remainingTime / 1000);
-        const newProgress = (remainingTime / COUNTDOWN_DURATION) * 100;
-        
-        setProgress(newProgress);
-        
-        // Only update seconds display when it changes
-        if (newSecondsLeft !== lastSecondRef.current) {
-          lastSecondRef.current = newSecondsLeft;
-          setSecondsLeft(newSecondsLeft);
-          logToDebug(`Countdown: ${newSecondsLeft}s remaining`);
-        }
-        
-        if (remainingTime > 0) {
-          animationFrameRef.current = requestAnimationFrame(updateCountdown);
-        } else {
-          logToDebug('Countdown finished, dispatching timeout');
-          dispatch({ type: 'QUESTION_TIMEOUT' });
-        }
-      };
-      
-      updateCountdown();
+    try {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = Date.now();
+        debugLog('Countdown started');
+
+        const updateCountdown = () => {
+          try {
+            if (startTimeRef.current === null) return;
+
+            const elapsedTime = Date.now() - startTimeRef.current;
+            const remainingTime = Math.max(0, COUNTDOWN_DURATION - elapsedTime);
+            const newSecondsLeft = Math.ceil(remainingTime / 1000);
+            const newProgress = (remainingTime / COUNTDOWN_DURATION) * 100;
+
+            setProgress(newProgress);
+
+            if (newSecondsLeft !== lastSecondRef.current) {
+              lastSecondRef.current = newSecondsLeft;
+              setSecondsLeft(newSecondsLeft);
+              debugLog(`Countdown: ${newSecondsLeft}s remaining`);
+            }
+
+            if (remainingTime > 0) {
+              animationFrameRef.current = requestAnimationFrame(updateCountdown);
+            } else {
+              debugLog('Countdown finished, dispatching timeout');
+              dispatch({ type: 'QUESTION_TIMEOUT' });
+            }
+          } catch (error) {
+            debugError(error as Error, 'Error in countdown update');
+          }
+        };
+
+        updateCountdown();
+      }
+    } catch (error) {
+      debugError(error as Error, 'Error starting countdown');
     }
   }, [dispatch]);
 
   useEffect(() => {
     if (message.type === 'question' && currentQuestion) {
-      logToDebug('Question received, starting option reveal sequence');
+      debugLog('Question received, starting option reveal sequence');
       const timeouts: NodeJS.Timeout[] = [];
-      
+
       const revealOptions = () => {
         if (revealedOptions < currentQuestion.options.length) {
           setRevealedOptions(prev => {
             const newValue = prev + 1;
-            logToDebug(`Revealing option ${newValue} of ${currentQuestion.options.length}`);
+            debugLog(`Revealing option ${newValue} of ${currentQuestion.options.length}`);
             return newValue;
           });
           timeouts.push(setTimeout(revealOptions, OPTION_REVEAL_DELAY));
         } else {
-          logToDebug('All options revealed, starting countdown');
+          debugLog('All options revealed, starting countdown');
           startCountdown();
         }
       };
@@ -120,7 +92,7 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast }) => {
 
       return () => {
         timeouts.forEach(clearTimeout);
-        logToDebug('Cleaned up option reveal timeouts');
+        debugLog('Cleaned up option reveal timeouts');
       };
     }
   }, [message.type, currentQuestion, revealedOptions, startCountdown]);
@@ -129,7 +101,7 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast }) => {
     return () => {
       if (animationFrameRef.current !== undefined) {
         cancelAnimationFrame(animationFrameRef.current);
-        logToDebug('Cleaned up animation frame');
+        debugLog('Cleaned up animation frame');
       }
     };
   }, []);
@@ -138,7 +110,7 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast }) => {
     if (startTimeRef.current !== null) {
       if (animationFrameRef.current !== undefined) {
         cancelAnimationFrame(animationFrameRef.current);
-        logToDebug(`Option ${optionIndex} selected, countdown stopped`);
+        debugLog(`Option ${optionIndex} selected, countdown stopped`);
       }
       dispatch({ type: 'ANSWER_SELECTED', payload: optionIndex });
     }
@@ -166,9 +138,9 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast }) => {
                 ))}
                 {revealedOptions === currentQuestion.options.length && (
                   <div className="countdown-container">
-                    <div 
-                      className="countdown-progress" 
-                      style={{ width: `${progress}%` }} 
+                    <div
+                      className="countdown-progress"
+                      style={{ width: `${progress}%` }}
                     />
                     <div className="countdown-display">
                       {secondsLeft}s
@@ -232,8 +204,8 @@ const ParticipateButton: React.FC = () => {
         <span className="avatar-letter">Z</span>
       </div>
       <div className="message-content">
-        <button 
-          className={`participate-button ${clicked ? 'clicked' : ''}`} 
+        <button
+          className={`participate-button ${clicked ? 'clicked' : ''}`}
           onClick={handleStart}
           disabled={clicked}
         >
@@ -245,56 +217,34 @@ const ParticipateButton: React.FC = () => {
   );
 };
 
-// Debug Console Component
-const DebugConsole: React.FC = () => {
+export const ChatPanel: React.FC = () => {
+  const { state } = useGameContext();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [state.messages]);
+
   return (
-    <div className="debug-console">
-      <div className="debug-header">
-        <span>Debug Console</span>
-        <div className="debug-controls">
-          <button onClick={() => document.querySelector('.debug-messages')?.scrollTo(0, 0)}>
-            Top
-          </button>
-          <button onClick={() => document.querySelector('.debug-messages')?.scrollTo(0, Number.MAX_SAFE_INTEGER)}>
-            Bottom
-          </button>
-        </div>
+    <div className="chat-panel">
+      <div className="messages-container">
+        {state.messages.map((message, index) => (
+          <MessageComponent
+            key={message.id}
+            message={message}
+            isLast={index === state.messages.length - 1}
+          />
+        ))}
+        {state.isTyping && <TypingIndicator />}
+        {!state.isPlaying && <ParticipateButton />}
+        <div ref={messagesEndRef} />
       </div>
-      <div className="debug-messages"></div>
     </div>
   );
 };
 
-export const ChatPanel: React.FC = () => {
-  const { state } = useGameContext();
-  const { isPlaying, messages, isTyping } = state;
-  const chatRef = useRef<HTMLDivElement>(null);
-
-  // Handle message display and auto-scroll
-  useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-    }
-  }, [messages, isTyping]);
-
-  return (
-    <>
-      <div className="chat-panel">
-        <div id="captions" ref={chatRef}>
-          {!isPlaying && <ParticipateButton />}
-          {messages.map((message, index) => (
-            <MessageComponent 
-              key={message.id} 
-              message={message} 
-              isLast={index === messages.length - 1}
-            />
-          ))}
-          {isTyping && <TypingIndicator />}
-        </div>
-      </div>
-      <DebugConsole />
-    </>
-  );
-};
-
-export default ChatPanel; 
+export default ChatPanel;

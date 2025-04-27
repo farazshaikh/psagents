@@ -3,7 +3,6 @@ import './styles.css';
 import { GameProvider } from './context/GameContext';
 import { VideoPlayer } from './components/VideoPlayer';
 import { ChatPanel } from './components/ChatPanel';
-import { DebugConsole } from './components/DebugConsole';
 
 interface GameShowProps {
   videoUrl: string;
@@ -23,7 +22,6 @@ export const GameShow: React.FC<GameShowProps> = ({ videoUrl, captionsUrl }) => 
         </div>
 
         <ChatPanel />
-        <DebugConsole />
       </div>
     </GameProvider>
   );
