@@ -1,3 +1,22 @@
+/**
+ * Typography Component Styles
+ *
+ * This stylesheet ONLY handles typography-specific styling:
+ * - Font sizes
+ * - Line heights
+ * - Font weights
+ * - Letter spacing
+ * - Text alignment
+ * - Text transforms
+ * - Text truncation
+ *
+ * Colors are NOT managed here - they are handled by the theme system.
+ * This separation ensures:
+ * 1. Typography remains focused on text presentation
+ * 2. Color theming can be changed without affecting typography
+ * 3. Better maintainability and clearer separation of concerns
+ */
+
 .typography {
   margin: 0;
   padding: 0;
@@ -87,27 +106,6 @@
   font-weight: var(--typography-overline-weight, 500);
   text-transform: uppercase;
   letter-spacing: var(--typography-overline-spacing, 0.08em);
-}
-
-/* Colors */
-.color-primary {
-  color: var(--color-primary, #0095f6);
-}
-
-.color-secondary {
-  color: var(--color-secondary, #8e8e8e);
-}
-
-.color-error {
-  color: var(--color-error, #ed4956);
-}
-
-.color-text {
-  color: var(--color-text, #262626);
-}
-
-.color-textSecondary {
-  color: var(--color-text-secondary, #8e8e8e);
 }
 
 /* Alignment */

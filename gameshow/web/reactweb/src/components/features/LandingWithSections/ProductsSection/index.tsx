@@ -15,8 +15,6 @@ const ProductsSection: React.FC<ProductsSectionProps> = ({ content }) => {
   const sectionStyle = {
     backgroundColor: theme.colors.bg.primary,
     '--glow-color': theme.colors.accent.primary,
-    '--text-gradient-start': theme.colors.fg.primary,
-    '--text-gradient-end': theme.colors.fg.secondary,
   } as React.CSSProperties;
 
   return (
@@ -24,25 +22,27 @@ const ProductsSection: React.FC<ProductsSectionProps> = ({ content }) => {
       <div className="products-section-glow" />
       <div className="products-section-content">
         <Typography
-          variant="h2"
-          className="products-header"
-          component="h2"
+          variant="h1"
+          align="center"
+          gutterBottom
         >
           {content.header}
         </Typography>
 
         <Typography
           variant="h3"
+          align="center"
+          gutterBottom
           className="products-subheader"
-          component="h3"
         >
           {content.subHeader}
         </Typography>
 
         <Typography
           variant="h4"
+          color="primary"
+          align="center"
           className="products-category"
-          component="h4"
         >
           {content.categoryTerm}
         </Typography>
@@ -54,7 +54,8 @@ const ProductsSection: React.FC<ProductsSectionProps> = ({ content }) => {
         </div>
 
         <Typography
-          variant="body1"
+          variant="subtitle1"
+          align="center"
           className="products-closing"
         >
           {content.closingLine}

@@ -21,7 +21,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ content }) => {
         </Typography>
         <Typography
           variant="h2"
-          color="text"
         >
           {content.name}
         </Typography>
@@ -30,7 +29,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ content }) => {
       <div className="product-card-description">
         <Typography
           variant="h4"
-          color="textSecondary"
         >
           {content.description}
         </Typography>

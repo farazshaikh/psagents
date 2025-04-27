@@ -1,21 +1,48 @@
+/**
+ * Typography Component
+ * 
+ * A foundational component for text presentation that handles:
+ * - Text hierarchy (h1-h6, body, etc.)
+ * - Font styling (size, weight, line height, etc.)
+ * - Text alignment and transforms
+ * 
+ * Colors are handled by the theme system, not this component.
+ * The color prop simply connects to theme variables.
+ */
+
 import React, { ElementType } from 'react';
+import { useTheme } from '../ThemeProvider';
 import './styles.css';
 
 export interface TypographyProps {
+  /** The typographic hierarchy variant to use */
   variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'subtitle1' | 'subtitle2' | 'body1' | 'body2' | 'caption' | 'overline';
+  
+  /** Override the HTML element used */
   component?: ElementType;
-  color?: 'primary' | 'secondary' | 'error' | 'text' | 'textSecondary';
+  
+  /** Theme-based color to use. Maps to theme.colors.fg.* values */
+  color?: 'primary' | 'secondary' | 'tertiary' | 'inverse';
+  
+  /** Text alignment */
   align?: 'left' | 'center' | 'right' | 'justify';
+  
+  /** Add bottom margin */
   gutterBottom?: boolean;
+  
+  /** Prevent text wrapping */
   noWrap?: boolean;
+  
+  /** Additional CSS classes */
   className?: string;
+  
   children: React.ReactNode;
 }
 
 const Typography: React.FC<TypographyProps> = ({
   variant = 'body1',
   component,
-  color = 'text',
+  color = 'primary',
   align = 'left',
   gutterBottom = false,
   noWrap = false,
@@ -23,12 +50,16 @@ const Typography: React.FC<TypographyProps> = ({
   children,
   ...props
 }) => {
+  const { theme } = useTheme();
   const Component = component || getDefaultComponent(variant);
+  
+  const style = {
+    color: theme.colors.fg[color],
+  };
   
   const classes = [
     'typography',
     `typography-${variant}`,
-    `color-${color}`,
     `align-${align}`,
     gutterBottom ? 'gutter-bottom' : '',
     noWrap ? 'no-wrap' : '',
@@ -36,7 +67,7 @@ const Typography: React.FC<TypographyProps> = ({
   ].filter(Boolean).join(' ');
 
   return (
-    <Component className={classes} {...props}>
+    <Component className={classes} style={style} {...props}>
       {children}
     </Component>
   );
