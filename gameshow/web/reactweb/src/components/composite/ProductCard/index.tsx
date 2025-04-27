@@ -20,7 +20,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ content }) => {
           {content.unicodeLogo}
         </Typography>
         <Typography
-          variant="h2"
+          variant="h1"
         >
           {content.name}
         </Typography>
@@ -28,7 +28,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ content }) => {
 
       <div className="product-card-description">
         <Typography
-          variant="h4"
+          variant="h2"
         >
           {content.description}
         </Typography>
@@ -40,7 +40,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ content }) => {
           variant="contained"
           color="primary"
           fullWidth
-          effect="gradient"
         >
           {content.ctaText}
         </Button>

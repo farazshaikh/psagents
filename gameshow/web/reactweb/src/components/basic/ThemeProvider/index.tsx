@@ -54,7 +54,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     root.classList.remove('dark-theme', 'light-theme');
     root.classList.add(isDark ? 'dark-theme' : 'light-theme');
     
-    // Set core colors immediately
+    // Set core colors
     root.style.setProperty('--color-background-main', theme.colors.bg.primary);
     root.style.setProperty('--color-background-surface', theme.colors.bg.secondary);
     root.style.setProperty('--color-background-elevated', theme.colors.bg.tertiary);
@@ -84,23 +84,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     root.style.setProperty('--button-disabled-opacity', theme.buttons.disabled.opacity.toString());
     root.style.setProperty('--button-border-radius', theme.buttons.borderRadius);
     root.style.setProperty('--button-transition', theme.buttons.transition);
-
-    // Set typography
-    root.style.setProperty('--typography-font-family', theme.typography.fontFamily);
-    Object.entries(theme.typography.fontSize).forEach(([key, value]) => {
-      root.style.setProperty(`--typography-font-size-${key}`, value);
-    });
-    Object.entries(theme.typography.fontWeight).forEach(([key, value]) => {
-      root.style.setProperty(`--typography-font-weight-${key}`, value.toString());
-    });
-    Object.entries(theme.typography.lineHeight).forEach(([key, value]) => {
-      root.style.setProperty(`--typography-line-height-${key}`, value.toString());
-    });
-
-    // Set spacing
-    Object.entries(theme.spacing).forEach(([key, value]) => {
-      root.style.setProperty(`--spacing-${key}`, value);
-    });
 
     // Set effects
     root.style.setProperty('--effects-gradient-primary', theme.colors.gradients.primary);

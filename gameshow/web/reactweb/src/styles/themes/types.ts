@@ -39,49 +39,6 @@ export interface Theme {
       heavy: string;    // Heavy overlay
     };
   };
-  typography: {
-    fontFamily: string;
-    fontSize: {
-      xs: string;      // 12px - Small labels, metadata
-      sm: string;      // 14px - Secondary text, captions
-      md: string;      // 16px - Body text
-      lg: string;      // 18px - Large body text
-      xl: string;      // 24px - Section headings
-      '2xl': string;   // 32px - Page titles
-      '3xl': string;   // 40px - Hero text
-      '4xl': string;   // 48px - Large display text
-    };
-    fontWeight: {
-      light: number;    // 300 - Light text
-      regular: number;  // 400 - Regular body text
-      medium: number;   // 500 - Medium emphasis
-      semibold: number; // 600 - High emphasis
-      bold: number;     // 700 - Maximum emphasis
-    };
-    lineHeight: {
-      none: number;     // 1 - Headings
-      tight: number;    // 1.25 - Compact text
-      snug: number;     // 1.375 - Slightly compact
-      normal: number;   // 1.5 - Body text
-      relaxed: number;  // 1.625 - Relaxed body text
-      loose: number;    // 2 - Very relaxed
-    };
-    letterSpacing: {
-      tighter: string;  // -0.05em
-      tight: string;    // -0.025em
-      normal: string;   // 0
-      wide: string;     // 0.025em
-      wider: string;    // 0.05em
-    };
-  };
-  spacing: {
-    xs: string;
-    sm: string;
-    md: string;
-    lg: string;
-    xl: string;
-    '2xl': string;
-  };
   buttons: {
     primary: {
       background: string;
@@ -130,8 +87,6 @@ export interface Theme {
 export function validateTheme(theme: Partial<Theme>): theme is Theme {
   const requiredFields = [
     'colors',
-    'typography',
-    'spacing',
     'buttons',
     'effects'
   ];

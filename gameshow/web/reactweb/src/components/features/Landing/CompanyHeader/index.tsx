@@ -1,4 +1,5 @@
 import React from 'react';
+import Typography from '../../../basic/Typography';
 import './styles.css';
 
 interface CompanyHeaderProps {
@@ -9,14 +10,24 @@ interface CompanyHeaderProps {
 
 export const CompanyHeader: React.FC<CompanyHeaderProps> = ({ companyName, tag_line_word_1, tag_line_word_2 }) => {
   return (
-    <div className="company-header">
-      <h1 className="company-name">{companyName}</h1>
-      <h2 className="tagline">
-        <span className="tagline-part">{tag_line_word_1}</span>
-        <span className="tagline-separator">, </span>
-        <span className="tagline-evolved">{tag_line_word_2}</span>
-        <span className="tagline-exclamation">!</span>
-      </h2>
+    <div>
+      <Typography variant="h1" align="center" className="company-name animate-fade-in">
+        {companyName}
+      </Typography>
+      <div className="tagline">
+        <Typography variant="h1" component="span" className="tagline-part">
+          {tag_line_word_1}
+        </Typography>
+        <Typography variant="h1" component="span" className="tagline-separator">
+          ,{' '}
+        </Typography>
+        <Typography variant="h1" component="span" className="tagline-evolved">
+          {tag_line_word_2}
+        </Typography>
+        <Typography variant="h1" component="span" className="tagline-exclamation">
+          !
+        </Typography>
+      </div>
     </div>
   );
 };

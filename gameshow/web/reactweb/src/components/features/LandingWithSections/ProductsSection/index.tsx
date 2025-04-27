@@ -19,7 +19,6 @@ const ProductsSection: React.FC<ProductsSectionProps> = ({ content }) => {
 
   return (
     <section id={content.id} className="products-section" style={sectionStyle}>
-      <div className="products-section-glow" />
       <div className="products-section-content">
         <Typography
           variant="h1"

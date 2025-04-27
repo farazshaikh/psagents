@@ -1,43 +1,38 @@
 /*
  * Component Stylesheet Guidelines:
- * 
+ *
  * 1. In accordance with Theme System individual component stylesheets:
  *    - SHOULD NOT have any hardcoded rgba/hex colors
  *    - MUST use theme variables for all colors
  *    - CAN define new gradients using theme colors
- * 
+ *
  * 2. In accordance with the Typography System individual component stylesheets:
  *    - SHOULD NOT define font sizes or weights directly
  *    - MUST use typography variables for text styling
  *    - Handles text hierarchy (H1, H2, SubHeading, etc.)
- * 
+ *
  * 3. For Layout Control individual stylesheets:
  *    - CAN control alignment and layout of children
  *    - Parent components responsible for thier first level child positioning and alignment
- * 
+ *
  * CompanyHeader Component Styles:
  * This stylesheet manages the layout and positioning of the company header:
  * - Header container positioning and dimensions
  * - Logo and navigation item alignment
  * - Responsive layout adjustments
  * - Interactive state animations
- * 
+ *
  * All text styling is delegated to Typography component
  * All colors are pulled from theme variables
  */
 
-/* CompanyHeader styles */
-.company-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  margin-bottom: 2rem;
-  position: relative;
-  z-index: 1;
+
+/* Company Name Styles */
+.company-header .company-name.typography {
+  margin-bottom: var(--spacing-lg);
 }
 
+/* Animations */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -50,57 +45,40 @@
 }
 
 @keyframes slideInSide {
-  0% {
+  from {
     opacity: 0;
     transform: translateX(-40px) rotate(-2deg);
   }
-  100% {
+  to {
     opacity: 1;
     transform: translateX(0) rotate(0);
   }
 }
 
-@keyframes evolveUp {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.company-name {
-  font-size: calc(var(--typography-fontSize-2xl) * 2);
-  font-weight: var(--typography-fontWeight-bold);
-  margin-bottom: var(--spacing-md);
-  color: var(--color-text-primary);
+/* Animation Classes */
+.animate-fade-in {
   opacity: 0;
   animation: fadeInUp 0.6s ease-out forwards;
-  letter-spacing: -0.03em;
-  line-height: var(--typography-lineHeight-tight);
 }
 
+.animate-slide-in {
+  opacity: 0;
+  animation: slideInSide 0.7s ease-out forwards;
+}
+
+/* Tagline Layout */
 .tagline {
-  font-size: var(--typography-fontSize-xl);
-  font-weight: var(--typography-fontWeight-regular);
-  margin-bottom: var(--spacing-xl);
-  color: var(--color-text-secondary);
-  letter-spacing: -0.02em;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.15em;
-  line-height: var(--typography-lineHeight-normal);
+  margin-bottom: var(--spacing-lg);
 }
 
 .tagline-part {
   opacity: 0;
   animation: slideInSide 0.7s ease-out 0.3s forwards;
   transform-origin: left center;
-  font-weight: var(--typography-fontWeight-regular);
-  color: var(--color-text-primary);
 }
 
 .tagline-separator {
@@ -111,38 +89,18 @@
 
 .tagline-evolved {
   opacity: 0;
-  animation: evolveUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.7s forwards;
-  font-weight: var(--typography-fontWeight-bold);
-  color: var(--color-text-primary);
+  animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.7s forwards;
 }
 
 .tagline-exclamation {
   opacity: 0;
   animation: fadeInUp 0.4s ease-out 1.2s forwards;
   color: var(--color-text-disabled);
-  font-weight: var(--typography-fontWeight-regular);
 }
 
-.debug-visible {
-  color: red !important;
-  opacity: 1 !important;
-  animation: none !important;
-  background: none !important;
-  -webkit-text-fill-color: red !important;
-  display: inline !important;
-  visibility: visible !important;
-  z-index: 9999 !important;
-}
-
-/* Responsive adjustments */
+/* Responsive Layout */
 @media (max-width: 768px) {
-  .company-name {
-    font-size: calc(var(--typography-fontSize-2xl) * 1.5);
-    letter-spacing: -0.02em;
-  }
-
-  .tagline {
-    font-size: var(--typography-fontSize-lg);
-    letter-spacing: -0.01em;
+  .company-header {
+    margin-bottom: var(--spacing-lg);
   }
 }

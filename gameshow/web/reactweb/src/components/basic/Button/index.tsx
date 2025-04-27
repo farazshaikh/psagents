@@ -1,15 +1,28 @@
 import React, { useMemo } from 'react';
 import { useTheme } from '../ThemeProvider';
+import Typography from '../Typography';
 import './styles.css';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Visual style variant */
   variant?: 'contained' | 'outlined' | 'text';
+
+  /** Theme-based color to use. Maps to theme.colors.accent.* values */
   color?: 'primary' | 'secondary' | 'error';
+
+  /** Typography-based size variant */
   size?: 'small' | 'medium' | 'large';
-  effect?: 'frosted' | 'gradient' | 'none';
+
+  /** Make the button take full width */
   fullWidth?: boolean;
+
+  /** Icon to show before text */
   iconStart?: React.ReactNode;
+
+  /** Icon to show after text */
   iconEnd?: React.ReactNode;
+
+  /** Convert button to anchor tag */
   href?: string;
 }
 
@@ -17,7 +30,6 @@ export const Button: React.FC<ButtonProps> = ({
   variant = 'contained',
   color = 'primary',
   size = 'medium',
-  effect = 'none',
   fullWidth = false,
   disabled = false,
   className = '',
@@ -33,30 +45,22 @@ export const Button: React.FC<ButtonProps> = ({
   const buttonStyles = useMemo(() => {
     const styles: React.CSSProperties = {
       backgroundColor: 'transparent',
-      color: theme.colors.fg.primary,
       borderRadius: theme.buttons.borderRadius,
       transition: theme.buttons.transition,
     };
 
+    // Apply variant styles
     if (variant === 'contained') {
-      if (color === 'primary') {
-        styles.backgroundColor = theme.colors.accent.primary;
-        styles.color = theme.colors.fg.inverse;
-      } else if (color === 'secondary') {
-        styles.backgroundColor = theme.colors.accent.secondary;
-        styles.color = theme.colors.fg.inverse;
-      } else if (color === 'error') {
-        styles.backgroundColor = theme.colors.accent.error;
-        styles.color = theme.colors.fg.inverse;
-      }
+      styles.backgroundColor = theme.colors.accent[color];
+      styles.color = theme.colors.fg.inverse;
     } else if (variant === 'outlined') {
       styles.border = `1px solid ${theme.colors.border.medium}`;
-      styles.color = theme.colors.fg.primary;
-    } else if (effect === 'gradient') {
-      styles.background = theme.colors.gradients[color === 'primary' ? 'primary' : 'surface'];
-      styles.color = theme.colors.fg.primary;
+      styles.color = theme.colors.accent[color];
+    } else {
+      styles.color = theme.colors.accent[color];
     }
 
+    // Apply disabled styles
     if (disabled) {
       styles.opacity = theme.buttons.disabled.opacity;
       styles.cursor = 'not-allowed';
@@ -66,7 +70,7 @@ export const Button: React.FC<ButtonProps> = ({
     }
 
     return styles;
-  }, [theme, variant, color, effect, disabled]);
+  }, [theme, variant, color, disabled]);
 
   const buttonClasses = [
     'button',
@@ -85,11 +89,15 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const content = (
-    <>
-      {iconStart}
+    <Typography
+      variant={size === 'small' ? 'body2' : 'body1'}
+      component="span"
+      className="button__content"
+    >
+      {iconStart && <span className="button__icon button__icon--start">{iconStart}</span>}
       {children}
-      {iconEnd}
-    </>
+      {iconEnd && <span className="button__icon button__icon--end">{iconEnd}</span>}
+    </Typography>
   );
 
   if (href && !disabled) {
@@ -108,4 +116,4 @@ export const Button: React.FC<ButtonProps> = ({
       {content}
     </button>
   );
-}; 
+};

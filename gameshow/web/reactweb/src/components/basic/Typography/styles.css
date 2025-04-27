@@ -1,3 +1,36 @@
+/*
+ * Component Stylesheet Guidelines:
+ *
+ * 1. In accordance with Theme System individual component stylesheets:
+ *    - SHOULD NOT have any hardcoded rgba/hex colors
+ *    - MUST use theme variables for all colors
+ *    - CAN define new gradients using theme colors
+ *
+ * 2. In accordance with the Typography System individual component stylesheets:
+ *    - SHOULD NOT define font sizes or weights directly
+ *    - MUST use typography variables for text styling
+ *    - Handles text hierarchy (H1, H2, SubHeading, etc.)
+ *
+ * 3. For Layout Control individual stylesheets:
+ *    - CAN control alignment and layout of children
+ *    - Parent components responsible for thier first level child positioning and alignment
+ *
+ * Typography Component Styles:
+ * This is the core typography system stylesheet that defines the base text hierarchy.
+ * It ONLY handles typography-specific styling:
+ * - Font sizes through CSS variables
+ * - Line heights through CSS variables
+ * - Font weights through CSS variables
+ * - Letter spacing through CSS variables
+ * - Text alignment utilities
+ * - Text transforms
+ *
+ * This stylesheet explicitly does NOT handle:
+ * - Colors (managed by theme system)
+ * - Layout/positioning (managed by parent components)
+ * - Component-specific styling
+ */
+
 /**
  * Typography Component Styles
  *
@@ -17,128 +50,198 @@
  * 3. Better maintainability and clearer separation of concerns
  */
 
-/*
- * Component Stylesheet Guidelines:
- * 
- * 1. In accordance with Theme System individual component stylesheets:
- *    - SHOULD NOT have any hardcoded rgba/hex colors
- *    - MUST use theme variables for all colors
- *    - CAN define new gradients using theme colors
- * 
- * 2. In accordance with the Typography System individual component stylesheets:
- *    - SHOULD NOT define font sizes or weights directly
- *    - MUST use typography variables for text styling
- *    - Handles text hierarchy (H1, H2, SubHeading, etc.)
- * 
- * 3. For Layout Control individual stylesheets:
- *    - CAN control alignment and layout of children
- *    - Parent components responsible for thier first level child positioning and alignment
- * 
- * Typography Component Styles:
- * This is the core typography system stylesheet that defines the base text hierarchy.
- * It ONLY handles typography-specific styling:
- * - Font sizes through CSS variables
- * - Line heights through CSS variables
- * - Font weights through CSS variables
- * - Letter spacing through CSS variables
- * - Text alignment utilities
- * - Text transforms
- * 
- * This stylesheet explicitly does NOT handle:
- * - Colors (managed by theme system)
- * - Layout/positioning (managed by parent components)
- * - Component-specific styling
- */
+/* Root Variables */
+:root {
+  /* Font Family - Apple/Instagram Style
+   * 1. SF Pro Display - Apple's system font
+   * 2. -apple-system - Fallback for older Apple devices
+   * 3. BlinkMacSystemFont - Chrome on macOS
+   * 4. Segoe UI - Windows
+   * 5. Roboto - Android
+   * 6. System fonts - Ultimate fallback
+   */
+  --typography-font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, -system-ui, sans-serif;
+
+  /* Monospace Font Family - For code and technical content
+   * 1. SF Mono - Apple's monospace font
+   * 2. SFMono-Regular - Older Apple devices
+   * 3. Menlo - Classic macOS
+   * 4. Monaco - Alternative macOS
+   * 5. Consolas - Windows
+   * 6. Liberation Mono - Linux
+   * 7. Monospace - Ultimate fallback
+   */
+  --typography-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  /* Font Sizes - Instagram/Apple Scale
+   * Follows Apple's typography scale with Instagram's content hierarchy
+   */
+  --typography-size-xs: 0.75rem;      /* 12px - Labels, metadata */
+  --typography-size-sm: 0.875rem;     /* 14px - Secondary text */
+  --typography-size-md: 1rem;         /* 16px - Body text */
+  --typography-size-lg: 1.125rem;     /* 18px - Large body */
+  --typography-size-xl: 1.75rem;      /* 28px - Section headers */
+  --typography-size-2xl: 2.25rem;     /* 36px - Page titles */
+  --typography-size-3xl: 3rem;        /* 48px - Hero headlines */
+  --typography-size-4xl: 3.75rem;     /* 60px - Display text */
+  --typography-size-5xl: 4.5rem;      /* 72px - Large display */
+  --typography-size-6xl: 6rem;        /* 96px - Hero display */
+
+  /* Font Weights - Apple/Instagram Style
+   * SF Pro Display specific weights
+   */
+  --typography-weight-light: 300;      /* Light - Subtle text */
+  --typography-weight-regular: 400;    /* Regular - Body text */
+  --typography-weight-medium: 500;     /* Medium - Semi-emphasized */
+  --typography-weight-semibold: 600;   /* Semibold - Headers, emphasis */
+  --typography-weight-bold: 700;       /* Bold - Strong emphasis */
+
+  /* Line Heights - Modern UI Standards */
+  --typography-line-height-none: 1;          /* Headlines */
+  --typography-line-height-tight: 1.2;       /* Compact headers */
+  --typography-line-height-snug: 1.333;      /* Subheaders */
+  --typography-line-height-normal: 1.5;      /* Body text */
+  --typography-line-height-relaxed: 1.625;   /* Large text */
+  --typography-line-height-loose: 1.75;      /* Extended text */
+
+  /* Letter Spacing - Apple/Instagram Style */
+  --typography-letter-spacing-tighter: -0.024em; /* Headlines */
+  --typography-letter-spacing-tight: -0.012em;   /* Subheaders */
+  --typography-letter-spacing-normal: 0;         /* Body text */
+  --typography-letter-spacing-wide: 0.012em;     /* Small text */
+  --typography-letter-spacing-wider: 0.024em;    /* Labels */
+
+  /* Spacing - Apple/Instagram 8pt Grid */
+  --spacing-xs: 0.5rem;    /* 8px */
+  --spacing-sm: 0.75rem;   /* 12px */
+  --spacing-md: 1rem;      /* 16px */
+  --spacing-lg: 1.5rem;    /* 24px */
+  --spacing-xl: 2rem;      /* 32px */
+  --spacing-2xl: 3rem;     /* 48px */
+}
 
 .typography {
   margin: 0;
   padding: 0;
+  font-family: var(--typography-font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-/* Variants */
+/* Variants - Instagram/Apple Style Typography */
 .typography-h1 {
-  font-size: var(--typography-h1-size, 2.5rem);
-  line-height: var(--typography-h1-line-height, 1.2);
-  font-weight: var(--typography-h1-weight, 600);
-  letter-spacing: var(--typography-h1-spacing, -0.02em);
+  font-size: var(--typography-size-3xl);
+  line-height: var(--typography-line-height-tight);
+  font-weight: var(--typography-weight-bold);
+  letter-spacing: var(--typography-letter-spacing-tighter);
 }
 
 .typography-h2 {
-  font-size: var(--typography-h2-size, 2rem);
-  line-height: var(--typography-h2-line-height, 1.2);
-  font-weight: var(--typography-h2-weight, 600);
-  letter-spacing: var(--typography-h2-spacing, -0.01em);
+  font-size: var(--typography-size-2xl);
+  line-height: var(--typography-line-height-tight);
+  font-weight: var(--typography-weight-semibold);
+  letter-spacing: var(--typography-letter-spacing-tighter);
 }
 
 .typography-h3 {
-  font-size: var(--typography-h3-size, 1.75rem);
-  line-height: var(--typography-h3-line-height, 1.3);
-  font-weight: var(--typography-h3-weight, 600);
-  letter-spacing: var(--typography-h3-spacing, -0.01em);
+  font-size: var(--typography-size-xl);
+  line-height: var(--typography-line-height-snug);
+  font-weight: var(--typography-weight-semibold);
+  letter-spacing: var(--typography-letter-spacing-tight);
 }
 
 .typography-h4 {
-  font-size: var(--typography-h4-size, 1.5rem);
-  line-height: var(--typography-h4-line-height, 1.3);
-  font-weight: var(--typography-h4-weight, 600);
+  font-size: var(--typography-size-lg);
+  line-height: var(--typography-line-height-snug);
+  font-weight: var(--typography-weight-semibold);
+  letter-spacing: var(--typography-letter-spacing-tight);
 }
 
 .typography-h5 {
-  font-size: var(--typography-h5-size, 1.25rem);
-  line-height: var(--typography-h5-line-height, 1.4);
-  font-weight: var(--typography-h5-weight, 600);
+  font-size: var(--typography-size-md);
+  line-height: var(--typography-line-height-normal);
+  font-weight: var(--typography-weight-semibold);
+  letter-spacing: var(--typography-letter-spacing-normal);
 }
 
 .typography-h6 {
-  font-size: var(--typography-h6-size, 1.125rem);
-  line-height: var(--typography-h6-line-height, 1.4);
-  font-weight: var(--typography-h6-weight, 600);
+  font-size: var(--typography-size-sm);
+  line-height: var(--typography-line-height-normal);
+  font-weight: var(--typography-weight-semibold);
+  letter-spacing: var(--typography-letter-spacing-normal);
 }
 
 .typography-subtitle1 {
-  font-size: var(--typography-subtitle1-size, 1rem);
-  line-height: var(--typography-subtitle1-line-height, 1.5);
-  font-weight: var(--typography-subtitle1-weight, 500);
-  letter-spacing: var(--typography-subtitle1-spacing, 0.01em);
+  font-size: var(--typography-size-md);
+  line-height: var(--typography-line-height-normal);
+  font-weight: var(--typography-weight-medium);
+  letter-spacing: var(--typography-letter-spacing-normal);
 }
 
 .typography-subtitle2 {
-  font-size: var(--typography-subtitle2-size, 0.875rem);
-  line-height: var(--typography-subtitle2-line-height, 1.5);
-  font-weight: var(--typography-subtitle2-weight, 500);
-  letter-spacing: var(--typography-subtitle2-spacing, 0.01em);
+  font-size: var(--typography-size-sm);
+  line-height: var(--typography-line-height-normal);
+  font-weight: var(--typography-weight-medium);
+  letter-spacing: var(--typography-letter-spacing-wide);
 }
 
 .typography-body1 {
-  font-size: var(--typography-body1-size, 0.875rem);
-  line-height: var(--typography-body1-line-height, 1.5);
-  font-weight: var(--typography-body1-weight, 400);
-  letter-spacing: var(--typography-body1-spacing, 0.01em);
+  font-size: var(--typography-size-md);
+  line-height: var(--typography-line-height-normal);
+  font-weight: var(--typography-weight-regular);
+  letter-spacing: var(--typography-letter-spacing-normal);
 }
 
 .typography-body2 {
-  font-size: var(--typography-body2-size, 0.8125rem);
-  line-height: var(--typography-body2-line-height, 1.5);
-  font-weight: var(--typography-body2-weight, 400);
-  letter-spacing: var(--typography-body2-spacing, 0.01em);
+  font-size: var(--typography-size-sm);
+  line-height: var(--typography-line-height-normal);
+  font-weight: var(--typography-weight-regular);
+  letter-spacing: var(--typography-letter-spacing-normal);
 }
 
 .typography-caption {
-  font-size: var(--typography-caption-size, 0.75rem);
-  line-height: var(--typography-caption-line-height, 1.5);
-  font-weight: var(--typography-caption-weight, 400);
-  letter-spacing: var(--typography-caption-spacing, 0.02em);
+  font-size: var(--typography-size-xs);
+  line-height: var(--typography-line-height-normal);
+  font-weight: var(--typography-weight-regular);
+  letter-spacing: var(--typography-letter-spacing-wide);
 }
 
 .typography-overline {
-  font-size: var(--typography-overline-size, 0.6875rem);
-  line-height: var(--typography-overline-line-height, 1.5);
-  font-weight: var(--typography-overline-weight, 500);
+  font-size: var(--typography-size-xs);
+  line-height: var(--typography-line-height-normal);
+  font-weight: var(--typography-weight-medium);
   text-transform: uppercase;
-  letter-spacing: var(--typography-overline-spacing, 0.08em);
+  letter-spacing: var(--typography-letter-spacing-wider);
+}
+
+.typography-display {
+  font-size: var(--typography-size-4xl);
+  line-height: var(--typography-line-height-none);
+  font-weight: var(--typography-weight-bold);
+  letter-spacing: var(--typography-letter-spacing-tighter);
+}
+
+/* Display Variants - Large Scale Typography */
+.typography-display1 {
+  font-size: var(--typography-size-6xl);
+  line-height: var(--typography-line-height-none);
+  font-weight: var(--typography-weight-bold);
+  letter-spacing: var(--typography-letter-spacing-tighter);
+}
+
+.typography-display2 {
+  font-size: var(--typography-size-5xl);
+  line-height: var(--typography-line-height-none);
+  font-weight: var(--typography-weight-bold);
+  letter-spacing: var(--typography-letter-spacing-tighter);
+}
+
+.typography-display3 {
+  font-size: var(--typography-size-4xl);
+  line-height: var(--typography-line-height-none);
+  font-weight: var(--typography-weight-bold);
+  letter-spacing: var(--typography-letter-spacing-tighter);
 }
 
 /* Alignment */
@@ -160,7 +263,7 @@
 
 /* Modifiers */
 .gutter-bottom {
-  margin-bottom: var(--typography-gutter, 0.35em);
+  margin-bottom: var(--spacing-md);
 }
 
 .no-wrap {
@@ -169,39 +272,25 @@
   text-overflow: ellipsis;
 }
 
-/* Responsive Typography */
+/* Responsive Typography - Apple/Instagram Style */
 @media (max-width: 960px) {
-  .typography-h1 {
-    font-size: 3rem;
-  }
-
-  .typography-h2 {
-    font-size: 2.5rem;
-  }
-
-  .typography-h3 {
-    font-size: 2rem;
-  }
-
-  .typography-h4 {
-    font-size: 1.75rem;
+  :root {
+    --typography-size-6xl: 4.5rem;    /* 72px -> 60px */
+    --typography-size-5xl: 3.75rem;   /* 60px -> 48px */
+    --typography-size-4xl: 3rem;      /* 48px -> 40px */
+    --typography-size-3xl: 2.5rem;    /* 40px -> 32px */
+    --typography-size-2xl: 2rem;      /* 32px -> 28px */
+    --typography-size-xl: 1.5rem;     /* 24px -> 20px */
   }
 }
 
 @media (max-width: 600px) {
-  .typography-h1 {
-    font-size: 2.5rem;
+  :root {
+    --typography-size-6xl: 3.75rem;   /* 60px -> 48px */
+    --typography-size-5xl: 3rem;      /* 48px -> 40px */
+    --typography-size-4xl: 2.5rem;    /* 40px -> 32px */
+    --typography-size-3xl: 2rem;      /* 32px -> 28px */
+    --typography-size-2xl: 1.75rem;   /* 28px -> 24px */
+    --typography-size-xl: 1.375rem;   /* 22px -> 20px */
   }
-
-  .typography-h2 {
-    font-size: 2rem;
-  }
-
-  .typography-h3 {
-    font-size: 1.75rem;
-  }
-
-  .typography-h4 {
-    font-size: 1.5rem;
-  }
-} 
+}

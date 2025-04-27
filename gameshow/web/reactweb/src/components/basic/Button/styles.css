@@ -1,20 +1,20 @@
 /*
  * Component Stylesheet Guidelines:
- * 
+ *
  * 1. In accordance with Theme System individual component stylesheets:
  *    - SHOULD NOT have any hardcoded rgba/hex colors
  *    - MUST use theme variables for all colors
  *    - CAN define new gradients using theme colors
- * 
+ *
  * 2. In accordance with the Typography System individual component stylesheets:
  *    - SHOULD NOT define font sizes or weights directly
  *    - MUST use typography variables for text styling
  *    - Handles text hierarchy (H1, H2, SubHeading, etc.)
- * 
+ *
  * 3. For Layout Control individual stylesheets:
  *    - CAN control alignment and layout of children
  *    - Parent components responsible for thier first level child positioning and alignment
- * 
+ *
  * Button Component Styles:
  * This stylesheet defines the visual presentation and interaction states for buttons:
  * - Button variants (contained, outlined, text)
@@ -22,349 +22,80 @@
  * - States (hover, active, disabled, loading)
  * - Sizes and layout variations
  * - Icon positioning and spacing
- * 
+ *
  * Note: This component needs to be updated to:
  * - Remove hardcoded colors (rgba/hex) and use theme variables
  * - Use typography variables for font styling
  * - Consolidate duplicate button classes
  */
 
-.btn {
-  /* Base button styles */
+.button {
+  /* Base layout */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 1rem;
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.5;
+  padding: 0;
+  border: none;
   cursor: pointer;
   text-decoration: none;
-  white-space: nowrap;
+  background: none;
+  font-family: var(--typography-font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Variants */
-.btn-contained {
-  background-color: var(--btn-primary-bg);
-  color: var(--btn-primary-color);
+/* Content wrapper */
+.button__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  height: 100%;
+  font-weight: var(--typography-weight-medium);
+  letter-spacing: var(--typography-letter-spacing-normal);
+  line-height: var(--typography-line-height-normal);
 }
 
-.btn-contained:hover {
-  background-color: var(--btn-primary-hover-bg);
+/* Size variants - using Typography's spacing and font size variables */
+.button--small {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  min-height: var(--spacing-xl);
+  font-size: var(--typography-size-sm);
 }
 
-.btn-contained:active {
-  background-color: var(--btn-primary-active-bg);
+.button--medium {
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: calc(var(--spacing-xl) + var(--spacing-sm));
+  font-size: var(--typography-size-md);
 }
 
-.btn-outlined {
-  background-color: transparent;
-  border: 1px solid var(--btn-primary-bg);
-  color: var(--btn-primary-bg);
+.button--large {
+  padding: var(--spacing-md) var(--spacing-lg);
+  min-height: calc(var(--spacing-xl) + var(--spacing-md));
+  font-size: var(--typography-size-lg);
 }
 
-.btn-outlined:hover {
-  background-color: rgba(0, 149, 246, 0.1);
-}
-
-.btn-text {
-  background-color: transparent;
-  color: var(--btn-primary-bg);
-}
-
-.btn-text:hover {
-  background-color: rgba(0, 149, 246, 0.1);
-}
-
-/* Colors */
-.btn-secondary {
-  --btn-primary-bg: var(--btn-secondary-bg);
-  --btn-primary-hover-bg: var(--btn-secondary-hover-bg);
-  --btn-primary-active-bg: var(--btn-secondary-active-bg);
-  --btn-primary-color: var(--btn-secondary-color);
-}
-
-.btn-error {
-  --btn-primary-bg: var(--btn-error-bg);
-  --btn-primary-hover-bg: var(--btn-error-hover-bg);
-  --btn-primary-active-bg: var(--btn-error-active-bg);
-  --btn-primary-color: var(--btn-error-color);
-}
-
-/* Sizes */
-.btn-small {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
-}
-
-.btn-large {
-  padding: 0.75rem 1.5rem;
-  font-size: 1.125rem;
-}
-
-/* Effects */
-.btn-effect-frosted {
-  backdrop-filter: blur(8px);
-  background-color: var(--btn-frosted-bg);
-}
-
-.btn-effect-gradient {
-  background-image: linear-gradient(to right, var(--btn-primary-bg), var(--btn-gradient-end));
-}
-
-/* Full Width */
-.btn-full-width {
+/* Layout modifiers */
+.button--full-width {
   width: 100%;
 }
 
-/* Icon Positioning */
-.btn-icon {
-  padding: 0.5rem;
-}
-
-.btn-icon-start > *:first-child {
-  margin-right: 0.5rem;
-}
-
-.btn-icon-end > *:last-child {
-  margin-left: 0.5rem;
-}
-
 /* States */
-.btn:disabled {
-  opacity: var(--btn-disabled-opacity);
-  cursor: not-allowed;
+.button--disabled {
+  pointer-events: none;
 }
 
-.btn:focus {
+/* Focus state */
+.button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--btn-focus-ring-color);
+  box-shadow: 0 0 0 2px var(--colors-accent-primary);
 }
 
-/* Loading state */
-.btn-loading {
-  cursor: wait;
-  opacity: 0.7;
+/* Icon positioning */
+.button__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: inherit;
 }
-
-.btn-loading::before {
-  content: '';
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: button-loading-spinner 1s ease infinite;
-}
-
-@keyframes button-loading-spinner {
-  from {
-    transform: rotate(0turn);
-  }
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-/* Sizes */
-.btn-medium {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-}
-
-/* Effects - Solid (Default) */
-.btn-effect-solid.btn-contained.btn-primary {
-  background: #0095F6;
-  color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.btn-effect-solid.btn-contained.btn-primary:hover {
-  background: #1877F2;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Effects - Frosted */
-.btn-effect-frosted.btn-contained.btn-primary {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.75);
-  box-shadow: none;
-  transition: all 0.2s ease;
-}
-
-.btn-effect-frosted.btn-contained.btn-primary:hover {
-  background: #FF4E50;
-  border: none;
-  color: #ffffff;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: 0 4px 16px rgba(255, 78, 80, 0.25);
-}
-
-.btn-effect-frosted.btn-contained.btn-primary:focus {
-  outline: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 0 3px rgba(255, 78, 80, 0.2);
-}
-
-.btn-effect-frosted.btn-contained.btn-primary:focus:not(:hover) {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.btn-effect-frosted.btn-contained.btn-primary:active {
-  background: #E64547;
-  transform: scale(0.98);
-  border: none;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.btn-effect-frosted.btn-contained.btn-primary:disabled {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.4);
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-/* Effects - Gradient */
-.btn-effect-gradient.btn-contained.btn-primary {
-  background: linear-gradient(135deg,
-    #FF4E50 0%,
-    #F43B47 50%,
-    #453A94 100%
-  );
-  color: white;
-  box-shadow: 0 4px 12px rgba(244, 59, 71, 0.2);
-}
-
-.btn-effect-gradient.btn-contained.btn-primary:hover {
-  background: linear-gradient(135deg,
-    #FF6B6C 0%,
-    #F54E59 50%,
-    #5849A6 100%
-  );
-  box-shadow: 0 4px 16px rgba(244, 59, 71, 0.3);
-}
-
-.btn-effect-gradient.btn-contained.btn-primary:active {
-  background: linear-gradient(135deg,
-    #E64547 0%,
-    #DC3540 50%,
-    #3D3485 100%
-  );
-  box-shadow: 0 2px 8px rgba(244, 59, 71, 0.2);
-}
-
-/* Hover States */
-.btn-contained:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.btn-outlined:hover {
-  background: rgba(59, 130, 246, 0.1);
-}
-
-.btn-text:hover {
-  background: rgba(59, 130, 246, 0.1);
-}
-
-/* Button base styles */
-.button {
-  /* Base styles using theme variables */
-  background-color: var(--colors-accent-primary);
-  color: var(--colors-fg-inverse);
-  border: 1px solid var(--colors-border-light);
-  box-shadow: var(--effects-shadow-sm);
-  transition: var(--button-transition);
-}
-
-.button:hover {
-  background-color: var(--colors-accent-secondary);
-  border-color: var(--colors-border-medium);
-  box-shadow: var(--effects-shadow-md);
-}
-
-.button:active {
-  background-color: var(--colors-accent-primary);
-  border-color: var(--colors-border-heavy);
-  box-shadow: var(--effects-shadow-sm);
-}
-
-/* Primary button */
-.button-primary {
-  background: var(--colors-gradients-primary);
-  color: var(--colors-fg-inverse);
-  border: none;
-}
-
-.button-primary:hover {
-  filter: brightness(1.1);
-}
-
-.button-primary:active {
-  filter: brightness(0.9);
-}
-
-/* Secondary button */
-.button-secondary {
-  background-color: var(--colors-bg-secondary);
-  color: var(--colors-fg-primary);
-  border: 1px solid var(--colors-border-light);
-}
-
-.button-secondary:hover {
-  background-color: var(--colors-bg-tertiary);
-  border-color: var(--colors-border-medium);
-}
-
-.button-secondary:active {
-  background-color: var(--colors-bg-primary);
-  border-color: var(--colors-border-heavy);
-}
-
-/* Error button */
-.button-error {
-  background-color: var(--colors-accent-error);
-  color: var(--colors-fg-inverse);
-  border: none;
-}
-
-.button-error:hover {
-  filter: brightness(1.1);
-}
-
-.button-error:active {
-  filter: brightness(0.9);
-}
-
-/* Disabled state */
-.button-disabled {
-  opacity: var(--button-disabled-opacity);
-  cursor: not-allowed;
-  background-color: var(--colors-bg-tertiary);
-  color: var(--colors-fg-tertiary);
-  border: 1px solid var(--colors-border-light);
-}
-
-/* Size variants */
-.button-small {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--typography-fontSize-sm);
-}
-
-.button-medium {
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--typography-fontSize-md);
-}
-
-.button-large {
-  padding: var(--spacing-md) var(--spacing-lg);
-  font-size: var(--typography-fontSize-lg);
-} 

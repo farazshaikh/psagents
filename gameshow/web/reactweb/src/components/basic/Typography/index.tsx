@@ -14,9 +14,9 @@ import React, { ElementType } from 'react';
 import { useTheme } from '../ThemeProvider';
 import './styles.css';
 
-export interface TypographyProps {
+export interface TypographyProps extends React.HTMLAttributes<HTMLElement> {
   /** The typographic hierarchy variant to use */
-  variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'subtitle1' | 'subtitle2' | 'body1' | 'body2' | 'caption' | 'overline';
+  variant?: 'display1' | 'display2' | 'display3' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'subtitle1' | 'subtitle2' | 'body1' | 'body2' | 'caption' | 'overline';
   
   /** Override the HTML element used */
   component?: ElementType;
@@ -35,7 +35,8 @@ export interface TypographyProps {
   
   /** Additional CSS classes */
   className?: string;
-  
+
+  /** Children elements */
   children: React.ReactNode;
 }
 
@@ -55,6 +56,7 @@ const Typography: React.FC<TypographyProps> = ({
   
   const style = {
     color: theme.colors.fg[color],
+    ...(props.style || {})
   };
   
   const classes = [
@@ -75,6 +77,10 @@ const Typography: React.FC<TypographyProps> = ({
 
 const getDefaultComponent = (variant: TypographyProps['variant']): ElementType => {
   switch (variant) {
+    case 'display1':
+    case 'display2':
+    case 'display3':
+      return 'h1';
     case 'h1':
     case 'h2':
     case 'h3':

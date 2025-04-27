@@ -9,9 +9,9 @@ import './styles.css';
  */
 const Container: React.FC<ContainerProps> = ({ children, className = '' }) => {
   const { theme } = useTheme();
-  
+
   return (
-    <div 
+    <div
       className={`next-gen-container ${className}`}
       style={{
         backgroundColor: theme.colors.bg.primary,
@@ -25,4 +25,4 @@ const Container: React.FC<ContainerProps> = ({ children, className = '' }) => {
   );
 };
 
-export default Container; 
+export default Container;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../../basic/ThemeProvider';
+import Typography from '../Typography';
 import './styles.css';
 
 interface DebugEntry {
@@ -40,7 +41,7 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
   const debugError = useCallback((error: Error | string, errorInfo?: string) => {
     const errorMessage = error instanceof Error ? error.message : error;
     const stackTrace = error instanceof Error ? error.stack : errorInfo;
-    
+
     console.error(errorMessage);
     setLogs(prevLogs => [...prevLogs, {
       message: errorMessage,
@@ -48,7 +49,7 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
       type: 'error',
       stack: stackTrace
     }]);
-    
+
     if (!isVisible) {
       setUnreadCount(count => count + 1);
     }
@@ -71,12 +72,12 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
 
     // Store original console.error
     const originalConsoleError = console.error;
-    
+
     // Override console.error but prevent recursion
     console.error = (...args) => {
       // Call original first
       originalConsoleError.apply(console, args);
-      
+
       // Skip if the error is coming from our own debug system
       const errorString = args.join(' ');
       if (!errorString.includes('DebugConsole')) {
@@ -85,7 +86,7 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
           timestamp: Date.now(),
           type: 'error'
         }]);
-        
+
         if (!isVisible) {
           setUnreadCount(count => count + 1);
         }
@@ -144,23 +145,26 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
   }, [isVisible]);
 
   return (
-    <div 
+    <div
       className={`debugWrapper ${isVisible ? 'expanded' : 'collapsed'}`}
       style={{
         backgroundColor: theme.colors.bg.overlay,
-        color: theme.colors.fg.primary,
-        fontFamily: theme.typography.fontFamily
+        color: theme.colors.fg.primary
       }}
     >
-      <div 
+      <div
         className="debugHandle"
         onClick={toggleVisibility}
       >
         <div className="debugHandleLeft">
-          <span className="debugHandleText">
+          <Typography
+            variant="subtitle2"
+            component="span"
+            className="debugHandleText"
+          >
             Debug Console
             {unreadCount > 0 && (
-              <span 
+              <span
                 className="unreadBadge"
                 style={{
                   backgroundColor: theme.colors.accent.primary,
@@ -170,29 +174,32 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
                 {unreadCount}
               </span>
             )}
-          </span>
-          <span 
+          </Typography>
+          <Typography
+            variant="caption"
+            component="span"
             className="copyLogs"
             onClick={(e) => { e.stopPropagation(); handleCopyLogs(); }}
             style={{
               color: theme.colors.fg.primary,
-              backgroundColor: `${theme.colors.fg.primary}1A`, // 10% opacity of text color
-              fontFamily: theme.typography.fontFamily
+              backgroundColor: `${theme.colors.fg.primary}1A` // 10% opacity of text color
             }}
           >
             {copyText}
-          </span>
+          </Typography>
         </div>
       </div>
-      <div 
+      <div
         className="debugConsole"
         style={{
           backgroundColor: theme.colors.bg.secondary
         }}
       >
         {logs.map((log, index) => (
-          <div 
-            key={index} 
+          <Typography
+            key={index}
+            variant="body2"
+            component="div"
             className={`debugEntry ${log.type === 'error' ? 'errorEntry' : ''}`}
             style={{
               color: log.type === 'error' ? theme.colors.accent.error : theme.colors.fg.primary,
@@ -200,23 +207,25 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
               borderLeftColor: log.type === 'error' ? theme.colors.accent.error : 'transparent'
             }}
           >
-            [{new Date(log.timestamp).toISOString()}] {log.message}
+            <code>[{new Date(log.timestamp).toISOString()}] {log.message}</code>
             {log.stack && (
-              <div 
+              <Typography
+                variant="caption"
+                component="div"
                 className="stackTrace"
                 style={{
                   color: `${theme.colors.accent.error}CC`, // 80% opacity
                   borderLeftColor: `${theme.colors.accent.error}4D` // 30% opacity
                 }}
               >
-                {log.stack}
-              </div>
+                <code>{log.stack}</code>
+              </Typography>
             )}
-          </div>
+          </Typography>
         ))}
       </div>
     </div>
   );
 };
 
-export default DebugConsole; 
+export default DebugConsole;

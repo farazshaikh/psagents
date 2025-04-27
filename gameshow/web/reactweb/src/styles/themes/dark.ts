@@ -37,50 +37,6 @@ export const darkTheme: Theme = {
       heavy: 'rgba(255, 255, 255, 0.4)'
     }
   },
-  typography: {
-    // SF Pro Display for Apple devices, Segoe UI for Windows, Roboto for Android
-    fontFamily: '-apple-system, system-ui, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: {
-      xs: '0.75rem',     // 12px - Small labels, metadata
-      sm: '0.875rem',    // 14px - Secondary text, captions
-      md: '1rem',        // 16px - Body text
-      lg: '1.125rem',    // 18px - Large body text
-      xl: '1.5rem',      // 24px - Section headings
-      '2xl': '2rem',     // 32px - Page titles
-      '3xl': '2.5rem',   // 40px - Hero text
-      '4xl': '3rem'      // 48px - Large display text
-    },
-    fontWeight: {
-      light: 300,        // Light text
-      regular: 400,      // Regular body text
-      medium: 500,       // Medium emphasis
-      semibold: 600,     // High emphasis
-      bold: 700         // Maximum emphasis
-    },
-    lineHeight: {
-      none: 1,          // Headings
-      tight: 1.25,      // Compact text
-      snug: 1.375,      // Slightly compact
-      normal: 1.5,      // Body text
-      relaxed: 1.625,   // Relaxed body text
-      loose: 2          // Very relaxed
-    },
-    letterSpacing: {
-      tighter: '-0.05em',
-      tight: '-0.025em',
-      normal: '0',
-      wide: '0.025em',
-      wider: '0.05em'
-    }
-  },
-  spacing: {
-    xs: '0.25rem',   // 4px
-    sm: '0.5rem',    // 8px
-    md: '1rem',      // 16px
-    lg: '1.5rem',    // 24px
-    xl: '2rem',      // 32px
-    '2xl': '3rem'    // 48px
-  },
   buttons: {
     primary: {
       background: 'rgba(0, 149, 246, 1)',
