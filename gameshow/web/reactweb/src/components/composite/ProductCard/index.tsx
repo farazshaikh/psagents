@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from '../../basic/Button';
 import Typography from '../../basic/Typography';
 import { ProductCardContent } from '../../../content/types';
 import './styles.css';
@@ -10,7 +9,7 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ content }) => {
   return (
-    <div className="product-card">
+    <a href={content.ctaHref} className="product-card">
       <div className="product-card-header">
         <Typography
           variant="h3"
@@ -33,18 +32,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ content }) => {
           {content.description}
         </Typography>
       </div>
-
-      <div className="product-card-cta">
-        <Button
-          href={content.ctaHref}
-          variant="contained"
-          color="primary"
-          fullWidth
-        >
-          {content.ctaText}
-        </Button>
-      </div>
-    </div>
+    </a>
   );
 };
 
