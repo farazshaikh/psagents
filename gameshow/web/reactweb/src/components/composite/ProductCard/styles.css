@@ -1,0 +1,90 @@
+.product-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-2xl);
+  width: 100%;
+  max-width: 420px;
+  border-radius: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  background: var(--colors-bg-secondary);
+  border: 1px solid var(--colors-border-light);
+  box-shadow: var(--effects-shadow-sm);
+}
+
+/* Gradient background */
+.product-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--effects-gradient-primary);
+  opacity: 0.03;
+  border-radius: inherit;
+  z-index: -1;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  background: var(--colors-bg-tertiary);
+  border-color: var(--colors-border-medium);
+  box-shadow: var(--effects-shadow-md);
+}
+
+.product-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.product-card-description {
+  flex-grow: 1;
+  margin-bottom: var(--spacing-2xl);
+}
+
+.product-card-cta {
+  width: 100%;
+  margin-top: auto;
+}
+
+.product-card-cta button,
+.product-card-cta a {
+  background: var(--buttons-primary-background) !important;
+  color: var(--buttons-primary-text) !important;
+  padding: var(--spacing-lg) var(--spacing-xl) !important;
+  border-radius: var(--buttons-borderRadius) !important;
+  transition: var(--buttons-transition) !important;
+  border: none !important;
+}
+
+.product-card-cta button:hover,
+.product-card-cta a:hover {
+  background: var(--buttons-primary-hover) !important;
+}
+
+.unicode-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: var(--effects-gradient-primary);
+  color: var(--colors-fg-inverse);
+  border-radius: 14px;
+  padding: var(--spacing-sm);
+  box-shadow: var(--effects-shadow-sm);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.product-card:hover .unicode-logo {
+  transform: rotate(-5deg);
+}
+
+@media (max-width: 768px) {
+  .product-card {
+    padding: var(--spacing-xl);
+    max-width: 100%;
+  }
+}

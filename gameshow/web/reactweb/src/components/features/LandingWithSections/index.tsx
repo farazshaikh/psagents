@@ -4,6 +4,8 @@ import CompanyHeader from '../Landing/CompanyHeader';
 import CyclicWaveBackground from '../../basic/CyclicWaveBackground';
 import { endConfig, startConfig } from '../Landing/HeroSection/waveConfigs';
 import ThemeSwitcher from '../../basic/ThemeSwitcher';
+import { landingPageContent } from '../../../content/landing';
+import ProductsSection from './ProductsSection';
 import './styles.css';
 
 /**
@@ -13,7 +15,7 @@ import './styles.css';
  */
 const LandingWithSections: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
-  const companyName = process.env.REACT_APP_COMPANY_NAME || 'TrueMetry';
+  const { companyHeader, productsSection } = landingPageContent;
 
   return (
     <>
@@ -29,9 +31,9 @@ const LandingWithSections: React.FC = () => {
 
         <div className="landing-content">
           <CompanyHeader
-            companyName={companyName}
-            tag_line_word_1="Entertainment"
-            tag_line_word_2="Evolved"
+            companyName={companyHeader.companyName}
+            tag_line_word_1={companyHeader.tagLine.word1}
+            tag_line_word_2={companyHeader.tagLine.word2}
           />
           <button className="cta-button">Get Started</button>
         </div>
@@ -50,18 +52,8 @@ const LandingWithSections: React.FC = () => {
         </div>
       </div>
 
-      {/* Additional sections will be added here */}
-      <div className="next-gen-sections">
-        <section id="features" className="next-gen-section">
-          <h2>Features</h2>
-          {/* Features content will be added here */}
-        </section>
-
-        <section id="contact" className="next-gen-section">
-          <h2>Contact Us</h2>
-          {/* Contact form will be added here */}
-        </section>
-      </div>
+      {/* Products Section */}
+      <ProductsSection content={productsSection} />
     </>
   );
 };

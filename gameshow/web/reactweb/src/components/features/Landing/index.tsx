@@ -4,6 +4,7 @@ import { endConfig, startConfig } from './HeroSection/waveConfigs';
 import CompanyHeader from './CompanyHeader';
 import ThemeSwitcher from '../../basic/ThemeSwitcher';
 import { useTheme } from '../../basic/ThemeProvider';
+import { landingPageContent } from '../../../content/landing';
 import './styles.css';
 
 /**
@@ -24,7 +25,7 @@ import './styles.css';
  */
 export const Landing: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
-  const companyName = process.env.REACT_APP_COMPANY_NAME || 'TrueMetry';
+  const { companyHeader } = landingPageContent;
 
   return (
     <div className="landing-container">
@@ -36,9 +37,9 @@ export const Landing: React.FC = () => {
 
         <div className="landing-content">
           <CompanyHeader
-            companyName={companyName}
-            tag_line_word_1="Entertainment"
-            tag_line_word_2="Evolved"
+            companyName={companyHeader.companyName}
+            tag_line_word_1={companyHeader.tagLine.word1}
+            tag_line_word_2={companyHeader.tagLine.word2}
           />
           <button className="cta-button">Get Started</button>
         </div>
