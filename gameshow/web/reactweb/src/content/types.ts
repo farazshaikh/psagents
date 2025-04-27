@@ -66,7 +66,7 @@ export const productCards: ProductCardContent[] = [
     unicodeLogo: "🛸",
     description: "Beam them across the multiverse.",
     ctaText: "Start Beaming",
-    ctaHref: "/beam"
+    ctaHref: "https://localhost:8443"
   }
 ];
 
@@ -85,4 +85,4 @@ export interface LandingPageContent {
   heroSection: HeroSectionContent;
   productsSection: ProductsSectionContent;
   featuresSections: FeaturesSectionContent[];
-} 
+}

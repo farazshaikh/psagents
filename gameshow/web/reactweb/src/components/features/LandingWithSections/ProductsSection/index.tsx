@@ -20,31 +20,7 @@ const ProductsSection: React.FC<ProductsSectionProps> = ({ content }) => {
   return (
     <section id={content.id} className="products-section" style={sectionStyle}>
       <div className="products-section-content">
-        <Typography
-          variant="h1"
-          align="center"
-          gutterBottom
-        >
-          {content.header}
-        </Typography>
 
-        <Typography
-          variant="h3"
-          align="center"
-          gutterBottom
-          className="products-subheader"
-        >
-          {content.subHeader}
-        </Typography>
-
-        <Typography
-          variant="h4"
-          color="primary"
-          align="center"
-          className="products-category"
-        >
-          {content.categoryTerm}
-        </Typography>
 
         <div className="products-grid">
           {content.products.map((product, index) => (

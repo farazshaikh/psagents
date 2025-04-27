@@ -6,6 +6,8 @@ import { endConfig, startConfig } from '../Landing/HeroSection/waveConfigs';
 import ThemeSwitcher from '../../basic/ThemeSwitcher';
 import { landingPageContent } from '../../../content/landing';
 import ProductsSection from './ProductsSection';
+import { MButton } from '../../basic/MButton';
+import Typography from '../../basic/Typography';
 import './styles.css';
 
 /**
@@ -48,7 +50,17 @@ const LandingWithSections: React.FC = () => {
             tag_line_word_1={companyHeader.tagLine.word1}
             tag_line_word_2={companyHeader.tagLine.word2}
           />
-          <button className="cta-button">Get Started</button>
+          <MButton 
+            variant="glass"
+            color="primary"
+            size="lg"
+            className="hero-cta"
+            startIcon={<span>✨</span>}
+          >
+            <Typography variant="h3">
+              Get Started
+            </Typography>
+          </MButton>
         </div>
         {/* Products Section */}
         <ProductsSection content={productsSection} />

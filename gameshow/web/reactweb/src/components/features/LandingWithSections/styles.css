@@ -121,27 +121,15 @@
   font-weight: var(--typography-fontWeight-regular);
 }
 
-/* Button styles */
-.cta-button {
-  margin-top: 0.75rem;
-  padding: 0.5rem 1.5rem;
-  font-size: var(--typography-fontSize-md);
-  background: var(--color-primary);
-  color: var(--color-text-on-primary);
-  border: none;
-  border-radius: var(--button-borderRadius);
-  cursor: pointer;
-  transition: var(--button-transition);
+/* Modern button styles */
+.hero-cta {
+  margin-top: 2rem;
+  opacity: 0;
+  animation: evolveUp 0.8s ease-out 0.6s forwards;
 }
 
-.cta-button:hover {
-  background: var(--button-primary-hover);
-  transform: translateY(-2px);
-}
-
-.cta-button:active {
-  background: var(--button-primary-active);
-  transform: translateY(0);
+.hero-cta .mbutton__icon {
+  font-size: 1.4em;
 }
 
 /* Animation keyframes */
@@ -200,10 +188,5 @@
   
   .tagline {
     font-size: clamp(1rem, 2.5vw, 1.4rem);
-  }
-  
-  .cta-button {
-    padding: 0.4rem 1.25rem;
-    font-size: var(--typography-fontSize-sm);
   }
 }

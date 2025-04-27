@@ -1,0 +1,190 @@
+/**
+ * MButton Component Styles
+ * Modern button implementation with support for:
+ * - Multiple variants (solid, soft, glass, outline, ghost)
+ * - Theme-based colors with opacity variations
+ * - Loading state with animation
+ * - Smooth transitions and hover effects
+ * - Accessible focus states
+ */
+
+.mbutton {
+  /* Base layout */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--button-border-color);
+  background-color: var(--button-bg);
+  color: var(--button-text-color);
+  box-shadow: var(--button-shadow);
+  cursor: pointer;
+  text-decoration: none;
+  overflow: hidden;
+  user-select: none;
+  vertical-align: middle;
+  -webkit-tap-highlight-color: transparent;
+
+  /* Transitions */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-property: background-color, box-shadow, border-color, transform, opacity;
+
+  /* Base shape */
+  border-radius: var(--button-border-radius);
+  margin: 0;
+  padding: 0;
+}
+
+/* Gradient background effect */
+.mbutton::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--button-gradient);
+  opacity: 0.15;
+  border-radius: inherit;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+/* Size variants */
+.mbutton--sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  min-height: calc(var(--spacing-xl) - var(--spacing-xs));
+}
+
+.mbutton--md {
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: var(--spacing-xl);
+}
+
+.mbutton--lg {
+  padding: var(--spacing-md) var(--spacing-lg);
+  min-height: calc(var(--spacing-xl) + var(--spacing-xs));
+}
+
+/* Content layout */
+.mbutton__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
+}
+
+.mbutton__text {
+  font-weight: var(--typography-weight-medium);
+  letter-spacing: var(--typography-letter-spacing-normal);
+  line-height: var(--typography-line-height-normal);
+}
+
+/* Icon positioning */
+.mbutton__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25em;
+  transition: transform 0.3s ease;
+}
+
+.mbutton__icon--start {
+  margin-right: var(--spacing-xs);
+}
+
+.mbutton__icon--end {
+  margin-left: var(--spacing-xs);
+}
+
+/* Hover and active states */
+.mbutton:not(.mbutton--disabled):hover {
+  background-color: var(--button-hover-bg);
+  box-shadow: var(--button-hover-shadow);
+  transform: translateY(-4px);
+  border-color: var(--colors-overlay-medium);
+}
+
+.mbutton:not(.mbutton--disabled):hover::before {
+  opacity: 0.25;
+}
+
+.mbutton:not(.mbutton--disabled):hover .mbutton__icon {
+  transform: rotate(-5deg);
+}
+
+.mbutton:not(.mbutton--disabled):active {
+  background-color: var(--button-active-bg);
+  transform: translateY(0);
+}
+
+/* Focus state */
+.mbutton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--colors-accent-primary-20);
+}
+
+/* Full width variant */
+.mbutton--full-width {
+  width: 100%;
+}
+
+/* Loading state */
+.mbutton--loading {
+  cursor: wait;
+}
+
+.mbutton__loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  border-right-color: transparent;
+  animation: mbutton-spin 0.75s linear infinite;
+}
+
+.mbutton--loading .mbutton__content {
+  opacity: 0;
+}
+
+@keyframes mbutton-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Disabled state */
+.mbutton--disabled {
+  cursor: not-allowed;
+}
+
+/* Variant-specific styles */
+.mbutton--solid:not(.mbutton--disabled):hover {
+  filter: brightness(1.1);
+}
+
+.mbutton--glass {
+  backdrop-filter: var(--effects-frostedGlass-blur);
+  -webkit-backdrop-filter: var(--effects-frostedGlass-blur);
+}
+
+.mbutton--outline {
+  border-width: 2px;
+}
+
+/* High contrast focus for accessibility */
+@media (forced-colors: active) {
+  .mbutton:focus-visible {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+} 

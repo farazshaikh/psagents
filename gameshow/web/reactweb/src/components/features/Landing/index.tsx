@@ -5,6 +5,7 @@ import CompanyHeader from './CompanyHeader';
 import ThemeSwitcher from '../../basic/ThemeSwitcher';
 import { useTheme } from '../../basic/ThemeProvider';
 import { landingPageContent } from '../../../content/landing';
+import { Button } from '../../basic/Button';
 import './styles.css';
 
 /**
@@ -41,7 +42,14 @@ export const Landing: React.FC = () => {
             tag_line_word_1={companyHeader.tagLine.word1}
             tag_line_word_2={companyHeader.tagLine.word2}
           />
-          <button className="cta-button">Get Started</button>
+          <Button 
+            variant="glass"
+            color="primary"
+            size="large"
+            className="landing-cta"
+          >
+            Get Started
+          </Button>
         </div>
 
         <div className="landing-wave-section">

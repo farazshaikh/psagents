@@ -42,6 +42,8 @@
   font-family: var(--typography-font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Content wrapper */
@@ -55,25 +57,54 @@
   font-weight: var(--typography-weight-medium);
   letter-spacing: var(--typography-letter-spacing-normal);
   line-height: var(--typography-line-height-normal);
+  z-index: 1;
 }
 
-/* Size variants - using Typography's spacing and font size variables */
+/* Size variants */
 .button--small {
   padding: var(--spacing-xs) var(--spacing-sm);
   min-height: var(--spacing-xl);
   font-size: var(--typography-size-sm);
+  border-radius: calc(var(--spacing-xl) / 2);
 }
 
 .button--medium {
   padding: var(--spacing-sm) var(--spacing-md);
   min-height: calc(var(--spacing-xl) + var(--spacing-sm));
   font-size: var(--typography-size-md);
+  border-radius: calc((var(--spacing-xl) + var(--spacing-sm)) / 2);
 }
 
 .button--large {
   padding: var(--spacing-md) var(--spacing-lg);
   min-height: calc(var(--spacing-xl) + var(--spacing-md));
   font-size: var(--typography-size-lg);
+  border-radius: calc((var(--spacing-xl) + var(--spacing-md)) / 2);
+}
+
+/* Variant specific hover effects */
+.button--contained:hover:not(.button--disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.button--outlined:hover:not(.button--disabled) {
+  background-color: var(--colors-accent-primary-10);
+}
+
+.button--glass:hover:not(.button--disabled) {
+  backdrop-filter: blur(12px);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.button--text:hover:not(.button--disabled) {
+  background-color: var(--colors-accent-primary-10);
+}
+
+/* Active states */
+.button:active:not(.button--disabled) {
+  transform: translateY(1px);
 }
 
 /* Layout modifiers */
@@ -81,7 +112,7 @@
   width: 100%;
 }
 
-/* States */
+/* Disabled state */
 .button--disabled {
   pointer-events: none;
 }
@@ -89,7 +120,7 @@
 /* Focus state */
 .button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--colors-accent-primary);
+  box-shadow: 0 0 0 3px var(--colors-accent-primary-20);
 }
 
 /* Icon positioning */
@@ -98,4 +129,12 @@
   align-items: center;
   justify-content: center;
   font-size: inherit;
+}
+
+.button__icon--start {
+  margin-right: var(--spacing-xs);
+}
+
+.button__icon--end {
+  margin-left: var(--spacing-xs);
 }
