@@ -1,9 +1,22 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import ssl
 
+class CORSRequestHandler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        # Add CORS headers
+        self.send_header('Access-Control-Allow-Origin', 'http://localhost:3000')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', '*')
+        SimpleHTTPRequestHandler.end_headers(self)
+
+    def do_OPTIONS(self):
+        # Handle preflight requests
+        self.send_response(200)
+        self.end_headers()
+
 # Create the HTTP server
 server_address = ('', 8443)  # Using 8443 to avoid needing sudo
-httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+httpd = HTTPServer(server_address, CORSRequestHandler)
 
 # Create SSL context
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

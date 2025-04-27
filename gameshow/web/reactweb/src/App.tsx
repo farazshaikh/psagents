@@ -1,9 +1,10 @@
 import React, { lazy, Suspense, useEffect, useRef } from 'react';
-//import { Landing } from './components/features/Landing';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useFeatureFlags } from './utils/featureFlags';
 import './App.css';
 import { ThemeProvider } from './components/basic/ThemeProvider';
 import NextGenLanding from './components/features/LandingWithSections';
+import GameShowPage from './components/features/GameShow/GameShowPage';
 
 // Only import DebugConsole in development
 const DebugConsole = process.env.NODE_ENV === 'development'
@@ -73,15 +74,19 @@ function App() {
 
   return (
     <ThemeProvider themeName={initialTheme as 'light' | 'dark'}>
-    <div className="app">
-       { /* <Landing /> */ }
-        <NextGenLanding />
-      {debugConsole && (
-        <Suspense fallback={null}>
-          <DebugConsole initialVisible={false} />
-        </Suspense>
-      )}
-    </div>
+      <Router>
+        <div className="app">
+          <Routes>
+            <Route path="/" element={<NextGenLanding />} />
+            <Route path="/gameshow" element={<GameShowPage />} />
+          </Routes>
+          {debugConsole && (
+            <Suspense fallback={null}>
+              <DebugConsole initialVisible={false} />
+            </Suspense>
+          )}
+        </div>
+      </Router>
     </ThemeProvider>
   );
 }

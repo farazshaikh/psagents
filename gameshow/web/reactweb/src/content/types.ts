@@ -66,7 +66,14 @@ export const productCards: ProductCardContent[] = [
     unicodeLogo: "🛸",
     description: "Beam them across the multiverse.",
     ctaText: "Start Beaming",
-    ctaHref: "https://localhost:8443"
+    ctaHref: "/beam"
+  },
+  {
+    name: "Play",
+    unicodeLogo: "🎮",
+    description: "Experience the future of game shows.",
+    ctaText: "Play Now",
+    ctaHref: "/gameshow"
   }
 ];
 
