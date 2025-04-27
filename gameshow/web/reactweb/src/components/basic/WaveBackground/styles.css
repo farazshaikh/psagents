@@ -1,3 +1,31 @@
+/*
+ * Component Stylesheet Guidelines:
+ * 
+ * 1. In accordance with Theme System individual component stylesheets:
+ *    - SHOULD NOT have any hardcoded rgba/hex colors
+ *    - MUST use theme variables for all colors
+ *    - CAN define new gradients using theme colors
+ * 
+ * 2. In accordance with the Typography System individual component stylesheets:
+ *    - SHOULD NOT define font sizes or weights directly
+ *    - MUST use typography variables for text styling
+ *    - Handles text hierarchy (H1, H2, SubHeading, etc.)
+ * 
+ * 3. For Layout Control individual stylesheets:
+ *    - CAN control alignment and layout of children
+ *    - Parent components responsible for thier first level child positioning and alignment
+ * 
+ * WaveBackground Component Styles:
+ * This stylesheet manages the animated wave background effect:
+ * - Canvas positioning and dimensions
+ * - Animation properties and timing
+ * - Wave layer stacking and z-index
+ * - Responsive scaling and positioning
+ * 
+ * Colors are controlled entirely through props and theme variables,
+ * allowing dynamic color changes while maintaining the wave animation logic.
+ */
+
 /* Core wave rendering styles */
 .wave-container {
   position: relative;

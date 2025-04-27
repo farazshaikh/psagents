@@ -65,4 +65,4 @@ const ProductsSection: React.FC<ProductsSectionProps> = ({ content }) => {
   );
 };
 
-export default ProductsSection; 
+export default ProductsSection;

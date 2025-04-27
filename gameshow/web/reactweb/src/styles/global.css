@@ -1,3 +1,37 @@
+/*
+ * Component Stylesheet Guidelines:
+ * 
+ * 1. In accordance with Theme System individual component stylesheets:
+ *    - SHOULD NOT have any hardcoded rgba/hex colors
+ *    - MUST use theme variables for all colors
+ *    - CAN define new gradients using theme colors
+ * 
+ * 2. In accordance with the Typography System individual component stylesheets:
+ *    - SHOULD NOT define font sizes or weights directly
+ *    - MUST use typography variables for text styling
+ *    - Handles text hierarchy (H1, H2, SubHeading, etc.)
+ * 
+ * 3. For Layout Control individual stylesheets:
+ *    - CAN control alignment and layout of children
+ *    - Parent components responsible for thier first level child positioning and alignment
+ * 
+ * Global Styles:
+ * This stylesheet provides application-wide base styling:
+ * - CSS reset and normalization
+ * - Root theme variable declarations
+ * - Base HTML element styling
+ * - Global utility classes
+ * - Common animations and transitions
+ * 
+ * This is the only stylesheet that should:
+ * - Define root CSS variables
+ * - Set base HTML element styles
+ * - Provide global utility classes
+ * 
+ * Individual components should NOT override these base styles directly
+ * but rather extend them through component-specific styles.
+ */
+
 /* Reset and Base Styles */
 * {
   margin: 0;

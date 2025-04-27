@@ -1,3 +1,32 @@
+/*
+ * Component Stylesheet Guidelines:
+ * 
+ * 1. In accordance with Theme System individual component stylesheets:
+ *    - SHOULD NOT have any hardcoded rgba/hex colors
+ *    - MUST use theme variables for all colors
+ *    - CAN define new gradients using theme colors
+ * 
+ * 2. In accordance with the Typography System individual component stylesheets:
+ *    - SHOULD NOT define font sizes or weights directly
+ *    - MUST use typography variables for text styling
+ *    - Handles text hierarchy (H1, H2, SubHeading, etc.)
+ * 
+ * 3. For Layout Control individual stylesheets:
+ *    - CAN control alignment and layout of children
+ *    - Parent components responsible for thier first level child positioning and alignment
+ * 
+ * HeroSection Component Styles:
+ * This stylesheet manages the hero section layout and animations:
+ * - Hero container dimensions and spacing
+ * - Content alignment and positioning
+ * - Background effects and overlays
+ * - Entrance animations and transitions
+ * - Responsive layout adaptations
+ * 
+ * All text styling is delegated to Typography component
+ * All colors and gradients use theme variables
+ */
+
 .hero-section {
   position: relative;
   width: 100%;
