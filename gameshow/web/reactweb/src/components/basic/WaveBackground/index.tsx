@@ -95,6 +95,28 @@ const hexToRGB = (hex: string): [number, number, number] => {
   return [r, g, b];
 };
 
+/**
+ * Creates a horizontal linear gradient with opacity variation.
+ * Lets the canvas handle color interpolation between start and end points.
+ */
+const createHorizontalGradient = (
+  ctx: CanvasRenderingContext2D,
+  startColor: string,
+  endColor: string,
+  index: number
+): CanvasGradient => {
+  const canvas = ctx.canvas;
+  const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+
+  const startRGB = hexToRGB(startColor);
+  const endRGB = hexToRGB(endColor);
+
+  // Set just two stops with appropriate opacity
+  gradient.addColorStop(0, `rgba(${startRGB[0]}, ${startRGB[1]}, ${startRGB[2]}, 0.2)`);
+  gradient.addColorStop(1, `rgba(${endRGB[0]}, ${endRGB[1]}, ${endRGB[2]}, 0.9)`);
+  return gradient;
+};
+
 const WaveBackground: React.FC<WaveBackgroundProps> = ({ config }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
@@ -139,10 +161,11 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({ config }) => {
     return () => clearInterval(logInterval);
   }, []);
 
-  const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, waveY: number) => {
+  const drawWave = useCallback((ctx: CanvasRenderingContext2D, wave: WaveParams, waveY: number, index: number) => {
     const startTime = performance.now();
     const points: [number, number][] = [];
     const canvas = ctx.canvas;
+    
     // Calculate wave points
     for (let x = 0; x <= canvas.width; x += 2) {
       const primaryWave = Math.sin(
@@ -168,16 +191,8 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({ config }) => {
       metricsRef.current.waveCalculationTime += performance.now() - startTime;
     }
 
-    // Create gradient for the wave
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-
-    // Create simple linear opacity gradient from start to end
-    const startRGB = hexToRGB(wave.startColor);
-    const endRGB = hexToRGB(wave.endColor);
-
-    // Just two stops for a pure linear gradient from transparent to fully opaque
-    gradient.addColorStop(0, `rgba(${startRGB[0]}, ${startRGB[1]}, ${startRGB[2]}, 0.0)`);    // Start fully transparent
-    gradient.addColorStop(1, `rgba(${endRGB[0]}, ${endRGB[1]}, ${endRGB[2]}, 1.0)`);         // End fully opaque
+    // Create gradient with spatial variation
+    const gradient = createHorizontalGradient(ctx, wave.startColor, wave.endColor, index);
 
     // Calculate the total height of all lines
     const totalHeight = (config.renderConfig.numLines - 1) * config.renderConfig.lineSpacing;
@@ -256,7 +271,7 @@ const WaveBackground: React.FC<WaveBackgroundProps> = ({ config }) => {
 
     config.waves.slice(0, config.numWaves).forEach((wave, index) => {
       let waveY = index * (waveHeight/3);
-      drawWave(ctx, wave, waveY + topspacing);
+      drawWave(ctx, wave, waveY + topspacing, index);
     });
 
     timeRef.current += 0.016 * config.globalSpeed;
