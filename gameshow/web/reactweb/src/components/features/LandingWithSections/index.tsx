@@ -23,13 +23,26 @@ const LandingWithSections: React.FC = () => {
         <ThemeSwitcher isDark={isDark} onToggle={toggleTheme} />
       </div>
 
-      {/* Hero Section - Using Landing styles */}
-      <div className="landing">
-        <nav className="landing-nav">
-          {/* Navigation content will go here */}
-        </nav>
+      {/* Hero Section with Wave Background */}
+      <div className="hero-section">
+        {/* Wave Container */}
+        <div className="wave-container">
+          <div className="wave-section">
+            <CyclicWaveBackground
+              startConfig={startConfig}
+              endConfig={endConfig}
+              cycleConfig={{
+                cycleDuration: 20000,     // 20 seconds per cycle
+                startWaitTime: 0.00,      // 0.6% brief pause at start
+                endWaitTime: 0.00,        // 0.5% brief pause at end
+                transitionTime: 0.495     // 45% each transition (9s × 2 = 18s)
+              }}
+            />
+          </div>
+        </div>
 
-        <div className="landing-content">
+        {/* Company Header Section */}
+        <div className="header-section">
           <CompanyHeader
             companyName={companyHeader.companyName}
             tag_line_word_1={companyHeader.tagLine.word1}
@@ -37,23 +50,9 @@ const LandingWithSections: React.FC = () => {
           />
           <button className="cta-button">Get Started</button>
         </div>
-
-        <div className="landing-wave-section">
-          <CyclicWaveBackground
-            startConfig={startConfig}
-            endConfig={endConfig}
-            cycleConfig={{
-              cycleDuration: 20000,     // 20 seconds per cycle
-              startWaitTime: 0.00,      // 0.6% brief pause at start
-              endWaitTime: 0.00,        // 0.5% brief pause at end
-              transitionTime: 0.495     // 45% each transition (9s × 2 = 18s)
-            }}
-          />
-        </div>
+        {/* Products Section */}
+        <ProductsSection content={productsSection} />
       </div>
-
-      {/* Products Section */}
-      <ProductsSection content={productsSection} />
     </>
   );
 };

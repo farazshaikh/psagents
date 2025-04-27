@@ -206,8 +206,7 @@
 }
 
 /* Remove all specific button styles */
-.reset-button, .dump-button, 
-.reset-button:hover, .dump-button:hover {
+.reset-button, .dump-button, .reset-button:hover, .dump-button:hover {
   background: none !important;
   border: none !important;
   box-shadow: none !important;

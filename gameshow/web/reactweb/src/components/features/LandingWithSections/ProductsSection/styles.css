@@ -28,10 +28,10 @@
  */
 
 .products-section {
-  padding: var(--spacing-2xl) var(--spacing-xl);
-  min-height: 100vh;
+  padding: clamp(1rem, 2vw, 2rem) clamp(0.75rem, 1.5vw, 1.5rem);
+  width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   position: relative;
   overflow: hidden;
 }
@@ -59,7 +59,14 @@
   margin: 0 auto;
   position: relative;
   z-index: 1;
-  padding: 0 var(--spacing-2xl);
+  padding: 0 clamp(0.75rem, 1.5vw, 1.5rem);
+}
+
+/* Typography styles with dynamic sizing */
+.products-section h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.2;
+  margin-bottom: clamp(0.5rem, 2vw, 1.5rem);
 }
 
 .products-subheader {
@@ -68,29 +75,35 @@
   margin-right: auto;
   opacity: 0;
   animation: fadeInUp 0.6s ease-out 0.2s forwards;
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  line-height: 1.3;
 }
 
 .products-category {
   opacity: 0;
   animation: slideInSide 0.7s ease-out 0.4s forwards;
   transform-origin: left center;
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  margin: clamp(1rem, 3vw, 2rem) 0;
 }
 
 .products-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-2xl);
-  margin: var(--spacing-2xl) 0;
+  gap: clamp(1rem, 3vw, 2rem);
+  margin: clamp(1.5rem, 3vw, 2rem) 0;
   opacity: 0;
   animation: fadeInUp 0.6s ease-out 0.6s forwards;
 }
 
 .products-closing {
   max-width: 800px;
-  margin: var(--spacing-2xl) auto 0;
+  margin: clamp(1.5rem, 3vw, 2rem) auto 0;
   opacity: 0;
   animation: fadeInUp 0.6s ease-out 0.8s forwards;
-  padding: 0 var(--spacing-lg);
+  padding: 0 clamp(0.75rem, 1.5vw, 1.5rem);
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  line-height: 1.5;
 }
 
 @keyframes fadeInUp {
@@ -118,21 +131,11 @@
 @media (max-width: 1200px) {
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-xl);
   }
 }
 
 @media (max-width: 768px) {
-  .products-section {
-    padding: var(--spacing-xl) var(--spacing-md);
-  }
-
-  .products-section-content {
-    padding: 0 var(--spacing-lg);
-  }
-
   .products-grid {
     grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
   }
 }
