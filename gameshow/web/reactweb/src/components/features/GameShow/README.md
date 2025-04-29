@@ -450,7 +450,7 @@ Potential areas for improvement:
    useEffect(() => {
      const styles = loadedStylesRef.current;
      const scripts = loadedScriptsRef.current;
-     
+
      return () => {
        styles.forEach(style => style.remove());
        scripts.forEach(script => script.remove());
@@ -463,7 +463,7 @@ Potential areas for improvement:
    // Stable ref initialization
    const loadedStylesRef = useRef<HTMLLinkElement[]>([]);
    const loadedScriptsRef = useRef<HTMLScriptElement[]>([]);
-   
+
    // Updating refs safely
    const appendStyle = useCallback((style: HTMLLinkElement) => {
      loadedStylesRef.current = [...loadedStylesRef.current, style];
@@ -507,11 +507,11 @@ Potential areas for improvement:
    // Ensure all resources are tracked and cleaned up
    useEffect(() => {
      const resources = new Set();
-     
+
      const track = (resource: any) => {
        resources.add(resource);
      };
-     
+
      return () => {
        resources.forEach(resource => resource.cleanup());
        resources.clear();

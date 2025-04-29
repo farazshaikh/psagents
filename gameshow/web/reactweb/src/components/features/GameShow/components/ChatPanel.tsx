@@ -47,7 +47,11 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast }) => {
             if (newSecondsLeft !== lastSecondRef.current) {
               lastSecondRef.current = newSecondsLeft;
               setSecondsLeft(newSecondsLeft);
-              debugLog(`Countdown: ${newSecondsLeft}s remaining`);
+
+              // Throttle debug logging to log only once per second
+              if (newSecondsLeft % 1 === 0) {
+                debugLog(`Countdown: ${newSecondsLeft}s remaining`);
+              }
             }
 
             if (remainingTime > 0) {

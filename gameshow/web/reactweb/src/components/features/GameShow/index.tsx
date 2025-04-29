@@ -14,7 +14,7 @@ export const GameShow: React.FC<GameShowProps> = ({ videoUrl, captionsUrl }) => 
     <GameProvider>
       <div className="main-container">
         <VideoPlayer src={videoUrl} captionsSrc={captionsUrl} />
-        
+
         {/* ZAIA status in top left */}
         <div className="zaia-status">
           <span className="name">ZAIA</span>
@@ -27,4 +27,4 @@ export const GameShow: React.FC<GameShowProps> = ({ videoUrl, captionsUrl }) => 
   );
 };
 
-export default GameShow; 
+export default GameShow;

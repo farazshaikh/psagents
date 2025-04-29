@@ -22,4 +22,4 @@ export const GameShow: React.FC<GameShowProps> = ({ videoUrl, captionsUrl }) => 
       </div>
     </GameProvider>
   );
-}; 
+};

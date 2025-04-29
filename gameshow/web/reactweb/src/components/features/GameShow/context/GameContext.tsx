@@ -159,8 +159,8 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
 
         case 'QUESTION_TIMEOUT':
           // Check if we already have a timeout message for this question
-          if (state.messages.some(msg => 
-            msg.type === 'text' && 
+          if (state.messages.some(msg =>
+            msg.type === 'text' &&
             msg.text === "Time's up! Let's move on to the next question."
           )) {
             return state;
@@ -251,4 +251,4 @@ export const useGameContext = () => {
     throw new Error('useGameContext must be used within a GameProvider');
   }
   return context;
-}; 
+};
