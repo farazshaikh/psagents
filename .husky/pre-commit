@@ -1,7 +1,8 @@
 #!/bin/sh
 
-# Change to the React project directory and run lint
-cd "$(dirname "$0")/../gameshow/web/reactweb" && npm run lint
+# react web precommit hook
+# Get the git root directory
+GIT_ROOT=$(git rev-parse --show-toplevel)
 
 # Get the list of staged files in the React project
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=d | grep "^gameshow/web/reactweb/")
@@ -10,6 +11,9 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=d | grep "^gameshow/w
 if [ -z "$STAGED_FILES" ]; then
     exit 0
 fi
+
+# Change to the React project directory and run lint
+cd "$GIT_ROOT/gameshow/web/reactweb" && npm run lint
 
 # Run the linter
 echo "🔍 Running ESLint on staged files..."
@@ -20,4 +24,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "✅ ESLint check passed!" 
+echo "✅ ESLint check passed!"
