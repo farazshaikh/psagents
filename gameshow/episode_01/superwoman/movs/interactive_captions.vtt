@@ -1,19 +1,19 @@
 WEBVTT
 
-1
-00:00:35.240 --> 00:00:39.240
+35.24 --> 39.24
 {
     "caption": "But before they called me Superwoman, my name was ...",
     "interactive": {
-    "type": "singleChoiceQuestion",
-    "content": {
-     "question": "What was my name before they called me Superwoman?",
-     "active_duration_sec": 10,
-      "options": [
-       "Cara Zor-El",
-       "Zina Kal",
-       "Arla Wey",
-       "Kalia Dior"
-       ],
+        "type": "singleChoiceQuestion",
+        "content": {
+            "question": "What was my name before they called me Superwoman?",
+            "active_duration_sec": 10,
+            "options": [
+                "Cara Zor-El",
+                "Zina Kal",
+                "Arla Wey",
+                "Kalia Dior"
+            ]
+        }
     }
 }
