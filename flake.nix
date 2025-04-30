@@ -43,6 +43,22 @@
           # Database tools
           neo4j # Graph database
           qdrant # Vector database
+
+          # Python development - minimal system requirements
+          python312
+          gcc
+          ffmpeg
+
+          # ROCm support for GPU acceleration
+          rocmPackages.clr
+          rocmPackages.rocm-core
+          rocmPackages.rocm-runtime
+          rocmPackages.hipblas
+          rocmPackages.rocblas
+
+          # Additional system dependencies
+          stdenv.cc.cc.lib
+          autoPatchelfHook
         ];
 
         # Qdrant service scripts
@@ -127,7 +143,7 @@
         # Neo4j service scripts
         startNeo4j = pkgs.writeScriptBin "start-neo4j" ''
                     #!${pkgs.bash}/bin/bash
-                    
+
                     # Find repository root (directory containing flake.nix)
                     REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
                     if [ $? -ne 0 ]; then

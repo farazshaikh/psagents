@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 
 let
   # Go version to use
@@ -8,10 +8,10 @@ let
   devTools = with pkgs; [
     # Go tools
     go
-    gopls           # Go language server
-    golangci-lint   # Go linter
-    delve          # Go debugger
-    gotools        # Go tools (gofmt, etc.)
+    gopls # Go language server
+    golangci-lint # Go linter
+    delve # Go debugger
+    gotools # Go tools (gofmt, etc.)
 
     # Build tools
     pkg-config
@@ -19,70 +19,96 @@ let
 
     # Version control
     git
-    gh             # GitHub CLI
+    gh # GitHub CLI
 
     # Shell tools
-    ripgrep        # Fast grep
-    fd            # Fast find
-    jq            # JSON processor
-    yq            # YAML processor
+    ripgrep # Fast grep
+    fd # Fast find
+    jq # JSON processor
+    yq # YAML processor
 
     # Database tools
-    neo4j          # Graph database
-    qdrant         # Vector database
+    neo4j # Graph database
+    qdrant # Vector database
+
+    # Python and ML dependencies
+    python312
+    python312Packages.pip
+    python312Packages.virtualenv
+    python312Packages.torch
+    python312Packages.numpy
+    python312Packages.tqdm
+    python312Packages.more-itertools
+    python312Packages.transformers
+    python312Packages.ffmpeg-python
+    stdenv.cc.cc.lib
+
+    # System libraries
+    ffmpeg
+
+    # ROCm support
+    rocmPackages.clr
+    rocmPackages.rocm-core
+    rocmPackages.rocm-runtime
+    rocmPackages.hipblas
+    rocmPackages.rocblas
+
+    # Build dependencies
+    gcc
+    autoPatchelfHook
   ];
 
   # Qdrant service scripts
   startQdrant = pkgs.writeScriptBin "start-qdrant" ''
-    #!${pkgs.bash}/bin/bash
-    QDRANT_DIR="$PWD/data/qdrant"
-    PID_FILE="$QDRANT_DIR/qdrant.pid"
-    LOG_FILE="$QDRANT_DIR/qdrant.log"
-    mkdir -p "$QDRANT_DIR"
+        #!${pkgs.bash}/bin/bash
+        QDRANT_DIR="$PWD/data/qdrant"
+        PID_FILE="$QDRANT_DIR/qdrant.pid"
+        LOG_FILE="$QDRANT_DIR/qdrant.log"
+        mkdir -p "$QDRANT_DIR"
 
-    # Check if Qdrant is already running
-    if [ -f "$PID_FILE" ]; then
-      PID=$(cat "$PID_FILE")
-      if kill -0 "$PID" 2>/dev/null; then
-        echo "Qdrant is already running (PID: $PID)"
-        exit 0
-      else
-        rm -f "$PID_FILE"
-      fi
-    fi
+        # Check if Qdrant is already running
+        if [ -f "$PID_FILE" ]; then
+          PID=$(cat "$PID_FILE")
+          if kill -0 "$PID" 2>/dev/null; then
+            echo "Qdrant is already running (PID: $PID)"
+            exit 0
+          else
+            rm -f "$PID_FILE"
+          fi
+        fi
 
-    # Create Qdrant config
-    cat > "$QDRANT_DIR/config.yaml" << EOF
-storage:
-  dir: $QDRANT_DIR
+        # Create Qdrant config
+        cat > "$QDRANT_DIR/config.yaml" << EOF
+    storage:
+      dir: $QDRANT_DIR
 
-service:
-  host: 127.0.0.1
-  http_port: 6333
-  grpc_port: 6334
+    service:
+      host: 127.0.0.1
+      http_port: 6333
+      grpc_port: 6334
 
-telemetry:
-  disabled: true
-EOF
+    telemetry:
+      disabled: true
+    EOF
 
-    # Start Qdrant in background
-    echo "Starting Qdrant..."
-    nohup ${pkgs.qdrant}/bin/qdrant --config-path "$QDRANT_DIR/config.yaml" > "$LOG_FILE" 2>&1 &
-    PID=$!
-    echo $PID > "$PID_FILE"
-    
-    # Wait for Qdrant to start
-    echo "Waiting for Qdrant to start..."
-    for i in {1..30}; do
-      if curl -s http://localhost:6333/healthz >/dev/null; then
-        echo "Qdrant is running (PID: $PID)"
-        exit 0
-      fi
-      sleep 1
-    done
-    
-    echo "Failed to start Qdrant"
-    exit 1
+        # Start Qdrant in background
+        echo "Starting Qdrant..."
+        nohup ${pkgs.qdrant}/bin/qdrant --config-path "$QDRANT_DIR/config.yaml" > "$LOG_FILE" 2>&1 &
+        PID=$!
+        echo $PID > "$PID_FILE"
+        
+        # Wait for Qdrant to start
+        echo "Waiting for Qdrant to start..."
+        for i in {1..30}; do
+          if curl -s http://localhost:6333/healthz >/dev/null; then
+            echo "Qdrant is running (PID: $PID)"
+            exit 0
+          fi
+          sleep 1
+        done
+        
+        echo "Failed to start Qdrant"
+        exit 1
   '';
 
   stopQdrant = pkgs.writeScriptBin "stop-qdrant" ''
@@ -106,9 +132,11 @@ EOF
     fi
   '';
 
-in
-pkgs.mkShell {
+in pkgs.mkShell {
   buildInputs = devTools ++ [ startQdrant stopQdrant ];
+
+  # Automatically fix library paths
+  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath devTools;
 
   shellHook = ''
     # Create temporary directory for Go
