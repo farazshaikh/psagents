@@ -260,6 +260,9 @@
           buildInputs = devTools
             ++ [ startQdrant stopQdrant startNeo4j stopNeo4j ];
 
+          # Automatically fix library paths
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath devTools;
+
           shellHook = ''
             # Create temporary directory for Go
             mkdir -p /tmp/nix-shell-$UID-0
@@ -291,6 +294,14 @@
             echo "  - yq: YAML processor"
             echo "  - neo4j: Graph database"
             echo "  - qdrant: Vector database"
+            echo ""
+            echo "⚠️  Python Development:"
+            echo "This environment provides system libraries (ffmpeg, C++ libs) and Python ${pkgs.python312.version}"
+            echo "For Python projects:"
+            echo "1. cd into the Python project directory"
+            echo "2. Create a virtualenv: python -m venv venv"
+            echo "3. Activate it: source venv/bin/activate"
+            echo "4. Install deps: pip install -r requirements.txt"
             echo ""
             echo "Database commands:"
             echo "  start-qdrant  - Start Qdrant in background"
