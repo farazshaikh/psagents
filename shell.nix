@@ -31,21 +31,19 @@ let
     neo4j # Graph database
     qdrant # Vector database
 
-    # Python base tools - minimal set
-    python312
-    python312Packages.pip
-    python312Packages.virtualenv
-    stdenv.cc.cc.lib # Required for PyTorch and other compiled extensions
-
-    # System libraries
-    ffmpeg
+    # System libraries required for Python development
+    # Note: Do NOT use nix Python! Instead:
+    # 1. Install Python normally (e.g. from python.org or system package manager)
+    # 2. For each Python project, create a new virtualenv:
+    #    python -m venv venv
+    #    source venv/bin/activate
+    #    pip install -r requirements.txt
+    stdenv.cc.cc.lib # C++ standard library (needed for PyTorch, etc.)
+    ffmpeg # Required for video processing
 
     # ROCm support
     rocmPackages.clr
     rocmPackages.rocm-core
-    rocmPackages.rocm-runtime
-    rocmPackages.hipblas
-    rocmPackages.rocblas
 
     # Build dependencies
     gcc
@@ -163,6 +161,14 @@ in pkgs.mkShell {
     echo "  - yq: YAML processor"
     echo "  - neo4j: Graph database"
     echo "  - qdrant: Vector database"
+    echo ""
+    echo "⚠️  Python Development:"
+    echo "This environment provides system libraries (ffmpeg, C++ libs) but NOT Python."
+    echo "For Python projects:"
+    echo "1. cd into the Python project directory"
+    echo "2. Create a virtualenv: python -m venv venv"
+    echo "3. Activate it: source venv/bin/activate"
+    echo "4. Install deps: pip install -r requirements.txt"
     echo ""
     echo "Qdrant commands:"
     echo "  start-qdrant  - Start Qdrant in background"

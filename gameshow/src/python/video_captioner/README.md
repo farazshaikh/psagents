@@ -1,5 +1,20 @@
 # Video Captioner
 
+⚠️ **Important: Python Environment Setup**
+This project requires its own Python virtualenv. Even though the project is in a nix-managed workspace, do NOT use the nix Python. Instead:
+
+1. Make sure you have Python 3.12+ installed on your system
+2. Create a new virtualenv:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate   # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+3. Always activate the virtualenv before running any Python commands:
+   ```bash
+   source venv/bin/activate   # On Windows: venv\Scripts\activate
+   ```
+
 A Python tool to automatically generate VTT captions from MP4 videos using OpenAI's Whisper.
 
 ## Overview
