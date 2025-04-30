@@ -1,19 +1,19 @@
 WEBVTT
 
 1
-00:00:34.600 --> 00:00:36.240
+00:00:35.240 --> 00:00:39.240
 {
-    caption: 'And trust me, your brain's gonna stop.',
+    "caption": "But before they called me Superwoman, my name was ...",
     "interactive": {
     "type": "singleChoiceQuestion",
     "content": {
-      "question": "Question text",
-      "active_duration_sec": 10
+     "question": "What was my name before they called me Superwoman?",
+     "active_duration_sec": 10,
       "options": [
-       "decode, like it's standing face-to-face with a cursed scroll",
-       "race, like a scarab on hot stone chasing the final clue",
-       "gonna burn, like Ra's sun hitting a forgotten riddle",
-       "crack, before the tomb door does"
+       "Cara Zor-El",
+       "Zina Kal",
+       "Arla Wey",
+       "Kalia Dior"
        ],
     }
 }

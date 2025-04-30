@@ -3,17 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <title>ZAIA Game Show</title>
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/debug.css">
-  <script src="scripts/debug.js"></script>
-  <script src="scripts/script.js"></script>
+  <link rel="stylesheet" href="css/styles.css?v=1">
+  <link rel="stylesheet" href="css/debug.css?v=1">
+  <script src="scripts/debug.js?v=1"></script>
+  <script src="scripts/script.js?v=1"></script>
 </head>
 <body>
   <div class="main-container">
     <!-- Video player taking full width -->
     <video id="videoPlayer" muted playsinline>
       <source src="videos/superwoman/video.mp4" type="video/mp4">
-      <track label="English" kind="captions" srclang="en" src="videos/superwoman/captions.vtt" default>
+      <!-- Original plain text captions -->
+      <track id="plainCaptions" label="Plain Captions" kind="captions" srclang="en" src="videos/superwoman/captions.vtt?v=1">
+      <!-- JSON formatted captions for interactive features -->
+      <track id="interactiveCaptions" label="Interactive Captions" kind="captions" srclang="en" src="videos/superwoman/interactive_captions.vtt?v=1">
     </video>
 
     <!-- ZAIA status in top left -->
