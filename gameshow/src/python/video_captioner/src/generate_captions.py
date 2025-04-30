@@ -6,8 +6,10 @@ Script to generate VTT captions from video files using OpenAI's Whisper.
 import argparse
 import os
 import sys
+import json
+import re
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict, Union
 
 import whisper
 from tqdm import tqdm
@@ -23,7 +25,7 @@ def setup_argparse() -> argparse.ArgumentParser:
         '--input',
         type=str,
         required=True,
-        help='Path to input video file or directory'
+        help='Path to input video file/directory, or VTT file when using --json-captions'
     )
     parser.add_argument(
         '--output',
@@ -47,6 +49,11 @@ def setup_argparse() -> argparse.ArgumentParser:
         '--batch',
         action='store_true',
         help='Process all video files in input directory'
+    )
+    parser.add_argument(
+        '--interactive-captions',
+        action='store_true',
+        help='Convert plain text VTT captions to interactive captions format'
     )
     return parser
 
@@ -132,16 +139,115 @@ def format_timestamp(seconds: float) -> str:
     seconds = seconds % 60
     return f"{hours:02d}:{minutes:02d}:{seconds:06.3f}"
 
+def parse_vtt_file(file_path: Path) -> List[Dict]:
+    """Parse a VTT file containing plain text captions."""
+    captions = []
+    current_caption = {}
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        
+        # Skip empty lines and WEBVTT header
+        if not line or line == 'WEBVTT':
+            i += 1
+            continue
+            
+        # Skip caption numbers
+        if line.isdigit():
+            i += 1
+            continue
+            
+        # Parse timestamp
+        if '-->' in line:
+            start, end = line.split(' --> ')
+            current_caption = {
+                'start': start.strip(),
+                'end': end.strip()
+            }
+            i += 1
+            
+            # Get the caption text (may be multiline)
+            text_lines = []
+            while i < len(lines) and lines[i].strip() and not lines[i].strip().isdigit():
+                text_lines.append(lines[i].strip())
+                i += 1
+            
+            current_caption['text'] = ' '.join(text_lines)
+            captions.append(current_caption)
+            continue
+            
+        i += 1
+        
+    return captions
+
+def generate_interactive_captions(
+    input_file: Path,
+    output_file: Path
+) -> None:
+    """Generate VTT file with JSON formatted captions from plain text VTT."""
+    try:
+        # Parse input VTT file
+        captions = parse_vtt_file(input_file)
+        
+        # Write VTT file with JSON captions
+        print(f"Writing JSON captions to: {output_file}")
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write("WEBVTT\n\n")
+            
+            for i, caption in enumerate(captions, 1):
+                # Write caption number
+                f.write(f"{i}\n")
+                
+                # Write timestamp
+                f.write(f"{caption['start']} --> {caption['end']}\n")
+                
+                # Write caption as JSON
+                caption_obj = {
+                    'caption': caption['text']
+                }
+                
+                # Format JSON with single quotes and unquoted property names
+                json_str = json.dumps(caption_obj, ensure_ascii=False)
+                json_str = json_str.replace('"', "'")
+                json_str = re.sub(r"'([\w_]+)':", r'\1:', json_str)
+                
+                f.write(f"{json_str}\n\n")
+                
+        print(f"Successfully generated JSON captions for: {input_file}")
+        
+    except Exception as e:
+        print(f"Error processing {input_file}: {str(e)}")
+        raise
+
 def main():
     """Main entry point."""
-    # Check for FFmpeg
+    parser = setup_argparse()
+    args = parser.parse_args()
+    
+    # Handle JSON captions if specified
+    if args.interactive_captions:
+        input_file = Path(args.input)
+        if not input_file.exists():
+            print(f"Error: JSON captions file not found: {input_file}")
+            sys.exit(1)
+            
+        output_file = get_output_path(input_file, args.output)
+        try:
+            generate_interactive_captions(input_file, output_file)
+            sys.exit(0)
+        except Exception as e:
+            print(f"Failed to create interactive captions: {str(e)}")
+            sys.exit(1)
+    
+    # Check for FFmpeg for video processing
     if not check_ffmpeg():
         print("Error: FFmpeg is not installed or not in PATH")
         print("Please install FFmpeg and try again")
         sys.exit(1)
-        
-    parser = setup_argparse()
-    args = parser.parse_args()
     
     # Get list of video files to process
     video_files = get_video_files(args.input)
