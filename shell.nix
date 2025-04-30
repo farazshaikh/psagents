@@ -31,17 +31,11 @@ let
     neo4j # Graph database
     qdrant # Vector database
 
-    # Python and ML dependencies
+    # Python base tools - minimal set
     python312
     python312Packages.pip
     python312Packages.virtualenv
-    python312Packages.torch
-    python312Packages.numpy
-    python312Packages.tqdm
-    python312Packages.more-itertools
-    python312Packages.transformers
-    python312Packages.ffmpeg-python
-    stdenv.cc.cc.lib
+    stdenv.cc.cc.lib # Required for PyTorch and other compiled extensions
 
     # System libraries
     ffmpeg
