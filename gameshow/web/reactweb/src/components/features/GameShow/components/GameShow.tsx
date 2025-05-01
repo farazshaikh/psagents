@@ -1,19 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GameProvider } from '../context/GameContext';
 import { ChatPanel } from './ChatPanel';
 import { VideoPlayer } from './VideoPlayer';
+import { MediaSource } from '../index';
 
 interface GameShowProps {
-  videoUrl: string;
-  plainCaptionsSrc: string;
-  interactiveCaptionsSrc: string;
+  mediaSources: MediaSource[];
 }
 
-export const GameShow: React.FC<GameShowProps> = ({
-  videoUrl,
-  plainCaptionsSrc,
-  interactiveCaptionsSrc
-}) => {
+export const GameShow: React.FC<GameShowProps> = ({ mediaSources }) => {
+  const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
+  const currentSource = mediaSources[currentSourceIndex];
+
+  const handleVideoEnd = () => {
+    if (currentSourceIndex < mediaSources.length - 1) {
+      setCurrentSourceIndex(prev => prev + 1);
+    }
+  };
+
   return (
     <GameProvider>
       <div className="main-container">
@@ -23,9 +27,10 @@ export const GameShow: React.FC<GameShowProps> = ({
         </div>
 
         <VideoPlayer
-          src={videoUrl}
-          plainCaptionsSrc={plainCaptionsSrc}
-          interactiveCaptionsSrc={interactiveCaptionsSrc}
+          src={currentSource.videoUrl}
+          plainCaptionsSrc={currentSource.plainCaptionsSrc}
+          interactiveCaptionsSrc={currentSource.interactiveCaptionsSrc}
+          onEnded={handleVideoEnd}
         />
         <ChatPanel />
       </div>

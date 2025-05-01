@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { useGameContext } from '../context/GameContext';
+import { debugLog } from '../../../../utils/debug';
 
 interface VideoPlayerProps {
   src: string;
   plainCaptionsSrc: string;
   interactiveCaptionsSrc: string;
+  onEnded?: () => void;
 }
 
 interface InteractiveCaptionData {
@@ -22,7 +24,8 @@ interface InteractiveCaptionData {
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
   plainCaptionsSrc,
-  interactiveCaptionsSrc
+  interactiveCaptionsSrc,
+  onEnded
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const plainTrackRef = useRef<HTMLTrackElement>(null);
@@ -57,44 +60,38 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [state.isPlaying]);
 
-  // Track video state
+  // Track video state and handle ended event
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const updateVideoState = () => {
+    const handleTimeUpdate = () => {
       dispatch({
         type: 'SET_VIDEO_STATE',
         payload: {
           currentTime: video.currentTime,
           duration: video.duration,
-          isPlaying: !video.paused,
-          isMuted: video.muted,
-          isFullscreen: document.fullscreenElement !== null
+          isPlaying: !video.paused
         }
       });
     };
 
-    // Update state on various video events
-    video.addEventListener('play', updateVideoState);
-    video.addEventListener('pause', updateVideoState);
-    video.addEventListener('timeupdate', updateVideoState);
-    video.addEventListener('durationchange', updateVideoState);
-    video.addEventListener('volumechange', updateVideoState);
-    document.addEventListener('fullscreenchange', updateVideoState);
+    const handleEnded = () => {
+      debugLog('Video ended event fired');
+      // Ensure we're really at the end
+      if (Math.abs(video.currentTime - video.duration) < 0.5) {
+        onEnded?.();
+      }
+    };
 
-    // Initial state update
-    updateVideoState();
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('ended', handleEnded);
 
     return () => {
-      video.removeEventListener('play', updateVideoState);
-      video.removeEventListener('pause', updateVideoState);
-      video.removeEventListener('timeupdate', updateVideoState);
-      video.removeEventListener('durationchange', updateVideoState);
-      video.removeEventListener('volumechange', updateVideoState);
-      document.removeEventListener('fullscreenchange', updateVideoState);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('ended', handleEnded);
     };
-  }, [dispatch]);
+  }, [dispatch, onEnded]);
 
   // Handle caption tracks
   useEffect(() => {
@@ -154,7 +151,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       if (activeCues.length > 0) {
         const cue = activeCues[0] as VTTCue;
         try {
-          console.log('Interactive caption cue:', cue.text);
+          debugLog(`Interactive caption cue: ${cue.text}`);
           const data: InteractiveCaptionData = JSON.parse(cue.text);
 
           // If there's a caption text in the JSON, add it as a message
@@ -184,7 +181,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             });
           }
         } catch (error) {
-          console.error('Error parsing interactive caption:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          debugLog(`Error parsing interactive caption: ${errorMessage}`);
+          
+          // Display the parsing error and the problematic caption text in the chat
+          dispatch({
+            type: 'ADD_MESSAGE',
+            payload: {
+              id: `caption-error-${Date.now()}`,
+              text: `⚠️ Caption parsing error:\n${errorMessage}\n\nCaption text:\n${cue.text}`,
+              type: 'system',
+              timestamp: Date.now()
+            }
+          });
         }
       }
     };
@@ -219,6 +228,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         ref={videoRef}
         className="video-player"
         playsInline
+        autoPlay
         muted
         crossOrigin="anonymous"
       >
@@ -237,7 +247,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           kind="subtitles"
           srcLang="en"
           src={interactiveCaptionsSrc}
-          default
         />
       </video>
     </div>
