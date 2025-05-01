@@ -3,9 +3,9 @@ import ssl
 
 class CORSRequestHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
-        # Add CORS headers
-        self.send_header('Access-Control-Allow-Origin', 'http://localhost:3000')
-        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        # Allow all origins for testing
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', '*')
         self.send_header('Access-Control-Allow-Headers', '*')
 
         # Aggressive no-cache headers for ALL responses
@@ -28,7 +28,7 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
 # Create the HTTP server
-server_address = ('', 8443)  # Using 8443 to avoid needing sudo
+server_address = ('0.0.0.0', 8443)  # Listen on all interfaces
 httpd = HTTPServer(server_address, CORSRequestHandler)
 
 # Create SSL context
@@ -40,5 +40,5 @@ httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
 
 print('Starting HTTPS server on port 8443...')
 print('Note: You will need to accept the self-signed certificate in your browser')
-print('Access the site at: https://localhost:8443')
+print('Server allows all CORS origins (*) - FOR TESTING ONLY')
 httpd.serve_forever()

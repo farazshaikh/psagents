@@ -21,6 +21,47 @@ declare global {
   }
 }
 
+const copyToClipboard = (text: string): Promise<void> => {
+  // Try using the clipboard API first
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+
+  // Fallback: Create a temporary textarea element
+  return new Promise((resolve, reject) => {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      // Prevent zooming on iOS
+      textarea.style.fontSize = '12pt';
+      // Reset box model
+      textarea.style.border = '0';
+      textarea.style.padding = '0';
+      textarea.style.margin = '0';
+      // Move element out of screen horizontally
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      // Move element to the same position vertically
+      textarea.style.top = (window.pageYOffset || document.documentElement.scrollTop) + 'px';
+
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      if (successful) {
+        resolve();
+      } else {
+        reject(new Error('Copy command failed'));
+      }
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
 const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) => {
   const { theme } = useTheme();
   const [logs, setLogs] = useState<DebugEntry[]>([]);
@@ -116,10 +157,16 @@ const DebugConsole: React.FC<DebugConsoleProps> = ({ initialVisible = false }) =
       return text;
     }).join('\n');
 
-    navigator.clipboard.writeText(logText).then(() => {
-      setCopyText('Copied!');
-      setTimeout(() => setCopyText('Copy Logs'), 2000);
-    });
+    copyToClipboard(logText)
+      .then(() => {
+        setCopyText('Copied!');
+        setTimeout(() => setCopyText('Copy Logs'), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy:', err);
+        setCopyText('Copy Failed');
+        setTimeout(() => setCopyText('Copy Logs'), 2000);
+      });
   };
 
   const toggleVisibility = useCallback(() => {
