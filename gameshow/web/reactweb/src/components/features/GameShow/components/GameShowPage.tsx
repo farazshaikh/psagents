@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { GameShow } from './GameShow';
+import { GameShow } from '../index';
 
 const REMOTE_SERVER = 'https://localhost:8443';
 
@@ -16,12 +16,15 @@ export const GameShowPage: React.FC = () => {
     };
   }, []);
 
-  const videoUrl = `${REMOTE_SERVER}/videos/game_show.mp4`;
-  const captionsUrl = `${REMOTE_SERVER}/videos/captions.vtt`;
-
   return (
     <div className="game-show-page">
-      <GameShow videoUrl={videoUrl} captionsUrl={captionsUrl} />
+      <GameShow 
+        videoUrl={`${REMOTE_SERVER}/videos/superwoman/video.mp4`}
+        plainCaptionsSrc={`${REMOTE_SERVER}/videos/superwoman/captions.vtt`}
+        interactiveCaptionsSrc={`${REMOTE_SERVER}/videos/superwoman/interactive_captions.vtt`}
+      />
     </div>
   );
-}; 
+};
+
+export default GameShowPage;

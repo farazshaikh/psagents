@@ -5,19 +5,28 @@ import { VideoPlayer } from './VideoPlayer';
 
 interface GameShowProps {
   videoUrl: string;
-  captionsUrl: string;
+  plainCaptionsSrc: string;
+  interactiveCaptionsSrc: string;
 }
 
-export const GameShow: React.FC<GameShowProps> = ({ videoUrl, captionsUrl }) => {
+export const GameShow: React.FC<GameShowProps> = ({
+  videoUrl,
+  plainCaptionsSrc,
+  interactiveCaptionsSrc
+}) => {
   return (
     <GameProvider>
-      <div className="game-show-container">
+      <div className="main-container">
         <div className="zaia-status">
           <span className="name">ZAIA</span>
           <span className="online">online</span>
         </div>
 
-        <VideoPlayer src={videoUrl} captionsSrc={captionsUrl} />
+        <VideoPlayer
+          src={videoUrl}
+          plainCaptionsSrc={plainCaptionsSrc}
+          interactiveCaptionsSrc={interactiveCaptionsSrc}
+        />
         <ChatPanel />
       </div>
     </GameProvider>

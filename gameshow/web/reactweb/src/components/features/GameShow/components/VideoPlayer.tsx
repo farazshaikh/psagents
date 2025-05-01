@@ -1,112 +1,68 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useGameContext } from '../context/GameContext';
 
 interface VideoPlayerProps {
   src: string;
-  captionsSrc: string;
+  plainCaptionsSrc: string;
+  interactiveCaptionsSrc: string;
 }
 
-// Final question options
-const FINAL_OPTIONS = [
-  "decode, like it's standing face-to-face with a cursed scroll",
-  "race, like a scarab on hot stone chasing the final clue",
-  "gonna burn, like Ra's sun hitting a forgotten riddle",
-  "crack, before the tomb door does"
-];
+interface InteractiveCaptionData {
+  caption: string;
+  interactive?: {
+    type: 'singleChoiceQuestion';
+    content: {
+      question: string;
+      active_duration_sec: number;
+      options: string[];
+    };
+  };
+}
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, captionsSrc }) => {
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  src,
+  plainCaptionsSrc,
+  interactiveCaptionsSrc
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { state, dispatch } = useGameContext();
-  const { isPlaying } = state;
-  const [lastCaptionTime, setLastCaptionTime] = useState<number | null>(null);
+  const plainTrackRef = useRef<HTMLTrackElement>(null);
+  const interactiveTrackRef = useRef<HTMLTrackElement>(null);
+  const { dispatch, state } = useGameContext();
 
-  // Prevent context menu and clicks
+  // Handle video playback when game starts
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const preventDefault = (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
+    if (state.isPlaying) {
+      video.currentTime = 0;
+      video.muted = false;
 
-    // Prevent all mouse events
-    video.addEventListener('contextmenu', preventDefault);
-    video.addEventListener('click', preventDefault);
-    video.addEventListener('dblclick', preventDefault);
-    video.addEventListener('mousedown', preventDefault);
-
-    // Prevent pause/play through space bar
-    const preventSpaceBar = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-      }
-    };
-    document.addEventListener('keydown', preventSpaceBar);
-
-    return () => {
-      video.removeEventListener('contextmenu', preventDefault);
-      video.removeEventListener('click', preventDefault);
-      video.removeEventListener('dblclick', preventDefault);
-      video.removeEventListener('mousedown', preventDefault);
-      document.removeEventListener('keydown', preventSpaceBar);
-    };
-  }, []);
-
-  // Handle game start
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !isPlaying) return;
-
-    // Reset video state
-    video.currentTime = 0;
-    video.muted = false;
-
-    // Try to play unmuted first
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(error => {
-        console.error('Error playing video:', error);
-        // If unmuted play fails, try muted
-        video.muted = true;
-        video.play().then(() => {
-          // Try to unmute after autoplay starts
-          video.muted = false;
-        }).catch(e => {
-          console.error('Failed to play even muted:', e);
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error('Error playing video:', error);
+          // Try playing muted if autoplay was blocked
+          video.muted = true;
+          video.play().then(() => {
+            // Try to unmute after successful muted playback
+            video.muted = false;
+          }).catch(e => {
+            console.error('Failed to play even muted:', e);
+          });
         });
-      });
-    }
-  }, [isPlaying]);
-
-  // Find last caption time when track loads
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const track = video.textTracks[0];
-    if (!track) return;
-
-    const checkTrack = setInterval(() => {
-      if (track.cues && track.cues.length > 0) {
-        const lastCue = track.cues[track.cues.length - 1];
-        setLastCaptionTime(lastCue.startTime);
-        clearInterval(checkTrack);
       }
-    }, 100);
+    } else {
+      video.pause();
+    }
+  }, [state.isPlaying]);
 
-    return () => clearInterval(checkTrack);
-  }, []);
-
-  // Handle video events and captions
+  // Track video state
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Remove loop setting
-    video.loop = false;
-
-    const handleTimeUpdate = () => {
+    const updateVideoState = () => {
       dispatch({
         type: 'SET_VIDEO_STATE',
         payload: {
@@ -119,175 +75,173 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, captionsSrc }) =>
       });
     };
 
-    const handleEnded = () => {
-      // When video ends, pause it and dispatch timeout action
-      video.pause();
-      dispatch({ type: 'QUESTION_TIMEOUT' });
-    };
+    // Update state on various video events
+    video.addEventListener('play', updateVideoState);
+    video.addEventListener('pause', updateVideoState);
+    video.addEventListener('timeupdate', updateVideoState);
+    video.addEventListener('durationchange', updateVideoState);
+    video.addEventListener('volumechange', updateVideoState);
+    document.addEventListener('fullscreenchange', updateVideoState);
 
-    // Handle captions
-    const handleCueChange = () => {
-      const track = video.textTracks[0];
-      if (!track) return;
-
-      const activeCues = track.activeCues;
-      if (activeCues && activeCues.length > 0) {
-        const cue = activeCues[0] as VTTCue;
-        
-        // Check if this is the last caption
-        if (lastCaptionTime && Math.abs(cue.startTime - lastCaptionTime) < 0.1) {
-          // Show the final question
-          dispatch({
-            type: 'SET_CURRENT_QUESTION',
-            payload: {
-              id: 'final',
-              text: cue.text,
-              options: FINAL_OPTIONS
-            }
-          });
-          dispatch({ type: 'SET_FINAL_QUESTION_SHOWN', payload: true });
-          
-          // Start 20-second timer for the final question
-          setTimeout(() => {
-            video.pause();
-            dispatch({ type: 'QUESTION_TIMEOUT' });
-          }, 20000);
-          return;
-        }
-        
-        // Set typing indicator before showing message
-        dispatch({ type: 'SET_TYPING', payload: true });
-        
-        // Add message after a short delay
-        setTimeout(() => {
-          dispatch({
-            type: 'ADD_MESSAGE',
-            payload: {
-              id: Date.now().toString(),
-              text: cue.text,
-              type: 'text',
-              timestamp: Date.now()
-            }
-          });
-        }, 1000);
-      }
-    };
-
-    // Setup video event listeners
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('ended', handleEnded);
-    video.addEventListener('play', handleTimeUpdate);
-    video.addEventListener('pause', handleTimeUpdate);
-    video.addEventListener('volumechange', handleTimeUpdate);
-
-    // Setup captions
-    if (video.textTracks.length > 0) {
-      const track = video.textTracks[0];
-      track.mode = 'hidden'; // Hide native captions
-      track.addEventListener('cuechange', handleCueChange);
-    }
-
-    // Prevent pause through video element except for timeouts
-    const preventPause = (e: Event) => {
-      if (video.paused && isPlaying && !video.ended) {
-        e.preventDefault();
-        video.play().catch(console.error);
-      }
-    };
-    video.addEventListener('pause', preventPause);
+    // Initial state update
+    updateVideoState();
 
     return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('ended', handleEnded);
-      video.removeEventListener('play', handleTimeUpdate);
-      video.removeEventListener('pause', handleTimeUpdate);
-      video.removeEventListener('volumechange', handleTimeUpdate);
-      video.removeEventListener('pause', preventPause);
-      
-      if (video.textTracks.length > 0) {
-        const track = video.textTracks[0];
-        track.removeEventListener('cuechange', handleCueChange);
-      }
+      video.removeEventListener('play', updateVideoState);
+      video.removeEventListener('pause', updateVideoState);
+      video.removeEventListener('timeupdate', updateVideoState);
+      video.removeEventListener('durationchange', updateVideoState);
+      video.removeEventListener('volumechange', updateVideoState);
+      document.removeEventListener('fullscreenchange', updateVideoState);
     };
-  }, [dispatch, lastCaptionTime, isPlaying]);
+  }, [dispatch]);
 
-  const handleMute = () => {
+  // Handle caption tracks
+  useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    const plainTrack = plainTrackRef.current;
+    const interactiveTrack = interactiveTrackRef.current;
+    if (!video || !plainTrack || !interactiveTrack) return;
 
-    video.muted = !video.muted;
-    dispatch({
-      type: 'SET_VIDEO_STATE',
-      payload: { 
-        isMuted: video.muted,
-        isPlaying: !video.paused,
-        currentTime: video.currentTime,
-        duration: video.duration
-      }
-    });
-  };
+    // Handle track loading
+    const handleTrackLoad = (track: TextTrack, type: string) => {
+      console.log(`${type} track loaded:`, track);
+      track.mode = 'showing'; // First set to showing to force load
+      setTimeout(() => {
+        track.mode = 'hidden'; // Then hide after load
+      }, 100);
+    };
 
-  const handleFullscreen = async () => {
-    const video = videoRef.current;
-    if (!video) return;
+    const handleTrackError = (event: Event, type: string) => {
+      console.error(`Error loading ${type} track:`, event);
+    };
 
-    if (!document.fullscreenElement) {
-      try {
-        await video.requestFullscreen();
+    // Set up plain captions track
+    plainTrack.addEventListener('load', () => handleTrackLoad(plainTrack.track, 'Plain'));
+    plainTrack.addEventListener('error', (e) => handleTrackError(e, 'Plain'));
+
+    // Set up interactive captions track
+    interactiveTrack.addEventListener('load', () => handleTrackLoad(interactiveTrack.track, 'Interactive'));
+    interactiveTrack.addEventListener('error', (e) => handleTrackError(e, 'Interactive'));
+
+    // Handle plain captions (normal text messages)
+    const handlePlainCueChange = () => {
+      const track = plainTrack.track;
+      if (!track) return;
+
+      const activeCues = Array.from(track.activeCues || []);
+      if (activeCues.length > 0) {
+        const cue = activeCues[0] as VTTCue;
+        console.log('Plain caption cue:', cue.text);
         dispatch({
-          type: 'SET_VIDEO_STATE',
+          type: 'ADD_MESSAGE',
           payload: {
-            isPlaying: !video.paused,
-            currentTime: video.currentTime,
-            duration: video.duration,
-            isMuted: video.muted
+            id: `caption-${Date.now()}`,
+            text: cue.text,
+            type: 'text',
+            timestamp: Date.now()
           }
         });
-      } catch (error) {
-        console.error('Error attempting to enable fullscreen:', error);
       }
-    } else {
-      await document.exitFullscreen();
-      dispatch({
-        type: 'SET_VIDEO_STATE',
-        payload: {
-          isPlaying: !video.paused,
-          currentTime: video.currentTime,
-          duration: video.duration,
-          isMuted: video.muted
+    };
+
+    // Handle interactive captions (JSON-formatted UI elements)
+    const handleInteractiveCueChange = () => {
+      const track = interactiveTrack.track;
+      if (!track) return;
+
+      const activeCues = Array.from(track.activeCues || []);
+      if (activeCues.length > 0) {
+        const cue = activeCues[0] as VTTCue;
+        try {
+          console.log('Interactive caption cue:', cue.text);
+          const data: InteractiveCaptionData = JSON.parse(cue.text);
+
+          // If there's a caption text in the JSON, add it as a message
+          if (data.caption) {
+            dispatch({
+              type: 'ADD_MESSAGE',
+              payload: {
+                id: `interactive-caption-${Date.now()}`,
+                text: data.caption,
+                type: 'text',
+                timestamp: Date.now()
+              }
+            });
+          }
+
+          // If there's an interactive element, handle it separately
+          if (data.interactive?.type === 'singleChoiceQuestion') {
+            const { question, options, active_duration_sec } = data.interactive.content;
+            dispatch({
+              type: 'SET_CURRENT_QUESTION',
+              payload: {
+                id: Date.now().toString(),
+                text: question,
+                options: options,
+                duration: active_duration_sec
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error parsing interactive caption:', error);
         }
-      });
-    }
-  };
+      }
+    };
+
+    // Set up track change listeners
+    plainTrack.track.addEventListener('cuechange', handlePlainCueChange);
+    interactiveTrack.track.addEventListener('cuechange', handleInteractiveCueChange);
+
+    // Force tracks to load by temporarily setting them to showing
+    video.textTracks[0].mode = 'showing';
+    video.textTracks[1].mode = 'showing';
+
+    // Then hide them after a short delay
+    setTimeout(() => {
+      video.textTracks[0].mode = 'hidden';
+      video.textTracks[1].mode = 'hidden';
+    }, 100);
+
+    return () => {
+      plainTrack.track.removeEventListener('cuechange', handlePlainCueChange);
+      interactiveTrack.track.removeEventListener('cuechange', handleInteractiveCueChange);
+      plainTrack.removeEventListener('load', () => handleTrackLoad(plainTrack.track, 'Plain'));
+      plainTrack.removeEventListener('error', (e) => handleTrackError(e, 'Plain'));
+      interactiveTrack.removeEventListener('load', () => handleTrackLoad(interactiveTrack.track, 'Interactive'));
+      interactiveTrack.removeEventListener('error', (e) => handleTrackError(e, 'Interactive'));
+    };
+  }, [dispatch]);
 
   return (
     <div className="video-container">
       <video
         ref={videoRef}
-        src={src}
         className="video-player"
         playsInline
+        muted
         crossOrigin="anonymous"
-        style={{ pointerEvents: 'none' }}
       >
+        <source src={src} type="video/mp4" />
         <track
-          kind="captions"
-          src={captionsSrc}
+          ref={plainTrackRef}
+          label="Plain Captions"
+          kind="subtitles"
           srcLang="en"
-          label="English"
+          src={plainCaptionsSrc}
+          default
+        />
+        <track
+          ref={interactiveTrackRef}
+          label="Interactive Captions"
+          kind="subtitles"
+          srcLang="en"
+          src={interactiveCaptionsSrc}
           default
         />
       </video>
-      <div className="video-controls">
-        <button onClick={handleMute} className="control-button">
-          <i className={`fas fa-volume-${videoRef.current?.muted ? 'mute' : 'up'}`} />
-        </button>
-        <button onClick={handleFullscreen} className="control-button">
-          <i className="fas fa-expand" />
-        </button>
-      </div>
     </div>
   );
 };
 
-export default VideoPlayer; 
+export default VideoPlayer;

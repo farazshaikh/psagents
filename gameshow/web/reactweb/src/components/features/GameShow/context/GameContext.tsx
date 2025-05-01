@@ -6,6 +6,7 @@ export interface Question {
   text: string;
   options: string[];
   correctAnswer?: number;
+  duration?: number;  // Duration in seconds for the question
 }
 
 export interface Message {
@@ -28,7 +29,6 @@ interface GameState {
   videoState: VideoState;
   messages: Message[];
   currentQuestion: Question | null;
-  currentCaption: string | null;
   isTyping: boolean;
   hasShownFinalQuestion: boolean;
   countdown: number;
@@ -39,7 +39,6 @@ type GameAction =
   | { type: 'SET_VIDEO_STATE'; payload: Partial<VideoState> }
   | { type: 'ADD_MESSAGE'; payload: Message }
   | { type: 'SET_CURRENT_QUESTION'; payload: Question | null }
-  | { type: 'SET_CURRENT_CAPTION'; payload: string | null }
   | { type: 'SET_TYPING'; payload: boolean }
   | { type: 'SET_FINAL_QUESTION_SHOWN'; payload: boolean }
   | { type: 'QUESTION_TIMEOUT' }
@@ -58,7 +57,6 @@ const initialState: GameState = {
   },
   messages: [],
   currentQuestion: null,
-  currentCaption: null,
   isTyping: false,
   hasShownFinalQuestion: false,
   countdown: 20,
@@ -74,7 +72,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
             isPlaying: true,
             messages: [],
             isTyping: false,
-            currentCaption: null,
             currentQuestion: null,
             hasShownFinalQuestion: false,
             countdown: 20,
@@ -108,9 +105,12 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
 
         case 'SET_CURRENT_QUESTION':
           if (action.payload) {
+            // Start countdown timer with question duration or default to 20 seconds
+            const countdown = action.payload.duration || 20;
             return {
               ...state,
               currentQuestion: action.payload,
+              countdown,
               messages: [...state.messages, {
                 id: `question-${action.payload.id}`,
                 text: action.payload.text,
@@ -121,28 +121,8 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           }
           return {
             ...state,
-            currentQuestion: null
-          };
-
-        case 'SET_CURRENT_CAPTION':
-          if (action.payload === null) {
-            return {
-              ...state,
-              currentCaption: null
-            };
-          }
-          return {
-            ...state,
-            currentCaption: action.payload,
-            messages: [
-              ...state.messages,
-              {
-                id: `caption-${Date.now()}`,
-                text: action.payload,
-                type: 'text' as const,
-                timestamp: Date.now()
-              }
-            ]
+            currentQuestion: null,
+            countdown: 20 // Reset to default
           };
 
         case 'SET_TYPING':
@@ -216,7 +196,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       `    - Playing: ${newState.isPlaying}\n` +
       `    - Video time: ${newState.videoState.currentTime.toFixed(3)}\n` +
       `    - Messages: ${newState.messages.length}\n` +
-      `    - Current caption: ${newState.currentCaption || 'none'}\n` +
       `    - Has final question: ${newState.hasShownFinalQuestion}`
     );
 

@@ -6,14 +6,23 @@ import { ChatPanel } from './components/ChatPanel';
 
 interface GameShowProps {
   videoUrl: string;
-  captionsUrl: string;
+  plainCaptionsSrc: string;
+  interactiveCaptionsSrc: string;
 }
 
-export const GameShow: React.FC<GameShowProps> = ({ videoUrl, captionsUrl }) => {
+export const GameShow: React.FC<GameShowProps> = ({
+  videoUrl,
+  plainCaptionsSrc,
+  interactiveCaptionsSrc
+}) => {
   return (
     <GameProvider>
       <div className="main-container">
-        <VideoPlayer src={videoUrl} captionsSrc={captionsUrl} />
+        <VideoPlayer
+          src={videoUrl}
+          plainCaptionsSrc={plainCaptionsSrc}
+          interactiveCaptionsSrc={interactiveCaptionsSrc}
+        />
 
         {/* ZAIA status in top left */}
         <div className="zaia-status">

@@ -4,7 +4,7 @@ import { useFeatureFlags } from './utils/featureFlags';
 import './App.css';
 import { ThemeProvider } from './components/basic/ThemeProvider';
 import NextGenLanding from './components/features/LandingWithSections';
-import GameShowPage from './components/features/GameShow/GameShowPage';
+import GameShowPage from './components/features/GameShow/components/GameShowPage';
 
 // Only import DebugConsole in development
 const DebugConsole = process.env.NODE_ENV === 'development'

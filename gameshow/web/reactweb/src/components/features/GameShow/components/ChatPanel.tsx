@@ -136,7 +136,8 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast }) => {
                       onClick={() => handleOptionClick(index)}
                       disabled={secondsLeft === 0}
                     >
-                      {String.fromCharCode(65 + index)}. {option}
+                      <span className="option-letter">{String.fromCharCode(65 + index)}</span>
+                      {option}
                     </button>
                   )
                 ))}
@@ -203,7 +204,7 @@ const ParticipateButton: React.FC = () => {
   };
 
   return (
-    <div className="caption-entry show clickable">
+    <div className="message visible">
       <div className="avatar-bubble">
         <span className="avatar-letter">Z</span>
       </div>
