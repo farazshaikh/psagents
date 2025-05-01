@@ -3,15 +3,17 @@ import { useGameContext } from '../context/GameContext';
 import type { Message } from '../context/GameContext';
 import { debugLog, debugError } from '../../../../utils/debug';
 
+// Configuration constants
+const COUNTDOWN_DURATION = 20000; // 20 seconds in milliseconds
+const OPTION_REVEAL_DELAY = 1000; // 1 second between each option reveal
+const LATEST_MESSAGES_FULL_OPACITY = 1; // Number of latest messages to keep at full opacity
+
 interface MessageProps {
   message: Message;
   isLast: boolean;
   totalMessages: number;
   messageIndex: number;
 }
-
-const COUNTDOWN_DURATION = 20000; // 20 seconds in milliseconds
-const OPTION_REVEAL_DELAY = 1000; // 1 second between each option reveal
 
 const calculateOpacity = (index: number, total: number): number => {
   // Get CSS variables for configuration
@@ -20,13 +22,25 @@ const calculateOpacity = (index: number, total: number): number => {
   const minOpacity = parseFloat(getComputedStyle(root).getPropertyValue('--message-min-opacity')) || 0.15;
   const maxOpacity = parseFloat(getComputedStyle(root).getPropertyValue('--message-opacity-latest')) || 1;
 
-  // Calculate relative position from newest (0) to oldest (1)
-  const position = index / (total - 1);
+  // If message is the latest one, keep full opacity
+  if (index < LATEST_MESSAGES_FULL_OPACITY) {
+    return maxOpacity;
+  }
+
+  // For the second latest message, apply sharp drop
+  if (index === LATEST_MESSAGES_FULL_OPACITY) {
+    return Math.max(maxOpacity * 0.4, minOpacity); // Sharp 60% reduction
+  }
+
+  // For older messages, calculate with steeper exponential decay
+  const adjustedIndex = index - LATEST_MESSAGES_FULL_OPACITY;
+  const adjustedTotal = total - LATEST_MESSAGES_FULL_OPACITY;
+  const position = adjustedTotal > 0 ? adjustedIndex / adjustedTotal : 0;
   
-  // Exponential decay formula: opacity = max * e^(-fadeRate * position)
-  const opacity = maxOpacity * Math.exp(-fadeRate * position * 10);
+  // More aggressive exponential decay formula
+  const baseOpacity = maxOpacity * 0.4; // Start from the sharp drop level
+  const opacity = baseOpacity * Math.exp(-fadeRate * position * 15); // Increased decay factor
   
-  // Ensure opacity doesn't go below minimum
   return Math.max(opacity, minOpacity);
 };
 
@@ -190,7 +204,7 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast, totalMessag
   };
 
   const messageStyle = {
-    opacity: isLast ? 1 : calculateOpacity(messageIndex, totalMessages)
+    opacity: calculateOpacity(messageIndex, totalMessages)
   };
 
   return (
