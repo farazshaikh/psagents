@@ -225,18 +225,41 @@ const ParticipateButton: React.FC = () => {
 export const ChatPanel: React.FC = () => {
   const { state } = useGameContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToBottom = useCallback(() => {
+    if (messagesContainerRef.current) {
+      // Force immediate scroll to bottom
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      
+      // Double-check scroll position after a brief delay to handle dynamic content
+      requestAnimationFrame(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      });
+    }
+  }, []);
 
+  // Scroll on new messages
   useEffect(() => {
     scrollToBottom();
-  }, [state.messages]);
+  }, [state.messages, scrollToBottom]);
+
+  // Scroll when options are revealed for questions
+  useEffect(() => {
+    const lastMessage = state.messages[state.messages.length - 1];
+    if (lastMessage?.type === 'question') {
+      const scrollInterval = setInterval(scrollToBottom, 100);
+      // Keep checking for 2 seconds to ensure all content is revealed
+      setTimeout(() => clearInterval(scrollInterval), 2000);
+      return () => clearInterval(scrollInterval);
+    }
+  }, [state.messages, scrollToBottom]);
 
   return (
     <div className="chat-panel">
-      <div className="messages-container">
+      <div className="messages-container" ref={messagesContainerRef}>
         {state.messages.map((message, index) => (
           <MessageComponent
             key={message.id}
