@@ -8,7 +8,7 @@ WEBVTT
         "type": "singleChoiceQuestion",
         "content": {
             "question": "What was my name before they called me Superwoman?",
-            "active_duration_sec": 10,
+            "active_duration_sec": 30,
             "options": [
                 "Cara Zor-El",
                 "Zina Kal",

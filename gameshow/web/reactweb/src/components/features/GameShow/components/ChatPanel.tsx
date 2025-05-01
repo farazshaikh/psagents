@@ -4,7 +4,6 @@ import type { Message } from '../context/GameContext';
 import { debugLog, debugError } from '../../../../utils/debug';
 
 // Configuration constants
-const COUNTDOWN_DURATION = 20000; // 20 seconds in milliseconds
 const OPTION_REVEAL_DELAY = 1000; // 1 second between each option reveal
 const LATEST_MESSAGES_FULL_OPACITY = 1; // Number of latest messages to keep at full opacity
 
@@ -36,11 +35,11 @@ const calculateOpacity = (index: number, total: number): number => {
   const adjustedIndex = index - LATEST_MESSAGES_FULL_OPACITY;
   const adjustedTotal = total - LATEST_MESSAGES_FULL_OPACITY;
   const position = adjustedTotal > 0 ? adjustedIndex / adjustedTotal : 0;
-  
+
   // More aggressive exponential decay formula
   const baseOpacity = maxOpacity * 0.4; // Start from the sharp drop level
   const opacity = baseOpacity * Math.exp(-fadeRate * position * 15); // Increased decay factor
-  
+
   return Math.max(opacity, minOpacity);
 };
 
@@ -49,12 +48,12 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast, totalMessag
   const { currentQuestion } = state;
   const [visible, setVisible] = useState(false);
   const [revealedOptions, setRevealedOptions] = useState<number>(0);
-  const [secondsLeft, setSecondsLeft] = useState(20);
+  const [secondsLeft, setSecondsLeft] = useState(currentQuestion?.duration || 20);
   const [progress, setProgress] = useState(100);
   const startTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const optionsTimeoutRef = useRef<NodeJS.Timeout[]>([]);
-  const lastSecondRef = useRef<number>(20);
+  const lastSecondRef = useRef<number>(currentQuestion?.duration || 20);
 
   useEffect(() => {
     setVisible(true);
@@ -62,8 +61,9 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast, totalMessag
 
   const startCountdown = useCallback(() => {
     try {
-      if (startTimeRef.current === null) {
+      if (startTimeRef.current === null && currentQuestion?.duration) {
         startTimeRef.current = Date.now();
+        const totalDuration = currentQuestion.duration * 1000; // Convert to milliseconds
         debugLog('Countdown started');
 
         const updateCountdown = () => {
@@ -71,9 +71,9 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast, totalMessag
             if (startTimeRef.current === null) return;
 
             const elapsedTime = Date.now() - startTimeRef.current;
-            const remainingTime = Math.max(0, COUNTDOWN_DURATION - elapsedTime);
+            const remainingTime = Math.max(0, totalDuration - elapsedTime);
             const newSecondsLeft = Math.ceil(remainingTime / 1000);
-            const newProgress = (remainingTime / COUNTDOWN_DURATION) * 100;
+            const newProgress = (remainingTime / totalDuration) * 100;
 
             setProgress(newProgress);
 
@@ -103,7 +103,7 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast, totalMessag
     } catch (error) {
       debugError(error as Error, 'Error starting countdown');
     }
-  }, [dispatch]);
+  }, [dispatch, currentQuestion]);
 
   useEffect(() => {
     if (message.type === 'question' && currentQuestion) {
@@ -176,12 +176,15 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast, totalMessag
                 ))}
                 {revealedOptions === currentQuestion.options.length && (
                   <div className="countdown-container">
-                    <div
-                      className="countdown-progress"
-                      style={{ width: `${progress}%` }}
-                    />
-                    <div className="countdown-display">
+                    <div className="countdown-timer">
+                      <span role="img" aria-label="timer">⏱</span>
                       {secondsLeft}s
+                    </div>
+                    <div className="countdown-progress-container">
+                      <div
+                        className="countdown-progress"
+                        style={{ width: `${progress}%` }}
+                      />
                     </div>
                   </div>
                 )}
