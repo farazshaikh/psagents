@@ -6,12 +6,31 @@ import { debugLog, debugError } from '../../../../utils/debug';
 interface MessageProps {
   message: Message;
   isLast: boolean;
+  totalMessages: number;
+  messageIndex: number;
 }
 
 const COUNTDOWN_DURATION = 20000; // 20 seconds in milliseconds
 const OPTION_REVEAL_DELAY = 1000; // 1 second between each option reveal
 
-const MessageComponent: React.FC<MessageProps> = ({ message, isLast }) => {
+const calculateOpacity = (index: number, total: number): number => {
+  // Get CSS variables for configuration
+  const root = document.documentElement;
+  const fadeRate = parseFloat(getComputedStyle(root).getPropertyValue('--message-fade-rate')) || 0.25;
+  const minOpacity = parseFloat(getComputedStyle(root).getPropertyValue('--message-min-opacity')) || 0.15;
+  const maxOpacity = parseFloat(getComputedStyle(root).getPropertyValue('--message-opacity-latest')) || 1;
+
+  // Calculate relative position from newest (0) to oldest (1)
+  const position = index / (total - 1);
+  
+  // Exponential decay formula: opacity = max * e^(-fadeRate * position)
+  const opacity = maxOpacity * Math.exp(-fadeRate * position * 10);
+  
+  // Ensure opacity doesn't go below minimum
+  return Math.max(opacity, minOpacity);
+};
+
+const MessageComponent: React.FC<MessageProps> = ({ message, isLast, totalMessages, messageIndex }) => {
   const { state, dispatch } = useGameContext();
   const { currentQuestion } = state;
   const [visible, setVisible] = useState(false);
@@ -166,8 +185,16 @@ const MessageComponent: React.FC<MessageProps> = ({ message, isLast }) => {
     }
   };
 
+  const getMessageClasses = () => {
+    return `message ${visible ? 'visible' : ''} ${message.type}`;
+  };
+
+  const messageStyle = {
+    opacity: isLast ? 1 : calculateOpacity(messageIndex, totalMessages)
+  };
+
   return (
-    <div className={`message ${visible ? 'visible' : ''} ${message.type}`}>
+    <div className={getMessageClasses()} style={messageStyle}>
       {(message.type === 'text' || message.type === 'system') && (
         <div className="avatar-bubble">
           <span className="avatar-letter">Z</span>
@@ -265,6 +292,8 @@ export const ChatPanel: React.FC = () => {
             key={message.id}
             message={message}
             isLast={index === state.messages.length - 1}
+            totalMessages={state.messages.length}
+            messageIndex={state.messages.length - 1 - index}
           />
         ))}
         {state.isTyping && <TypingIndicator />}

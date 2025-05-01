@@ -22,6 +22,13 @@
   --progress-height: 4px;
   --progress-color: #0095F6;
   --progress-bg: rgba(255, 255, 255, 0.2);
+  --message-opacity-latest: 1;
+  --message-opacity-hover: 0.95;
+  --message-fade-rate: 0.25;  /* Higher value = more aggressive fade */
+  --message-min-opacity: 0.15; /* Minimum opacity for oldest messages */
+  --message-transition: opacity 0.4s ease;
+  --message-bubble-bg: rgba(0, 0, 0, 0.75);
+  --message-bubble-hover-bg: rgba(0, 0, 0, 0.85);
 }
 
 .main-container {
@@ -201,29 +208,87 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  opacity: 0;
+  opacity: var(--message-min-opacity);
   transform: translateY(20px);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: var(--message-transition), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.message:hover {
+  opacity: var(--message-opacity-hover) !important;
 }
 
 .message.visible {
-  opacity: 1;
   transform: translateY(0);
 }
 
+/* Message bubble container */
 .message-content {
-  background: rgba(0, 0, 0, 0.75);
+  background: var(--message-bubble-bg);
   border-radius: 18px;
   padding: 10px 12px;
   color: #ffffff;
   font-size: 14px;
   line-height: 1.5;
   max-width: 80%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.message:hover .message-content {
+  background: var(--message-bubble-hover-bg);
 }
 
 .message.text .message-content,
 .message.system .message-content {
   border-top-left-radius: 4px;
+}
+
+/* Question message specific styles */
+.message.question .message-content {
+  background: var(--message-bubble-bg);
+  border-radius: 12px;
+  padding: 12px;
+  width: 100%;
+}
+
+.message.question .question-text {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.message.question .options-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message.question .option-button {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.message.question .option-button:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.7);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.message.question .option-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Avatar styles */
