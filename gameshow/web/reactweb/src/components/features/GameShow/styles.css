@@ -384,11 +384,7 @@
 
 /* Participate button */
 .participate-button {
-  background: rgba(0, 149, 246, 0.15);
-  border: none;
   border-radius: 8px;
-  color: var(--accent-color);
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -396,27 +392,19 @@
   font-size: 14px;
   font-weight: 600;
   padding: 8px 16px;
-  transition: all 0.2s ease;
+  background: rgba(48, 48, 48,1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255,1);
 }
 
 .participate-button:hover {
-  background: rgba(0, 149, 246, 0.25);
-  transform: translateY(-1px);
+  background: rgba(48, 48, 48, 0.98);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 1);
 }
 
-.participate-button:active {
-  transform: translateY(0);
-}
-
-.participate-button.clicked {
-  background: rgba(0, 149, 246, 0.1);
+.participate-button:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.participate-button.clicked:hover {
-  transform: none;
-  background: rgba(0, 149, 246, 0.1);
 }
 
 .green-dot {
@@ -743,4 +731,9 @@
 .question-container {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.02);
+}
+
+/* System messages and participate button - always fully visible */
+.messages-container .message.system {
+  opacity: 1 !important; /* System messages should always be fully visible */
 }
