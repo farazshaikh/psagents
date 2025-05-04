@@ -49,11 +49,11 @@ type GameAction =
 const initialState: GameState = {
   isPlaying: false,
   videoState: {
-    isPlaying: false,
     currentTime: 0,
     duration: 0,
-    isMuted: false,
-    isFullscreen: false,
+    isPlaying: false,
+    isMuted: true, // Start muted by default
+    isFullscreen: false
   },
   messages: [],
   currentQuestion: null,
@@ -84,6 +84,14 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           };
 
         case 'SET_VIDEO_STATE':
+          // Only update if values actually changed
+          const hasChanges = Object.entries(action.payload).some(
+            ([key, value]) => state.videoState[key as keyof VideoState] !== value
+          );
+          if (!hasChanges) {
+            return state;
+          }
+          debugLog(`Video state updated: ${JSON.stringify(action.payload)}`);
           return {
             ...state,
             videoState: {

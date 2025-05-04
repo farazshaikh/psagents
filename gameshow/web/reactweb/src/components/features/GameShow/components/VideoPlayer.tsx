@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGameContext } from '../context/GameContext';
 import { debugLog } from '../../../../utils/debug';
 
@@ -37,6 +37,28 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const interactiveTrackRef = useRef<HTMLTrackElement>(null);
   const { dispatch, state } = useGameContext();
   const isMobile = isMobileDevice();
+  const [isMuted, setIsMuted] = useState(true);
+
+  // Attempt unmute
+  const attemptUnmute = async (video: HTMLVideoElement) => {
+    try {
+      // Try to unmute first
+      video.muted = false;
+      await video.play();
+      setIsMuted(false);
+      debugLog('Successfully unmuted video');
+    } catch (e) {
+      debugLog(`Auto unmute failed: ${e}`);
+      // Keep video playing but muted if unmute failed
+      try {
+        video.muted = true;
+        setIsMuted(true);
+        await video.play();
+      } catch (playError) {
+        debugLog(`Fallback muted playback failed: ${playError}`);
+      }
+    }
+  };
 
   // Handle video playback when game starts
   useEffect(() => {
@@ -51,17 +73,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
 
     // Configure for streaming playback
-    video.preload = 'metadata'; // Only load metadata initially
-    video.autoplay = false; // We'll control playback manually
-    
+    video.preload = 'metadata';
+    video.controls = false; // Disable all built-in controls
+
     // Load just enough to start playback
     const handleLoadedMetadata = () => {
       debugLog(`Video metadata loaded - Duration: ${video.duration}`);
       if (state.isPlaying) {
-        // Start playback as soon as we have enough data
-        video.play().catch(e => {
-          debugLog(`Initial playback failed: ${e}`);
-        });
+        attemptUnmute(video);
       }
     };
 
@@ -93,6 +112,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       video.removeEventListener('waiting', handleWaiting);
     };
   }, [src, isMobile, state.isPlaying]);
+
+  // Update game context with video state
+  useEffect(() => {
+    dispatch({
+      type: 'SET_VIDEO_STATE',
+      payload: {
+        isMuted
+      }
+    });
+  }, [isMuted, dispatch]);
 
   // Track video state and handle ended event
   useEffect(() => {
@@ -262,7 +291,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         ref={videoRef}
         className="video-player"
         playsInline
-        preload="auto"
+        preload="metadata"
         crossOrigin="anonymous"
       >
         <source src={src} type="video/mp4" />

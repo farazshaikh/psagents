@@ -159,6 +159,39 @@
   box-shadow: 0 0 8px #4ade80;
 }
 
+/* Video status controls */
+.video-status-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-icon {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.status-icon:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.status-icon.active {
+  color: var(--accent-color);
+}
+
 /* Chat panel */
 .chat-panel {
   position: fixed;

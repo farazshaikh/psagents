@@ -7,13 +7,6 @@ const REMOTE_SERVER = 'https://10.0.0.100:8443';
 
 // Define the sequence of videos to be played
 const mediaSources: MediaSource[] = [
-  // 3. First question/challenge
-  {
-    videoUrl: `${REMOTE_SERVER}/videos/f16/video.mp4`,
-    plainCaptionsSrc: `${REMOTE_SERVER}/videos/f16/captions.vtt`,
-    interactiveCaptionsSrc: `${REMOTE_SERVER}/videos/f16/interactive_captions.vtt`,
-  },
-
   // 1. Introduction video
   {
     videoUrl: `${REMOTE_SERVER}/videos/intro/video.mp4`,
@@ -26,7 +19,13 @@ const mediaSources: MediaSource[] = [
     videoUrl: `${REMOTE_SERVER}/videos/superwoman/video.mp4`,
     plainCaptionsSrc: `${REMOTE_SERVER}/videos/superwoman/captions.vtt`,
     interactiveCaptionsSrc: `${REMOTE_SERVER}/videos/superwoman/interactive_captions.vtt`,
-  }
+  },
+    // 3. First question/challenge
+  {
+    videoUrl: `${REMOTE_SERVER}/videos/f16/video.mp4`,
+    plainCaptionsSrc: `${REMOTE_SERVER}/videos/f16/captions.vtt`,
+    interactiveCaptionsSrc: `${REMOTE_SERVER}/videos/f16/interactive_captions.vtt`,
+  },
 ];
 
 export const GameShowPage: React.FC = () => {
