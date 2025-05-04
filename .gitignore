@@ -9,3 +9,5 @@ data/neo4j
 data/logs
 node_modules/
 .direnv/
+change.diff
+changes.diff

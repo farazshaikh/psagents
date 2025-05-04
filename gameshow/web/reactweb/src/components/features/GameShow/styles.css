@@ -51,6 +51,7 @@
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  z-index: 1;
 }
 
 .video-player {
@@ -198,10 +199,10 @@
   left: 20px;
   bottom: 20px;
   width: min(600px, 50%);
-  max-height: 80vh;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
-  z-index: 100;
+  z-index: 10;
   pointer-events: auto;
   overflow: hidden;
 }
@@ -580,7 +581,7 @@
 @media (max-width: 768px) {
   .chat-panel {
     width: calc(100% - 40px);
-    max-height: 50vh;
+    max-height: 90vh;
   }
 
   .zaia-status {
