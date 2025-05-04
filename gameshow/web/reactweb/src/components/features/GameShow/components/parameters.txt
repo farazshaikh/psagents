@@ -1,0 +1,14 @@
+https://elevenlabs.io/app/voice-lab?voiceId=XHqlxleHbYnK8xmft8Vq
+Voice
+
+professional/Miss Sally May - Southern Girl Next Door
+Miss Sally May - Southern Girl Next Door
+Model
+
+Eleven Multilingual v2
+Speed Slower 1 Faster
+Stability More variable 50 More stable
+Similariy Low 1% High
+Style Exaggeration 10% None 10% Exaggerated
+
+Speaker boost True
