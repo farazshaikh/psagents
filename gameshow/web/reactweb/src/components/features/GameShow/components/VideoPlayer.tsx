@@ -21,6 +21,11 @@ interface InteractiveCaptionData {
   };
 }
 
+// Helper function to detect mobile devices
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
   plainCaptionsSrc,
@@ -31,34 +36,63 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const plainTrackRef = useRef<HTMLTrackElement>(null);
   const interactiveTrackRef = useRef<HTMLTrackElement>(null);
   const { dispatch, state } = useGameContext();
+  const isMobile = isMobileDevice();
 
   // Handle video playback when game starts
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (state.isPlaying) {
-      video.currentTime = 0;
-      video.muted = false;
+    // Set initial attributes for mobile compatibility
+    video.playsInline = true;
+    if (isMobile) {
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+    }
 
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error('Error playing video:', error);
-          // Try playing muted if autoplay was blocked
-          video.muted = true;
-          video.play().then(() => {
-            // Try to unmute after successful muted playback
-            video.muted = false;
-          }).catch(e => {
-            console.error('Failed to play even muted:', e);
-          });
+    // Configure for streaming playback
+    video.preload = 'metadata'; // Only load metadata initially
+    video.autoplay = false; // We'll control playback manually
+    
+    // Load just enough to start playback
+    const handleLoadedMetadata = () => {
+      debugLog(`Video metadata loaded - Duration: ${video.duration}`);
+      if (state.isPlaying) {
+        // Start playback as soon as we have enough data
+        video.play().catch(e => {
+          debugLog(`Initial playback failed: ${e}`);
         });
       }
-    } else {
-      video.pause();
-    }
-  }, [state.isPlaying]);
+    };
+
+    // Monitor buffering progress
+    const handleProgress = () => {
+      if (video.buffered.length > 0) {
+        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+        const duration = video.duration;
+        const bufferedPercent = (bufferedEnd / duration) * 100;
+        debugLog(`Buffered: ${bufferedPercent.toFixed(2)}%`);
+      }
+    };
+
+    // Handle waiting/buffering states
+    const handleWaiting = () => {
+      debugLog('Video is buffering...');
+    };
+
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('progress', handleProgress);
+    video.addEventListener('waiting', handleWaiting);
+
+    // Load the video source
+    video.load();
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('progress', handleProgress);
+      video.removeEventListener('waiting', handleWaiting);
+    };
+  }, [src, isMobile, state.isPlaying]);
 
   // Track video state and handle ended event
   useEffect(() => {
@@ -228,8 +262,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         ref={videoRef}
         className="video-player"
         playsInline
-        autoPlay
-        muted
+        preload="auto"
         crossOrigin="anonymous"
       >
         <source src={src} type="video/mp4" />
