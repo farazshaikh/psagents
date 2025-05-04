@@ -21,11 +21,6 @@ export const GameShow: React.FC<GameShowProps> = ({ mediaSources }) => {
   return (
     <GameProvider>
       <div className="main-container">
-        <div className="zaia-status">
-          <span className="name">ZAIA</span>
-          <span className="online">online</span>
-        </div>
-
         <VideoPlayer
           src={currentSource.videoUrl}
           plainCaptionsSrc={currentSource.plainCaptionsSrc}

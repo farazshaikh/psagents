@@ -270,6 +270,8 @@ export const ChatPanel: React.FC = () => {
   const { state } = useGameContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const scrollToBottom = useCallback(() => {
     if (messagesContainerRef.current) {
@@ -301,8 +303,45 @@ export const ChatPanel: React.FC = () => {
     }
   }, [state.messages, scrollToBottom]);
 
+  const handleMuteToggle = () => {
+    setIsMuted(!isMuted);
+    // TODO: Implement actual video muting logic
+  };
+
+  const handleFullscreenToggle = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
   return (
     <div className="chat-panel">
+      <div className="chat-header">
+        <div className="zaia-status">
+          <span className="name">ZAIA</span>
+          <span className="online">online</span>
+        </div>
+        <div className="video-status-controls">
+          <button 
+            className="status-icon" 
+            onClick={handleFullscreenToggle}
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? "⤓" : "⤢"}
+          </button>
+          <button 
+            className="status-icon" 
+            onClick={handleMuteToggle}
+            title={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? "🔇" : "🔊"}
+          </button>
+        </div>
+      </div>
       <div className="messages-container" ref={messagesContainerRef}>
         {state.messages.map((message, index) => (
           <MessageComponent
@@ -320,5 +359,3 @@ export const ChatPanel: React.FC = () => {
     </div>
   );
 };
-
-export default ChatPanel;

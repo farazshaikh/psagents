@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import './styles.css';
 import { GameProvider } from './context/GameContext';
 import { VideoPlayer } from './components/VideoPlayer';
-import { VideoStatusControls } from './components/VideoStatusControls';
 import { ChatPanel } from './components/ChatPanel';
 import { debugLog } from '../../../utils/debug';
 
@@ -45,13 +44,6 @@ export const GameShow: React.FC<GameShowProps> = ({ mediaSources }) => {
           interactiveCaptionsSrc={currentSource.interactiveCaptionsSrc}
           onEnded={handleVideoEnd}
         />
-
-        <div className="zaia-status">
-          <span className="name">ZAIA</span>
-          <span className="online">online</span>
-          <VideoStatusControls />
-        </div>
-
         <ChatPanel />
       </div>
     </GameProvider>
