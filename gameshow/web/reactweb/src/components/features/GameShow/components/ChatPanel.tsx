@@ -266,6 +266,11 @@ const ParticipateButton: React.FC = () => {
   );
 };
 
+// Helper function to detect iOS devices
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+};
+
 export const ChatPanel: React.FC = () => {
   const { state } = useGameContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -308,15 +313,29 @@ export const ChatPanel: React.FC = () => {
     // TODO: Implement actual video muting logic
   };
 
-  const handleFullscreenToggle = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+  const handleFullscreenToggle = useCallback(async () => {
+    // For iOS devices, we'll use a different approach since requestFullscreen isn't supported
+    if (isIOS()) {
+      // Add a class to handle fullscreen via CSS
+      document.documentElement.classList.toggle('ios-fullscreen');
+      setIsFullscreen(!isFullscreen);
+      return;
     }
-  };
+
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn('Fullscreen API not supported, falling back to CSS fullscreen');
+      document.documentElement.classList.toggle('ios-fullscreen');
+      setIsFullscreen(!isFullscreen);
+    }
+  }, [isFullscreen]);
 
   return (
     <div className="chat-panel">
