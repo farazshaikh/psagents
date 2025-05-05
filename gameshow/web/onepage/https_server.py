@@ -60,7 +60,7 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
                     sys.stderr.write(f"[DEBUG] Serving root index.html: {index_path}\n")
                     with open(index_path, 'rb') as f:
                         content = f.read()
-                    
+
                     self.send_response(200)
                     self.send_header('Content-Type', 'text/html; charset=utf-8')
                     self.send_header('Content-Length', str(len(content)))
@@ -218,7 +218,7 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         self.send_header('X-XSS-Protection', '1; mode=block')
         self.send_header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
         self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
-        
+
         # Cache control based on file type
         if self.path.endswith(('.mp4', '.webm', '.ogg')):
             # Cache media files for 1 year
@@ -229,7 +229,7 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         else:
             # Default cache policy
             self.send_header('Cache-Control', 'public, max-age=3600')
-        
+
         super().end_headers()
 
 def run_server(port=8443, bind="0.0.0.0"):
@@ -241,22 +241,20 @@ def run_server(port=8443, bind="0.0.0.0"):
     context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.maximum_version = ssl.TLSVersion.TLSv1_3
     context.set_ciphers('ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384')
-    
+
     try:
-        context.load_cert_chain('./ssl/certificate.crt', './ssl/private.key')
+        context.load_cert_chain('../ssl/certificate.crt', '../ssl/private.key')
     except Exception as e:
         print(f"Error loading SSL certificates: {e}")
         print("Please ensure valid SSL certificates are present in the ./ssl directory")
         sys.exit(1)
 
-    # Enable OCSP stapling
-    context.verify_flags = ssl.VERIFY_X509_STRICT
-    context.verify_mode = ssl.CERT_REQUIRED
-    context.load_verify_locations('/etc/ssl/certs/ca-certificates.crt')
+    # Configure SSL context for server-only authentication
+    context.verify_mode = ssl.CERT_NONE  # Don't require client certificates
     context.options |= (
-        ssl.OP_NO_SSLv2 | 
-        ssl.OP_NO_SSLv3 | 
-        ssl.OP_NO_TLSv1 | 
+        ssl.OP_NO_SSLv2 |
+        ssl.OP_NO_SSLv3 |
+        ssl.OP_NO_TLSv1 |
         ssl.OP_NO_TLSv1_1 |
         ssl.OP_NO_COMPRESSION |
         ssl.OP_CIPHER_SERVER_PREFERENCE |
@@ -269,7 +267,7 @@ def run_server(port=8443, bind="0.0.0.0"):
     print(f'Starting HTTPS server on {bind}:{port}...')
     print(f'Using TLS {context.maximum_version.name}')
     print('Note: Server is configured with production-grade security settings')
-    
+
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
